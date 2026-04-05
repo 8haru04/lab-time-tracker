@@ -1,12 +1,20 @@
 const STORAGE_KEY = "ergonomics-lab-permissions-v4";
 const ACTIVE_USER_KEY = "ergonomics-lab-active-user-v1";
 const DISPLAY_NAME_OVERRIDES_KEY = "ergonomics-lab-display-names-v1";
+const PRESENCE_PLANS_KEY = "ergonomics-lab-presence-plans-v1";
 const CATEGORIES = [
   {
     key: "presence",
     label: "\u5728\u5ba4\u7ba1\u7406",
     short: "\u5728\u5ba4\u72b6\u6cc1\u3092\u78ba\u8a8d",
     description: "\u7814\u7a76\u5ba4\u30e1\u30f3\u30d0\u30fc\u306e\u5728\u5ba4\u72b6\u6cc1\u3092\u6271\u3046\u753b\u9762\u3067\u3059\u3002"
+  },
+  {
+    key: "presenceInput",
+    label: "\u4e88\u5b9a\u5165\u529b",
+    short: "\u6708\u306e\u72b6\u6cc1\u3092\u5165\u529b",
+    description: "\u5728\u5ba4\u7ba1\u7406\u306b\u53cd\u6620\u3059\u308b\u6708\u6b21\u306e\u72b6\u6cc1\u3092\u5165\u529b\u3059\u308b\u753b\u9762\u3067\u3059\u3002",
+    isChild: true
   },
   {
     key: "schedule",
@@ -84,6 +92,19 @@ const workspaceTitle = document.getElementById("workspaceTitle");
 const workspaceDescription = document.getElementById("workspaceDescription");
 const currentUserBadge = document.getElementById("currentUserBadge");
 const logoutButton = document.getElementById("logoutButton");
+const presenceMonthLabel = document.getElementById("presenceMonthLabel");
+const presencePrevButton = document.getElementById("presencePrevButton");
+const presenceTodayButton = document.getElementById("presenceTodayButton");
+const presenceNextButton = document.getElementById("presenceNextButton");
+const presenceTableHead = document.getElementById("presenceTableHead");
+const presenceTableBody = document.getElementById("presenceTableBody");
+const presenceInputForm = document.getElementById("presenceInputForm");
+const presenceDateInput = document.getElementById("presenceDateInput");
+const presenceUserSelect = document.getElementById("presenceUserSelect");
+const presenceStatusInput = document.getElementById("presenceStatusInput");
+const presenceNoteInput = document.getElementById("presenceNoteInput");
+const presenceDeleteButton = document.getElementById("presenceDeleteButton");
+const presenceInputMessage = document.getElementById("presenceInputMessage");
 const currentUserCard = document.getElementById("currentUserCard");
 const permissionSummary = document.getElementById("permissionSummary");
 const settingsNotice = document.getElementById("settingsNotice");
@@ -103,6 +124,8 @@ let activeCategory = null;
 let displayNameOverrides = {};
 let displayNameStatusMessage =
   "\u8868\u793a\u540d\u306f\u3053\u306e\u7aef\u672b\u306e\u30ed\u30b0\u30a4\u30f3\u60c5\u5831\u3068\u4e00\u7dd2\u306b\u4fdd\u5b58\u3055\u308c\u307e\u3059\u3002";
+let presencePlans = {};
+let presenceMonthKey = "";
 
 function loadDisplayNameOverrides() {
   try {
@@ -117,6 +140,100 @@ function loadDisplayNameOverrides() {
 
 function saveDisplayNameOverrides() {
   window.localStorage.setItem(DISPLAY_NAME_OVERRIDES_KEY, JSON.stringify(displayNameOverrides));
+}
+
+function padNumber(value) {
+  return String(value).padStart(2, "0");
+}
+
+function toDateKey(date) {
+  return `${date.getFullYear()}-${padNumber(date.getMonth() + 1)}-${padNumber(date.getDate())}`;
+}
+
+function getTodayDateKey() {
+  return toDateKey(new Date());
+}
+
+function getMonthKey(date) {
+  return `${date.getFullYear()}-${padNumber(date.getMonth() + 1)}`;
+}
+
+function parseMonthKey(monthKey) {
+  const [year, month] = monthKey.split("-").map(Number);
+  return new Date(year, month - 1, 1);
+}
+
+function formatMonthLabel(monthKey) {
+  const date = parseMonthKey(monthKey);
+  return `${date.getFullYear()}\u5e74${date.getMonth() + 1}\u6708`;
+}
+
+function shiftMonthKey(monthKey, delta) {
+  const date = parseMonthKey(monthKey);
+  date.setMonth(date.getMonth() + delta);
+  return getMonthKey(date);
+}
+
+function getDaysForMonth(monthKey) {
+  const weekdays = ["\u65e5", "\u6708", "\u706b", "\u6c34", "\u6728", "\u91d1", "\u571f"];
+  const start = parseMonthKey(monthKey);
+  const lastDate = new Date(start.getFullYear(), start.getMonth() + 1, 0).getDate();
+
+  return Array.from({ length: lastDate }, (_, index) => {
+    const date = new Date(start.getFullYear(), start.getMonth(), index + 1);
+    return {
+      key: toDateKey(date),
+      label: index + 1,
+      weekday: weekdays[date.getDay()],
+      isWeekend: date.getDay() === 0 || date.getDay() === 6
+    };
+  });
+}
+
+function loadPresencePlans() {
+  try {
+    const raw = window.localStorage.getItem(PRESENCE_PLANS_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch (error) {
+    console.warn("Could not load presence plans. Using defaults.", error);
+    return {};
+  }
+}
+
+function savePresencePlans() {
+  window.localStorage.setItem(PRESENCE_PLANS_KEY, JSON.stringify(presencePlans));
+}
+
+function getPresenceEntry(userId, dateKey) {
+  const byDate = presencePlans[dateKey];
+  return byDate && typeof byDate === "object" ? byDate[userId] || null : null;
+}
+
+function setPresenceEntry(userId, dateKey, status, note) {
+  const nextStatus = status.trim();
+  const nextNote = note.trim();
+
+  if (!nextStatus && !nextNote) {
+    if (presencePlans[dateKey]) {
+      delete presencePlans[dateKey][userId];
+      if (Object.keys(presencePlans[dateKey]).length === 0) {
+        delete presencePlans[dateKey];
+      }
+      savePresencePlans();
+    }
+    return;
+  }
+
+  if (!presencePlans[dateKey] || typeof presencePlans[dateKey] !== "object") {
+    presencePlans[dateKey] = {};
+  }
+
+  presencePlans[dateKey][userId] = {
+    status: nextStatus,
+    note: nextNote
+  };
+  savePresencePlans();
 }
 
 function getDisplayName(id, fallback) {
@@ -261,6 +378,29 @@ function findMemberById(id) {
   return memberDirectory.find((member) => member.id === id) || null;
 }
 
+function getOrderedMembers() {
+  const roleOrder = Array.isArray(appConfig.userRoles) ? appConfig.userRoles : [];
+
+  return [...memberDirectory].sort((left, right) => {
+    if (left.isOwner && !right.isOwner) {
+      return -1;
+    }
+
+    if (!left.isOwner && right.isOwner) {
+      return 1;
+    }
+
+    const leftRoleIndex = roleOrder.indexOf(left.role);
+    const rightRoleIndex = roleOrder.indexOf(right.role);
+
+    if (leftRoleIndex !== rightRoleIndex) {
+      return leftRoleIndex - rightRoleIndex;
+    }
+
+    return left.id.localeCompare(right.id, "ja");
+  });
+}
+
 function renderRoleOptions(target, roles) {
   target.replaceChildren();
 
@@ -324,7 +464,7 @@ function createNavButton(category) {
   const active = activeCategory === category.key;
 
   button.type = "button";
-  button.className = `nav-button${active ? " is-active" : ""}${allowed ? "" : " is-disabled"}`;
+  button.className = `nav-button${category.isChild ? " is-child" : ""}${active ? " is-active" : ""}${allowed ? "" : " is-disabled"}`;
   button.disabled = !allowed;
   button.setAttribute("aria-current", active ? "page" : "false");
   button.innerHTML = `<strong>${category.label}</strong><small>${allowed ? category.short : "\u6a29\u9650\u304c\u3042\u308a\u307e\u305b\u3093"}</small>`;
@@ -442,6 +582,109 @@ function renderMemberTable() {
   });
 }
 
+function renderPresenceUserOptions() {
+  const selectedUserId = presenceUserSelect.value || currentUser?.id || "";
+  const orderedMembers = getOrderedMembers();
+
+  presenceUserSelect.replaceChildren();
+
+  orderedMembers.forEach((member) => {
+    const option = document.createElement("option");
+    option.value = member.id;
+    option.textContent = `${member.displayName} / ${member.role}`;
+    presenceUserSelect.appendChild(option);
+  });
+
+  if (orderedMembers.some((member) => member.id === selectedUserId)) {
+    presenceUserSelect.value = selectedUserId;
+  } else if (currentUser) {
+    presenceUserSelect.value = currentUser.id;
+  } else if (orderedMembers[0]) {
+    presenceUserSelect.value = orderedMembers[0].id;
+  }
+}
+
+function syncPresenceInputFields() {
+  const dateKey = presenceDateInput.value || getTodayDateKey();
+  const userId = presenceUserSelect.value;
+  const entry = getPresenceEntry(userId, dateKey);
+
+  presenceStatusInput.value = entry?.status || "";
+  presenceNoteInput.value = entry?.note || "";
+  presenceInputMessage.textContent = entry
+    ? "\u3053\u306e\u65e5\u306e\u5165\u529b\u304c\u3059\u3067\u306b\u4fdd\u5b58\u3055\u308c\u3066\u3044\u307e\u3059\u3002"
+    : "\u5165\u529b\u3057\u305f\u5185\u5bb9\u306f\u5728\u5ba4\u7ba1\u7406\u306e\u6708\u6b21\u8868\u306b\u53cd\u6620\u3055\u308c\u307e\u3059\u3002";
+}
+
+function renderPresenceBoard() {
+  const orderedMembers = getOrderedMembers();
+  const days = getDaysForMonth(presenceMonthKey);
+
+  presenceMonthLabel.textContent = formatMonthLabel(presenceMonthKey);
+  presenceTableHead.replaceChildren();
+  presenceTableBody.replaceChildren();
+
+  const headRow = document.createElement("tr");
+  const corner = document.createElement("th");
+  corner.textContent = "\u30e6\u30fc\u30b6\u30fc";
+  headRow.appendChild(corner);
+
+  days.forEach((day) => {
+    const headCell = document.createElement("th");
+    headCell.innerHTML = `
+      <span class="presence-day-label">${day.label}</span>
+      <span class="presence-weekday${day.isWeekend ? " presence-day-weekend" : ""}">${day.weekday}</span>
+    `;
+    headRow.appendChild(headCell);
+  });
+
+  presenceTableHead.appendChild(headRow);
+
+  orderedMembers.forEach((member) => {
+    const row = document.createElement("tr");
+    const memberCell = document.createElement("th");
+    memberCell.innerHTML = `
+      <span class="presence-user-name">${member.displayName}</span>
+      <span class="presence-user-meta">${member.role}</span>
+    `;
+    row.appendChild(memberCell);
+
+    days.forEach((day) => {
+      const cell = document.createElement("td");
+      const entry = getPresenceEntry(member.id, day.key);
+
+      if (entry && entry.status) {
+        const badge = document.createElement("span");
+        badge.className = "presence-cell-value";
+        badge.textContent = entry.status;
+        if (entry.note) {
+          badge.title = entry.note;
+        }
+        cell.appendChild(badge);
+      } else {
+        const empty = document.createElement("span");
+        empty.className = "presence-cell-empty";
+        empty.textContent = "-";
+        cell.appendChild(empty);
+      }
+
+      row.appendChild(cell);
+    });
+
+    presenceTableBody.appendChild(row);
+  });
+}
+
+function renderPresenceInput() {
+  renderPresenceUserOptions();
+
+  if (!presenceDateInput.value) {
+    presenceDateInput.value = getTodayDateKey();
+  }
+
+  syncPresenceInputFields();
+}
+
 function renderSettings() {
   renderCurrentUserSummary();
 
@@ -463,6 +706,14 @@ function renderViews() {
   allViews.forEach((view) => {
     view.hidden = view.id !== `view-${activeCategory}`;
   });
+
+  if (activeCategory === "presence") {
+    renderPresenceBoard();
+  }
+
+  if (activeCategory === "presenceInput") {
+    renderPresenceInput();
+  }
 
   if (activeCategory === "settings") {
     renderSettings();
@@ -613,6 +864,76 @@ displayNameForm.addEventListener("submit", (event) => {
   renderWorkspace();
 });
 
+presencePrevButton.addEventListener("click", () => {
+  presenceMonthKey = shiftMonthKey(presenceMonthKey, -1);
+  renderPresenceBoard();
+});
+
+presenceTodayButton.addEventListener("click", () => {
+  presenceMonthKey = getMonthKey(new Date());
+  renderPresenceBoard();
+});
+
+presenceNextButton.addEventListener("click", () => {
+  presenceMonthKey = shiftMonthKey(presenceMonthKey, 1);
+  renderPresenceBoard();
+});
+
+presenceUserSelect.addEventListener("change", () => {
+  syncPresenceInputFields();
+});
+
+presenceDateInput.addEventListener("change", () => {
+  syncPresenceInputFields();
+});
+
+presenceInputForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+
+  const dateKey = presenceDateInput.value;
+  const userId = presenceUserSelect.value;
+  const status = presenceStatusInput.value.trim();
+  const note = presenceNoteInput.value.trim();
+
+  if (!dateKey || !userId) {
+    presenceInputMessage.textContent =
+      "\u65e5\u4ed8\u3068\u30e6\u30fc\u30b6\u30fc\u3092\u9078\u3093\u3067\u304f\u3060\u3055\u3044\u3002";
+    return;
+  }
+
+  if (!status) {
+    presenceInputMessage.textContent =
+      "\u72b6\u6cc1\u306f\u77ed\u3044\u8a00\u8449\u3067\u5165\u529b\u3057\u3066\u304f\u3060\u3055\u3044\u3002";
+    return;
+  }
+
+  setPresenceEntry(userId, dateKey, status, note);
+  presenceMonthKey = dateKey.slice(0, 7);
+  presenceInputMessage.textContent =
+    "\u5165\u529b\u3092\u4fdd\u5b58\u3057\u307e\u3057\u305f\u3002\u5728\u5ba4\u7ba1\u7406\u306e\u6708\u6b21\u8868\u306b\u53cd\u6620\u3055\u308c\u307e\u3059\u3002";
+  renderPresenceBoard();
+  syncPresenceInputFields();
+});
+
+presenceDeleteButton.addEventListener("click", () => {
+  const dateKey = presenceDateInput.value;
+  const userId = presenceUserSelect.value;
+
+  if (!dateKey || !userId) {
+    presenceInputMessage.textContent =
+      "\u524a\u9664\u3059\u308b\u306b\u306f\u3001\u65e5\u4ed8\u3068\u30e6\u30fc\u30b6\u30fc\u3092\u9078\u3093\u3067\u304f\u3060\u3055\u3044\u3002";
+    return;
+  }
+
+  setPresenceEntry(userId, dateKey, "", "");
+  presenceStatusInput.value = "";
+  presenceNoteInput.value = "";
+  presenceMonthKey = dateKey.slice(0, 7);
+  presenceInputMessage.textContent =
+    "\u3053\u306e\u65e5\u306e\u5165\u529b\u3092\u524a\u9664\u3057\u307e\u3057\u305f\u3002";
+  renderPresenceBoard();
+});
+
 memberForm.addEventListener("submit", (event) => {
   event.preventDefault();
 
@@ -672,6 +993,8 @@ window.addEventListener("hashchange", () => {
 async function init() {
   appConfig = await loadConfig();
   displayNameOverrides = loadDisplayNameOverrides();
+  presencePlans = loadPresencePlans();
+  presenceMonthKey = getMonthKey(new Date());
   memberDirectory = loadStoredDirectory(appConfig);
   renderConfig(appConfig);
   loginForm.reset();

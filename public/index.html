@@ -79,9 +79,73 @@
         <section class="workspace-stage">
           <article id="view-presence" class="workspace-view">
             <section class="view-card">
-              <p class="view-label">&#x5728;&#x5ba4;&#x7ba1;&#x7406;</p>
-              <h3>&#x5728;&#x5ba4;&#x7ba1;&#x7406;&#x753b;&#x9762;</h3>
-              <p class="view-copy">&#x3053;&#x306e;&#x30ab;&#x30c6;&#x30b4;&#x30ea;&#x306e;&#x5185;&#x5bb9;&#x306f;&#x3001;&#x6b21;&#x306e;&#x6307;&#x793a;&#x306b;&#x5408;&#x308f;&#x305b;&#x3066;&#x500b;&#x5225;&#x306b;&#x5b9f;&#x88c5;&#x3057;&#x307e;&#x3059;&#x3002;</p>
+              <div class="presence-shell">
+                <div class="presence-toolbar">
+                  <div>
+                    <p class="view-label">&#x5728;&#x5ba4;&#x7ba1;&#x7406;</p>
+                    <h3 id="presenceMonthLabel">&#x4eca;&#x6708;</h3>
+                    <p class="view-copy">&#x6a2a;&#x8ef8;&#x3092;&#x65e5;&#x4ed8;&#x3001;&#x7e26;&#x8ef8;&#x3092;&#x30e6;&#x30fc;&#x30b6;&#x30fc;&#x3068;&#x3057;&#x3066;&#x3001;&#x6708;&#x5358;&#x4f4d;&#x306e;&#x72b6;&#x6cc1;&#x3092;&#x78ba;&#x8a8d;&#x3057;&#x307e;&#x3059;&#x3002;</p>
+                  </div>
+
+                  <div class="presence-nav">
+                    <button id="presencePrevButton" class="secondary-button" type="button">&#x524d;&#x306e;&#x6708;</button>
+                    <button id="presenceTodayButton" class="secondary-button" type="button">&#x4eca;&#x6708;</button>
+                    <button id="presenceNextButton" class="secondary-button" type="button">&#x6b21;&#x306e;&#x6708;</button>
+                  </div>
+                </div>
+
+                <div class="presence-table-wrap">
+                  <table class="presence-table">
+                    <thead id="presenceTableHead"></thead>
+                    <tbody id="presenceTableBody"></tbody>
+                  </table>
+                </div>
+              </div>
+            </section>
+          </article>
+
+          <article id="view-presenceInput" class="workspace-view" hidden>
+            <section class="view-card">
+              <div class="presence-shell">
+                <div>
+                  <p class="view-label">&#x4e88;&#x5b9a;&#x5165;&#x529b;</p>
+                  <h3>&#x6708;&#x306e;&#x72b6;&#x6cc1;&#x3092;&#x5165;&#x529b;</h3>
+                  <p class="view-copy">&#x65e5;&#x4ed8;&#x3068;&#x30e6;&#x30fc;&#x30b6;&#x30fc;&#x3092;&#x9078;&#x3073;&#x3001;&#x5728;&#x5ba4;&#x7ba1;&#x7406;&#x306b;&#x8868;&#x793a;&#x3059;&#x308b;&#x72b6;&#x6cc1;&#x3092;&#x767b;&#x9332;&#x3057;&#x307e;&#x3059;&#x3002;</p>
+                </div>
+
+                <form id="presenceInputForm" class="form-stack">
+                  <div class="presence-input-grid">
+                    <label class="field">
+                      <span>&#x65e5;&#x4ed8;</span>
+                      <input id="presenceDateInput" type="date" name="presenceDate">
+                    </label>
+
+                    <label class="field">
+                      <span>&#x30e6;&#x30fc;&#x30b6;&#x30fc;</span>
+                      <select id="presenceUserSelect" name="presenceUser"></select>
+                    </label>
+                  </div>
+
+                  <div class="presence-input-grid">
+                    <label class="field">
+                      <span>&#x72b6;&#x6cc1;&#xff08;&#x77ed;&#x304f;&#xff09;</span>
+                      <input id="presenceStatusInput" type="text" name="presenceStatus" maxlength="6" placeholder="">
+                    </label>
+
+                    <label class="field">
+                      <span>&#x88dc;&#x8db3;</span>
+                      <input id="presenceNoteInput" type="text" name="presenceNote" maxlength="40" placeholder="">
+                    </label>
+                  </div>
+
+                  <div class="presence-actions">
+                    <button class="primary-button" type="submit">&#x5165;&#x529b;&#x3092;&#x4fdd;&#x5b58;</button>
+                    <button id="presenceDeleteButton" class="secondary-button" type="button">&#x3053;&#x306e;&#x5165;&#x529b;&#x3092;&#x524a;&#x9664;</button>
+                  </div>
+                </form>
+
+                <p id="presenceInputMessage" class="helper-text">&#x5165;&#x529b;&#x3057;&#x305f;&#x5185;&#x5bb9;&#x306f;&#x5728;&#x5ba4;&#x7ba1;&#x7406;&#x306e;&#x6708;&#x6b21;&#x8868;&#x306b;&#x53cd;&#x6620;&#x3055;&#x308c;&#x307e;&#x3059;&#x3002;</p>
+              </div>
             </section>
           </article>
 
