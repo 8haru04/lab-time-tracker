@@ -1,40 +1,34 @@
-const STORAGE_KEY = "ergonomics-lab-permissions-v1";
-const PERMISSIONS = [
-  { key: "presence", label: "在室管理" },
-  { key: "schedule", label: "スケジュール管理" },
-  { key: "tasks", label: "マイタスク" },
-  { key: "clock", label: "打刻" },
-  { key: "settings", label: "設定" },
-  { key: "permissionAdmin", label: "権限管理" }
+const STORAGE_KEY = "ergonomics-lab-permissions-v3";
+const CATEGORIES = [
+  {
+    key: "presence",
+    label: "在室管理",
+    description: "研究室メンバーの在室状況を扱う画面です。"
+  },
+  {
+    key: "schedule",
+    label: "スケジュール管理",
+    description: "研究室の予定や共有スケジュールを扱う画面です。"
+  },
+  {
+    key: "tasks",
+    label: "マイタスク",
+    description: "個人のタスクを整理する画面です。"
+  },
+  {
+    key: "clock",
+    label: "打刻",
+    description: "入室・退出などの打刻を扱う画面です。"
+  },
+  {
+    key: "settings",
+    label: "設定",
+    description: "ログイン情報や権限管理を扱う画面です。"
+  }
 ];
 
-const authView = document.getElementById("authView");
-const appView = document.getElementById("appView");
-const installButton = document.getElementById("installButton");
-const installHint = document.getElementById("installHint");
-const loginForm = document.getElementById("loginForm");
-const loginMessage = document.getElementById("loginMessage");
-const roleSelect = document.getElementById("roleSelect");
-const userIdInput = document.getElementById("userIdInput");
-const memberRoleSelect = document.getElementById("memberRoleSelect");
-const memberForm = document.getElementById("memberForm");
-const memberFormMessage = document.getElementById("memberFormMessage");
-const backToLoginButton = document.getElementById("backToLoginButton");
-const adminPanel = document.getElementById("adminPanel");
-const adminNotice = document.getElementById("adminNotice");
-const memberTable = document.getElementById("memberTable");
-const currentUserCard = document.getElementById("currentUserCard");
-const permissionSummary = document.getElementById("permissionSummary");
-const labName = document.getElementById("labName");
-const tagline = document.getElementById("tagline");
-const loginDescription = document.getElementById("loginDescription");
-const versionValue = document.getElementById("versionValue");
-const urlValue = document.getElementById("urlValue");
-const connectionValue = document.getElementById("connectionValue");
-const modeValue = document.getElementById("modeValue");
-
 const FALLBACK_CONFIG = {
-  appName: "人間工学研究室 ログイン",
+  appName: "人間工学研究室 共有ツール",
   labName: "人間工学研究室",
   tagline:
     "研究室の在室管理、スケジュール管理、マイタスク、打刻を一つの入口から利用するための共有ツールです。",
@@ -48,21 +42,49 @@ const FALLBACK_CONFIG = {
   version: "基盤-2026-04"
 };
 
-let deferredPrompt = null;
+const authView = document.getElementById("authView");
+const workspaceView = document.getElementById("workspaceView");
+const loginForm = document.getElementById("loginForm");
+const loginMessage = document.getElementById("loginMessage");
+const roleSelect = document.getElementById("roleSelect");
+const userIdInput = document.getElementById("userIdInput");
+const labName = document.getElementById("labName");
+const sidebarLabName = document.getElementById("sidebarLabName");
+const tagline = document.getElementById("tagline");
+const loginDescription = document.getElementById("loginDescription");
+const workspaceNav = document.getElementById("workspaceNav");
+const sidebarUserText = document.getElementById("sidebarUserText");
+const workspaceTitle = document.getElementById("workspaceTitle");
+const workspaceDescription = document.getElementById("workspaceDescription");
+const currentUserBadge = document.getElementById("currentUserBadge");
+const logoutButton = document.getElementById("logoutButton");
+const currentUserCard = document.getElementById("currentUserCard");
+const permissionSummary = document.getElementById("permissionSummary");
+const settingsNotice = document.getElementById("settingsNotice");
+const adminSection = document.getElementById("adminSection");
+const memberSection = document.getElementById("memberSection");
+const memberTable = document.getElementById("memberTable");
+const memberForm = document.getElementById("memberForm");
+const memberNameInput = document.getElementById("memberNameInput");
+const memberIdInput = document.getElementById("memberIdInput");
+const memberRoleSelect = document.getElementById("memberRoleSelect");
+const memberFormMessage = document.getElementById("memberFormMessage");
+
 let appConfig = FALLBACK_CONFIG;
 let memberDirectory = [];
 let currentUser = null;
+let activeCategory = null;
 
 function buildOwnerRecord(config) {
   const permissions = {};
 
-  PERMISSIONS.forEach((permission) => {
-    permissions[permission.key] = true;
+  CATEGORIES.forEach((category) => {
+    permissions[category.key] = true;
   });
 
   return {
     id: config.ownerUser.id,
-    displayName: config.ownerUser.displayName,
+    displayName: config.ownerUser.displayName || config.ownerUser.id,
     role: config.ownerUser.role,
     isOwner: true,
     permissions
@@ -72,64 +94,88 @@ function buildOwnerRecord(config) {
 function createEmptyPermissions() {
   const permissions = {};
 
-  PERMISSIONS.forEach((permission) => {
-    permissions[permission.key] = false;
+  CATEGORIES.forEach((category) => {
+    permissions[category.key] = false;
   });
 
   return permissions;
 }
 
-function mergeDirectory(savedMembers, config) {
-  const ownerRecord = buildOwnerRecord(config);
-  const filtered = Array.isArray(savedMembers)
-    ? savedMembers.filter((member) => member.id !== ownerRecord.id)
-    : [];
+function normalizePermissions(rawPermissions) {
+  return {
+    ...createEmptyPermissions(),
+    ...(rawPermissions && typeof rawPermissions === "object" ? rawPermissions : {})
+  };
+}
 
-  return [ownerRecord, ...filtered];
+function normalizeMember(rawMember) {
+  if (!rawMember || typeof rawMember !== "object") {
+    return null;
+  }
+
+  const id = String(rawMember.id || "").trim();
+  const role = String(rawMember.role || "").trim();
+
+  if (!id || !role) {
+    return null;
+  }
+
+  return {
+    id,
+    displayName: String(rawMember.displayName || id).trim() || id,
+    role,
+    isOwner: false,
+    permissions: normalizePermissions(rawMember.permissions)
+  };
 }
 
 function loadStoredDirectory(config) {
+  const owner = buildOwnerRecord(config);
+
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      return mergeDirectory([], config);
-    }
+    const parsed = raw ? JSON.parse(raw) : [];
+    const others = Array.isArray(parsed)
+      ? parsed.map(normalizeMember).filter(Boolean).filter((member) => member.id !== owner.id)
+      : [];
 
-    const parsed = JSON.parse(raw);
-    return mergeDirectory(parsed, config);
+    return [owner, ...others];
   } catch (error) {
-    console.warn("保存済みの権限設定を読み込めなかったため、初期状態を使用します。", error);
-    return mergeDirectory([], config);
+    console.warn("保存済みユーザーデータを読み込めませんでした。初期状態を利用します。", error);
+    return [owner];
   }
 }
 
 function saveDirectory() {
-  const nonOwnerMembers = memberDirectory.filter((member) => !member.isOwner);
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(nonOwnerMembers));
+  const others = memberDirectory.filter((member) => !member.isOwner);
+  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(others));
 }
 
-function updateConnectionState() {
-  connectionValue.textContent = navigator.onLine ? "オンライン" : "オフライン";
+function isOwner(member) {
+  return Boolean(member && member.id === appConfig.ownerUser.id);
 }
 
-function updateDisplayMode() {
-  const isStandalone =
-    window.matchMedia("(display-mode: standalone)").matches ||
-    window.navigator.standalone === true;
-
-  modeValue.textContent = isStandalone ? "アプリ" : "ブラウザ";
+function canManagePermissions(member) {
+  return isOwner(member);
 }
 
-function updateRuntimeDetails() {
-  urlValue.textContent = window.location.href;
+function hasCategoryAccess(member, categoryKey) {
+  return Boolean(member && member.permissions && member.permissions[categoryKey]);
 }
 
-function setInstallState(options) {
-  installButton.disabled = !options.enabled;
-  installHint.textContent = options.text;
+function getAccessibleCategories(member) {
+  return CATEGORIES.filter((category) => hasCategoryAccess(member, category.key));
+}
+
+function findMemberById(id) {
+  return memberDirectory.find((member) => member.id === id) || null;
 }
 
 function renderRoleOptions(target, roles) {
+  if (!target) {
+    return;
+  }
+
   target.replaceChildren();
 
   roles.forEach((role) => {
@@ -143,81 +189,152 @@ function renderRoleOptions(target, roles) {
 function renderConfig(config) {
   document.title = config.appName;
   labName.textContent = config.labName;
+  sidebarLabName.textContent = config.labName;
   tagline.textContent = config.tagline;
   loginDescription.textContent = config.loginDescription;
-  versionValue.textContent = config.version || "基盤";
-  renderRoleOptions(roleSelect, config.userRoles || FALLBACK_CONFIG.userRoles);
-  renderRoleOptions(memberRoleSelect, config.userRoles || FALLBACK_CONFIG.userRoles);
-  updateRuntimeDetails();
+  renderRoleOptions(roleSelect, config.userRoles);
+  renderRoleOptions(memberRoleSelect, config.userRoles);
 }
 
-function hasPermission(member, key) {
-  return Boolean(member.permissions && member.permissions[key]);
+function updateHash(categoryKey) {
+  const nextHash = categoryKey && categoryKey !== "empty" ? `#${categoryKey}` : "";
+
+  if (window.location.hash !== nextHash) {
+    history.replaceState(null, "", nextHash || window.location.pathname);
+  }
 }
 
-function isOwner(member) {
-  return Boolean(member && member.id === appConfig.ownerUser.id);
+function resolvePreferredCategory() {
+  const accessible = getAccessibleCategories(currentUser);
+  const hashKey = window.location.hash.replace(/^#/, "");
+
+  if (hashKey && accessible.some((category) => category.key === hashKey)) {
+    return hashKey;
+  }
+
+  if (activeCategory && accessible.some((category) => category.key === activeCategory)) {
+    return activeCategory;
+  }
+
+  return accessible[0]?.key || "empty";
 }
 
-function renderCurrentUser() {
-  currentUserCard.replaceChildren();
+function setActiveCategory(categoryKey) {
+  if (!currentUser) {
+    return;
+  }
 
-  const name = document.createElement("div");
-  name.className = "summary-box";
-  name.innerHTML = `<span class="section-kicker">利用者</span><strong>${currentUser.displayName}</strong><small>${currentUser.id} / ${currentUser.role}</small>`;
+  if (categoryKey !== "empty" && !hasCategoryAccess(currentUser, categoryKey)) {
+    return;
+  }
 
-  const scope = document.createElement("div");
-  scope.className = "summary-box";
-  scope.innerHTML = `<span class="section-kicker">権限レベル</span><strong>${isOwner(currentUser) ? "最上位管理者" : "一般ユーザー"}</strong><small>${isOwner(currentUser) ? "すべての権限を保有" : "管理者が付与した権限のみ利用可能"}</small>`;
-
-  currentUserCard.append(name, scope);
+  activeCategory = categoryKey;
+  updateHash(categoryKey);
+  renderWorkspace();
 }
 
-function renderPermissionSummary() {
-  permissionSummary.replaceChildren();
+function createNavButton(category) {
+  const button = document.createElement("button");
+  const allowed = hasCategoryAccess(currentUser, category.key);
+  const active = activeCategory === category.key;
 
-  PERMISSIONS.forEach((permission) => {
-    const item = document.createElement("li");
-    const title = document.createElement("strong");
-    const note = document.createElement("small");
+  button.type = "button";
+  button.className = `nav-button${active ? " is-active" : ""}${allowed ? "" : " is-disabled"}`;
+  button.disabled = !allowed;
+  button.setAttribute("aria-current", active ? "page" : "false");
+  button.innerHTML = `<strong>${category.label}</strong><small>${allowed ? "画面を開く" : "権限がありません"}</small>`;
 
-    title.textContent = permission.label;
-    note.textContent = hasPermission(currentUser, permission.key) ? "利用できます" : "利用できません";
+  if (allowed) {
+    button.addEventListener("click", () => {
+      setActiveCategory(category.key);
+    });
+  }
 
-    item.append(title, note);
-    permissionSummary.appendChild(item);
+  return button;
+}
+
+function renderSidebar() {
+  workspaceNav.replaceChildren();
+
+  CATEGORIES.forEach((category) => {
+    workspaceNav.appendChild(createNavButton(category));
   });
 }
 
-function createPermissionToggle(member, permission) {
+function renderHeader() {
+  if (activeCategory === "empty") {
+    workspaceTitle.textContent = "利用できるカテゴリがありません";
+    workspaceDescription.textContent = "管理者が権限を付与すると、ここから各画面へ切り替えられます。";
+    return;
+  }
+
+  const currentCategory = CATEGORIES.find((category) => category.key === activeCategory);
+  if (!currentCategory) {
+    return;
+  }
+
+  workspaceTitle.textContent = currentCategory.label;
+  workspaceDescription.textContent = currentCategory.description;
+}
+
+function createInfoBox(title, value) {
+  const box = document.createElement("div");
+  box.className = "info-box";
+  box.innerHTML = `<strong>${title}</strong><small>${value}</small>`;
+  return box;
+}
+
+function renderCurrentUserSummary() {
+  currentUserCard.replaceChildren();
+  permissionSummary.replaceChildren();
+
+  currentUserCard.append(
+    createInfoBox("表示名", currentUser.displayName),
+    createInfoBox("利用者番号", currentUser.id),
+    createInfoBox("ユーザー区分", currentUser.role),
+    createInfoBox("権限レベル", isOwner(currentUser) ? "最上位管理者" : "一般ユーザー")
+  );
+
+  CATEGORIES.forEach((category) => {
+    const chip = document.createElement("span");
+    chip.className = `permission-chip${hasCategoryAccess(currentUser, category.key) ? "" : " is-off"}`;
+    chip.textContent = category.label;
+    permissionSummary.appendChild(chip);
+  });
+}
+
+function createPermissionControl(member, category) {
+  if (!canManagePermissions(currentUser)) {
+    const chip = document.createElement("span");
+    chip.className = `permission-chip${hasCategoryAccess(member, category.key) ? "" : " is-off"}`;
+    chip.textContent = category.label;
+    return chip;
+  }
+
   const label = document.createElement("label");
-  label.className = "permission-toggle";
+  label.className = "permission-item";
 
   const checkbox = document.createElement("input");
   checkbox.type = "checkbox";
-  checkbox.checked = hasPermission(member, permission.key);
+  checkbox.checked = hasCategoryAccess(member, category.key);
   checkbox.disabled = member.isOwner;
   checkbox.addEventListener("change", () => {
-    member.permissions[permission.key] = checkbox.checked;
+    member.permissions[category.key] = checkbox.checked;
     saveDirectory();
+
     if (currentUser && currentUser.id === member.id) {
       currentUser = member;
-      renderPermissionSummary();
+      activeCategory = resolvePreferredCategory();
     }
+
+    renderWorkspace();
   });
 
   const text = document.createElement("span");
-  text.textContent = permission.label;
+  text.textContent = category.label;
 
   label.append(checkbox, text);
   return label;
-}
-
-function createPermissionBadge(member, permission) {
-  const badge = document.createElement("span");
-  badge.className = `permission-badge${hasPermission(member, permission.key) ? "" : " is-off"}`;
-  badge.textContent = permission.label;
-  return badge;
 }
 
 function renderMemberTable() {
@@ -227,61 +344,84 @@ function renderMemberTable() {
     const row = document.createElement("article");
     row.className = "member-row";
 
-    const info = document.createElement("div");
-    info.className = "member-cell";
-    info.innerHTML = `
-      <span class="member-name">${member.displayName}</span>
+    const memberCard = document.createElement("div");
+    memberCard.className = "member-card";
+    memberCard.innerHTML = `
+      <strong>${member.displayName}</strong>
       <small>${member.id}</small>
       <small>${member.role}${member.isOwner ? " / 最上位管理者" : ""}</small>
     `;
 
-    const status = document.createElement("div");
-    status.className = "member-cell";
-    status.innerHTML = `
-      <strong>権限状態</strong>
-      <small>${member.isOwner ? "すべて固定で許可" : "管理者が個別に変更できます"}</small>
-    `;
+    const permissionGrid = document.createElement("div");
+    permissionGrid.className = "permission-grid";
 
-    const permissions = document.createElement("div");
-    permissions.className = "permission-grid";
-
-    PERMISSIONS.forEach((permission) => {
-      if (isOwner(currentUser)) {
-        permissions.appendChild(createPermissionToggle(member, permission));
-      } else {
-        permissions.appendChild(createPermissionBadge(member, permission));
-      }
+    CATEGORIES.forEach((category) => {
+      permissionGrid.appendChild(createPermissionControl(member, category));
     });
 
-    row.append(info, status, permissions);
+    row.append(memberCard, permissionGrid);
     memberTable.appendChild(row);
   });
 }
 
-function renderDashboard() {
-  authView.hidden = true;
-  appView.hidden = false;
-  adminPanel.hidden = !isOwner(currentUser);
-  adminNotice.textContent = isOwner(currentUser)
-    ? "202304193 のみが権限を変更できます。"
-    : "権限変更は最上位管理者のみ実行できます。";
+function renderSettings() {
+  renderCurrentUserSummary();
 
-  renderCurrentUser();
-  renderPermissionSummary();
-  renderMemberTable();
+  const ownerMessage = "202304193 のみが、すべてのユーザーに対するカテゴリ権限を変更できます。";
+  const userMessage = "権限変更は最上位管理者のみが実行できます。";
+
+  settingsNotice.textContent = canManagePermissions(currentUser) ? ownerMessage : userMessage;
+  adminSection.hidden = !canManagePermissions(currentUser);
+  memberSection.hidden = !canManagePermissions(currentUser);
+
+  if (canManagePermissions(currentUser)) {
+    renderMemberTable();
+  }
+}
+
+function renderViews() {
+  const allViews = Array.from(document.querySelectorAll(".workspace-view"));
+
+  allViews.forEach((view) => {
+    view.hidden = view.id !== `view-${activeCategory}`;
+  });
+
+  if (activeCategory === "settings") {
+    renderSettings();
+  }
+}
+
+function renderWorkspace() {
+  if (!currentUser) {
+    return;
+  }
+
+  activeCategory = resolvePreferredCategory();
+
+  authView.hidden = true;
+  workspaceView.hidden = false;
+  sidebarUserText.textContent = `${currentUser.displayName} / ${currentUser.id}`;
+  currentUserBadge.textContent = isOwner(currentUser) ? "最上位管理者" : currentUser.role;
+
+  renderSidebar();
+  renderHeader();
+  renderViews();
+  updateHash(activeCategory);
+}
+
+function resetLoginFormMessage() {
+  loginMessage.textContent = "ページを開き直した場合は、利用者番号をもう一度入力してください。";
 }
 
 function resetToLogin() {
   currentUser = null;
-  appView.hidden = true;
+  activeCategory = null;
+  workspaceView.hidden = true;
   authView.hidden = false;
-  loginMessage.textContent = "ログアウトしました。別の利用者番号でも確認できます。";
   loginForm.reset();
   roleSelect.value = appConfig.userRoles[0];
-}
-
-function findMemberById(id) {
-  return memberDirectory.find((member) => member.id === id) || null;
+  history.replaceState(null, "", window.location.pathname);
+  resetLoginFormMessage();
 }
 
 async function loadConfig() {
@@ -302,25 +442,13 @@ async function loadConfig() {
       }
     };
   } catch (error) {
-    console.warn("設定ファイルの読み込みに失敗したため、既定値を使います。", error);
+    console.warn("設定ファイルを読み込めなかったため、既定値を使用します。", error);
     return FALLBACK_CONFIG;
   }
 }
 
 async function registerServiceWorker() {
-  if (!("serviceWorker" in navigator)) {
-    setInstallState({
-      enabled: false,
-      text: "このブラウザは Service Worker に対応していません。"
-    });
-    return;
-  }
-
-  if (!window.isSecureContext) {
-    setInstallState({
-      enabled: false,
-      text: "PWA は HTTPS または localhost で最も安定して動作します。"
-    });
+  if (!("serviceWorker" in navigator) || !window.isSecureContext) {
     return;
   }
 
@@ -328,96 +456,56 @@ async function registerServiceWorker() {
     const registration = await navigator.serviceWorker.register("./service-worker.js");
     await registration.update();
   } catch (error) {
-    setInstallState({
-      enabled: false,
-      text: "Service Worker の登録に失敗しました。HTTPS 配信を確認してください。"
-    });
+    console.warn("Service Worker の登録に失敗しました。", error);
   }
 }
-
-window.addEventListener("beforeinstallprompt", (event) => {
-  event.preventDefault();
-  deferredPrompt = event;
-
-  setInstallState({
-    enabled: true,
-    text: "この端末ではアプリとして追加できます。"
-  });
-});
-
-window.addEventListener("appinstalled", () => {
-  deferredPrompt = null;
-  updateDisplayMode();
-  setInstallState({
-    enabled: false,
-    text: "アプリとして追加されました。"
-  });
-});
-
-installButton.addEventListener("click", async () => {
-  if (!deferredPrompt) {
-    setInstallState({
-      enabled: false,
-      text: "このブラウザでは、まだインストール案内が表示されていません。"
-    });
-    return;
-  }
-
-  deferredPrompt.prompt();
-  await deferredPrompt.userChoice;
-  deferredPrompt = null;
-
-  setInstallState({
-    enabled: false,
-    text: "インストール状態を確認しました。"
-  });
-});
 
 loginForm.addEventListener("submit", (event) => {
   event.preventDefault();
 
   const userId = userIdInput.value.trim();
-  const role = roleSelect.value;
+  const selectedRole = roleSelect.value;
   const member = findMemberById(userId);
 
   if (!member) {
-    loginMessage.textContent = "その利用者番号は未登録です。管理者が追加してからログインしてください。";
+    loginMessage.textContent = "その利用者番号はまだ登録されていません。管理者に登録を依頼してください。";
     return;
   }
 
-  if (member.role !== role) {
-    loginMessage.textContent = "利用者番号とユーザー区分が一致しません。";
+  if (member.role !== selectedRole) {
+    loginMessage.textContent = "利用者番号とユーザー区分が一致していません。";
     return;
   }
 
   currentUser = member;
-  renderDashboard();
+  activeCategory = resolvePreferredCategory();
+  renderWorkspace();
 });
 
 memberForm.addEventListener("submit", (event) => {
   event.preventDefault();
 
-  if (!isOwner(currentUser)) {
-    memberFormMessage.textContent = "ユーザー追加は最上位管理者のみ実行できます。";
+  if (!canManagePermissions(currentUser)) {
+    memberFormMessage.textContent = "ユーザー追加は最上位管理者のみが実行できます。";
     return;
   }
 
-  const displayName = document.getElementById("memberNameInput").value.trim();
-  const id = document.getElementById("memberIdInput").value.trim();
+  const displayName = memberNameInput.value.trim();
+  const memberId = memberIdInput.value.trim();
   const role = memberRoleSelect.value;
 
-  if (!displayName || !id) {
+  if (!displayName || !memberId) {
     memberFormMessage.textContent = "表示名と利用者番号を入力してください。";
     return;
   }
 
-  if (findMemberById(id)) {
+  if (findMemberById(memberId)) {
     memberFormMessage.textContent = "その利用者番号はすでに登録されています。";
     return;
   }
 
   memberDirectory.push({
-    id,
+    id: memberId,
     displayName,
     role,
     isOwner: false,
@@ -425,30 +513,35 @@ memberForm.addEventListener("submit", (event) => {
   });
 
   saveDirectory();
-  renderMemberTable();
   memberForm.reset();
   memberRoleSelect.value = appConfig.userRoles[0];
-  memberFormMessage.textContent = `${displayName} を追加しました。必要な権限をチェックで付与してください。`;
+  memberFormMessage.textContent = `${displayName} を追加しました。カテゴリ権限を設定してください。`;
+  renderSettings();
 });
 
-backToLoginButton.addEventListener("click", () => {
+logoutButton.addEventListener("click", () => {
   resetToLogin();
 });
 
-window.addEventListener("online", updateConnectionState);
-window.addEventListener("offline", updateConnectionState);
+window.addEventListener("hashchange", () => {
+  if (!currentUser) {
+    return;
+  }
+
+  const nextKey = window.location.hash.replace(/^#/, "");
+  if (nextKey && hasCategoryAccess(currentUser, nextKey)) {
+    activeCategory = nextKey;
+    renderWorkspace();
+  }
+});
 
 async function init() {
-  updateConnectionState();
-  updateDisplayMode();
-  setInstallState({
-    enabled: false,
-    text: "HTTPS または localhost で開くと、アプリとして追加しやすくなります。"
-  });
-
   appConfig = await loadConfig();
   memberDirectory = loadStoredDirectory(appConfig);
   renderConfig(appConfig);
+  loginForm.reset();
+  roleSelect.value = appConfig.userRoles[0];
+  resetLoginFormMessage();
   await registerServiceWorker();
 }
 

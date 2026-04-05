@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>人間工学研究室 ログイン</title>
-  <meta name="description" content="人間工学研究室の共有ツール ログイン画面">
-  <meta name="theme-color" content="#b65d2d">
+  <title>人間工学研究室 共有ツール</title>
+  <meta name="description" content="人間工学研究室の共有ツール">
+  <meta name="theme-color" content="#8c5a35">
   <meta name="robots" content="noindex, nofollow, noarchive">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="人間工学研究室">
@@ -15,39 +15,44 @@
   <script src="./app.js" defer></script>
 </head>
 <body>
-  <main class="app-page">
-    <section id="authView" class="auth-page">
-      <section class="auth-card" aria-labelledby="loginTitle">
-        <div class="auth-brand">
+  <main class="shell">
+    <section id="authView" class="auth-view">
+      <div class="auth-layout">
+        <section class="auth-hero">
           <p class="eyebrow">Human Ergonomics Lab</p>
           <h1 id="labName">人間工学研究室</h1>
-          <p id="tagline" class="auth-copy">
+          <p id="tagline" class="lead">
             研究室の在室管理、スケジュール管理、マイタスク、打刻を一つの入口から利用するための共有ツールです。
           </p>
-
-          <div class="feature-list" aria-label="利用カテゴリ">
-            <span class="feature-chip">在室管理</span>
-            <span class="feature-chip">スケジュール管理</span>
-            <span class="feature-chip">マイタスク</span>
-            <span class="feature-chip">打刻</span>
-            <span class="feature-chip">設定</span>
-            <span class="feature-chip">権限管理</span>
+          <div class="tag-list" aria-label="利用カテゴリ">
+            <span class="tag">在室管理</span>
+            <span class="tag">スケジュール管理</span>
+            <span class="tag">マイタスク</span>
+            <span class="tag">打刻</span>
+            <span class="tag">設定</span>
           </div>
-        </div>
+        </section>
 
-        <div class="auth-panel">
-          <div class="card-head">
+        <section class="auth-card" aria-labelledby="loginTitle">
+          <div class="section-head">
             <p class="eyebrow">Login</p>
             <h2 id="loginTitle">ログイン</h2>
-            <p id="loginDescription" class="card-copy">
+            <p id="loginDescription" class="muted">
               利用者番号とユーザー区分でサインインしてください。
             </p>
           </div>
 
-          <form id="loginForm" class="login-form">
+          <form id="loginForm" class="form-stack" novalidate autocomplete="off">
             <label class="field">
               <span>利用者番号</span>
-              <input id="userIdInput" type="text" name="userId" inputmode="numeric" placeholder="例: 202304193">
+              <input
+                id="userIdInput"
+                type="text"
+                name="userId"
+                inputmode="numeric"
+                autocomplete="off"
+                placeholder="例: 202304193"
+              >
             </label>
 
             <label class="field">
@@ -55,109 +60,134 @@
               <select id="roleSelect" name="role"></select>
             </label>
 
-            <label class="field">
-              <span>パスワード</span>
-              <input type="password" name="password" autocomplete="current-password" placeholder="パスワードを入力">
-            </label>
-
             <button class="primary-button" type="submit">ログイン</button>
-            <button id="installButton" class="secondary-button" type="button">アプリとして追加</button>
-
-            <p id="loginMessage" class="helper-text">
-              管理者は 202304193 / 学部4年 としてログインできます。
-            </p>
-
-            <p id="installHint" class="helper-text">
-              HTTPS または localhost で開くと、アプリとして追加しやすくなります。
-            </p>
+            <p id="loginMessage" class="helper-text">ページを開き直した場合は、利用者番号をもう一度入力してください。</p>
           </form>
-
-          <dl class="status-panel">
-            <div>
-              <dt>現在のURL</dt>
-              <dd id="urlValue">-</dd>
-            </div>
-            <div>
-              <dt>接続状態</dt>
-              <dd id="connectionValue">オンライン</dd>
-            </div>
-            <div>
-              <dt>表示モード</dt>
-              <dd id="modeValue">ブラウザ</dd>
-            </div>
-            <div>
-              <dt>バージョン</dt>
-              <dd id="versionValue">基盤-2026-04</dd>
-            </div>
-          </dl>
-        </div>
-      </section>
+        </section>
+      </div>
     </section>
 
-    <section id="appView" class="dashboard-page" hidden>
-      <header class="dashboard-header">
-        <div>
-          <p class="eyebrow">Permission Control</p>
-          <h2>権限管理ダッシュボード</h2>
-          <p class="dashboard-copy">管理者だけが他ユーザーの権限を設定できます。</p>
+    <section id="workspaceView" class="workspace-shell" hidden>
+      <aside class="sidebar">
+        <div class="sidebar-card">
+          <p class="eyebrow">Workspace</p>
+          <h2 id="sidebarLabName">人間工学研究室</h2>
+          <p id="sidebarUserText" class="muted"></p>
         </div>
 
-        <div class="header-actions">
-          <button id="backToLoginButton" class="secondary-button" type="button">ログアウト</button>
-        </div>
-      </header>
+        <nav id="workspaceNav" class="sidebar-nav" aria-label="カテゴリ一覧"></nav>
 
-      <section class="dashboard-grid">
-        <article class="panel">
-          <p class="section-kicker">現在のユーザー</p>
-          <div id="currentUserCard" class="current-user-card"></div>
-        </article>
+        <button id="logoutButton" class="secondary-button" type="button">ログアウト</button>
+      </aside>
 
-        <article class="panel">
-          <p class="section-kicker">利用可能な権限</p>
-          <div id="permissionSummary" class="permission-summary"></div>
-        </article>
-      </section>
-
-      <section class="dashboard-grid">
-        <article class="panel panel-wide">
-          <div class="panel-header">
-            <div>
-              <p class="section-kicker">ユーザー一覧</p>
-              <h3>権限の割り当て</h3>
-            </div>
-            <p id="adminNotice" class="helper-text"></p>
+      <section class="workspace-main">
+        <header class="workspace-header">
+          <div class="section-head section-head-compact">
+            <p class="eyebrow">Category</p>
+            <h2 id="workspaceTitle">在室管理</h2>
+            <p id="workspaceDescription" class="muted"></p>
           </div>
+          <span id="currentUserBadge" class="user-badge"></span>
+        </header>
 
-          <div id="memberTable" class="member-table" aria-live="polite"></div>
-        </article>
+        <section class="workspace-stage">
+          <article id="view-presence" class="workspace-view">
+            <section class="view-card">
+              <p class="section-label">在室管理</p>
+              <h3>在室管理画面</h3>
+              <p class="muted">このカテゴリの内容は、次の指示に合わせて個別に実装します。</p>
+            </section>
+          </article>
 
-        <article id="adminPanel" class="panel" hidden>
-          <p class="section-kicker">管理者操作</p>
-          <h3>ユーザー追加</h3>
-          <form id="memberForm" class="member-form">
-            <label class="field">
-              <span>表示名</span>
-              <input id="memberNameInput" type="text" name="displayName" placeholder="例: 学部4年A">
-            </label>
+          <article id="view-schedule" class="workspace-view" hidden>
+            <section class="view-card">
+              <p class="section-label">スケジュール管理</p>
+              <h3>スケジュール管理画面</h3>
+              <p class="muted">このカテゴリの内容は、次の指示に合わせて個別に実装します。</p>
+            </section>
+          </article>
 
-            <label class="field">
-              <span>利用者番号</span>
-              <input id="memberIdInput" type="text" name="memberId" inputmode="numeric" placeholder="例: 202399999">
-            </label>
+          <article id="view-tasks" class="workspace-view" hidden>
+            <section class="view-card">
+              <p class="section-label">マイタスク</p>
+              <h3>マイタスク画面</h3>
+              <p class="muted">このカテゴリの内容は、次の指示に合わせて個別に実装します。</p>
+            </section>
+          </article>
 
-            <label class="field">
-              <span>ユーザー区分</span>
-              <select id="memberRoleSelect" name="memberRole"></select>
-            </label>
+          <article id="view-clock" class="workspace-view" hidden>
+            <section class="view-card">
+              <p class="section-label">打刻</p>
+              <h3>打刻画面</h3>
+              <p class="muted">このカテゴリの内容は、次の指示に合わせて個別に実装します。</p>
+            </section>
+          </article>
 
-            <button class="primary-button" type="submit">ユーザーを追加</button>
-          </form>
+          <article id="view-settings" class="workspace-view" hidden>
+            <div class="settings-layout">
+              <section class="panel">
+                <div class="section-head section-head-compact">
+                  <p class="section-label">現在のユーザー</p>
+                  <h3>ログイン情報</h3>
+                </div>
+                <div id="currentUserCard" class="info-grid"></div>
+                <div id="permissionSummary" class="chip-list"></div>
+              </section>
 
-          <p id="memberFormMessage" class="helper-text">
-            追加したユーザーには、最初は権限が付与されません。
-          </p>
-        </article>
+              <section class="panel">
+                <div class="section-head section-head-compact">
+                  <p class="section-label">権限管理</p>
+                  <h3>管理者メモ</h3>
+                </div>
+                <p id="settingsNotice" class="muted"></p>
+              </section>
+
+              <section id="adminSection" class="panel" hidden>
+                <div class="section-head section-head-compact">
+                  <p class="section-label">ユーザー追加</p>
+                  <h3>新しいユーザーを登録</h3>
+                </div>
+
+                <form id="memberForm" class="form-stack">
+                  <label class="field">
+                    <span>表示名</span>
+                    <input id="memberNameInput" type="text" name="displayName" placeholder="例: 学部4年A">
+                  </label>
+
+                  <label class="field">
+                    <span>利用者番号</span>
+                    <input id="memberIdInput" type="text" name="memberId" inputmode="numeric" placeholder="例: 202399999">
+                  </label>
+
+                  <label class="field">
+                    <span>ユーザー区分</span>
+                    <select id="memberRoleSelect" name="memberRole"></select>
+                  </label>
+
+                  <button class="primary-button" type="submit">ユーザーを追加</button>
+                </form>
+
+                <p id="memberFormMessage" class="helper-text">追加したユーザーの権限は、下の一覧で個別に設定します。</p>
+              </section>
+
+              <section id="memberSection" class="panel" hidden>
+                <div class="section-head section-head-compact">
+                  <p class="section-label">ユーザー権限</p>
+                  <h3>カテゴリごとの権限一覧</h3>
+                </div>
+                <div id="memberTable" class="member-table" aria-live="polite"></div>
+              </section>
+            </div>
+          </article>
+
+          <article id="view-empty" class="workspace-view" hidden>
+            <section class="view-card empty-card">
+              <p class="section-label">権限待ち</p>
+              <h3>利用できるカテゴリがありません</h3>
+              <p class="muted">管理者がカテゴリ権限を付与すると、この画面から利用を開始できます。</p>
+            </section>
+          </article>
+        </section>
       </section>
     </section>
   </main>
