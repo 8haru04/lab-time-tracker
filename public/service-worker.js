@@ -1,5 +1,5 @@
-const SHELL_CACHE = "lab-shared-hub-shell-v2";
-const DATA_CACHE = "lab-shared-hub-data-v2";
+const SHELL_CACHE = "ergonomics-lab-shell-v3";
+const DATA_CACHE = "ergonomics-lab-data-v3";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -35,13 +35,30 @@ self.addEventListener("activate", (event) => {
 async function networkFirst(request) {
   try {
     const response = await fetch(request);
-    const cache = await caches.open(DATA_CACHE);
-    cache.put(request, response.clone());
+    if (response && response.ok) {
+      const cache = await caches.open(DATA_CACHE);
+      cache.put(request, response.clone());
+    }
     return response;
   } catch (error) {
     const cached = await caches.match(request);
     return cached || caches.match("./offline.html");
   }
+}
+
+async function staleWhileRevalidate(request) {
+  const cached = await caches.match(request);
+  const networkPromise = fetch(request)
+    .then(async (response) => {
+      if (response && response.ok) {
+        const cache = await caches.open(DATA_CACHE);
+        cache.put(request, response.clone());
+      }
+      return response;
+    })
+    .catch(() => null);
+
+  return cached || networkPromise || caches.match("./offline.html");
 }
 
 async function cacheFirst(request) {
@@ -75,6 +92,15 @@ self.addEventListener("fetch", (event) => {
 
   if (url.pathname.endsWith("/app-config.json")) {
     event.respondWith(networkFirst(event.request));
+    return;
+  }
+
+  if (
+    event.request.destination === "script" ||
+    event.request.destination === "style" ||
+    event.request.destination === "manifest"
+  ) {
+    event.respondWith(staleWhileRevalidate(event.request));
     return;
   }
 
