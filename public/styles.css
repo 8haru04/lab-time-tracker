@@ -672,14 +672,28 @@ p {
   text-align: center;
 }
 
-.clock-status-card {
-  width: min(520px, 100%);
-  padding: 24px;
-  border-radius: var(--radius-lg);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.05);
+.clock-now {
   display: grid;
-  gap: 10px;
+  gap: 8px;
+  justify-items: center;
+}
+
+.clock-current-time {
+  font-size: clamp(3.6rem, 12vw, 7rem);
+  line-height: 0.9;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+.clock-current-date {
+  font-size: 0.98rem;
+}
+
+.clock-status-line {
+  width: min(520px, 100%);
+  display: grid;
+  gap: 8px;
+  justify-items: center;
 }
 
 .clock-status-label {
@@ -690,9 +704,10 @@ p {
   text-transform: uppercase;
 }
 
-.clock-status-card h4 {
-  font-size: clamp(2rem, 5vw, 3.2rem);
-  line-height: 1;
+.clock-status-text {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--muted);
 }
 
 .clock-actions {
@@ -712,10 +727,13 @@ p {
   padding: 24px;
   border-radius: 32px;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  font-size: clamp(1.5rem, 3vw, 2.3rem);
-  font-weight: 800;
   cursor: pointer;
   transition: transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease, background 140ms ease;
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+  align-content: center;
+  text-align: center;
 }
 
 .clock-button:hover {
@@ -731,6 +749,23 @@ p {
 .clock-button-secondary {
   color: var(--text);
   background: rgba(255, 255, 255, 0.08);
+}
+
+.clock-button-icon {
+  font-size: clamp(2rem, 5vw, 3rem);
+  line-height: 1;
+}
+
+.clock-button-label {
+  font-size: clamp(1.45rem, 3vw, 2.2rem);
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.clock-button-note {
+  font-size: 0.95rem;
+  line-height: 1.4;
+  opacity: 0.82;
 }
 
 .view-card-empty {

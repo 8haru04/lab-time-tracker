@@ -181,6 +181,8 @@ const presenceDeleteButton = document.getElementById("presenceDeleteButton");
 const presenceInputMessage = document.getElementById("presenceInputMessage");
 const scheduleTableHead = document.getElementById("scheduleTableHead");
 const scheduleTableBody = document.getElementById("scheduleTableBody");
+const clockCurrentTime = document.getElementById("clockCurrentTime");
+const clockCurrentDate = document.getElementById("clockCurrentDate");
 const clockStatusText = document.getElementById("clockStatusText");
 const clockStatusSubtext = document.getElementById("clockStatusSubtext");
 const clockActionButtons = document.getElementById("clockActionButtons");
@@ -255,6 +257,24 @@ function formatDateTime(date) {
   }).format(date);
 }
 
+function renderClockNow() {
+  const now = new Date();
+
+  clockCurrentTime.textContent = new Intl.DateTimeFormat("ja-JP", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false
+  }).format(now);
+
+  clockCurrentDate.textContent = new Intl.DateTimeFormat("ja-JP", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    weekday: "short"
+  }).format(now);
+}
+
 function normalizeClockRecord(rawRecord) {
   if (!rawRecord || typeof rawRecord !== "object") {
     return {
@@ -327,19 +347,47 @@ function getClockActionLabel(actionType) {
 function buildClockActions(status) {
   if (status === "in") {
     return [
-      { label: "\u9000\u5ba4", actionType: "checkout", nextStatus: "out", tone: "secondary" },
-      { label: "\u4f11\u61a9", actionType: "breakStart", nextStatus: "break", tone: "primary" }
+      {
+        label: "\u9000\u5ba4",
+        note: "\u304a\u3064\u304b\u308c\u3055\u307e",
+        icon: "\u2190",
+        actionType: "checkout",
+        nextStatus: "out",
+        tone: "secondary"
+      },
+      {
+        label: "\u4f11\u61a9",
+        note: "\u3072\u3068\u606f\u3064\u304f",
+        icon: "\u2615",
+        actionType: "breakStart",
+        nextStatus: "break",
+        tone: "primary"
+      }
     ];
   }
 
   if (status === "break") {
     return [
-      { label: "\u4f11\u61a9\u7d42\u4e86", actionType: "breakEnd", nextStatus: "in", tone: "primary" }
+      {
+        label: "\u4f11\u61a9\u7d42\u4e86",
+        note: "\u4f5c\u696d\u306b\u623b\u308b",
+        icon: "\u21ba",
+        actionType: "breakEnd",
+        nextStatus: "in",
+        tone: "primary"
+      }
     ];
   }
 
   return [
-    { label: "\u5165\u5ba4", actionType: "checkin", nextStatus: "in", tone: "primary" }
+    {
+      label: "\u5165\u5ba4",
+      note: "\u4eca\u65e5\u3082\u3088\u308d\u3057\u304f",
+      icon: "\u2192",
+      actionType: "checkin",
+      nextStatus: "in",
+      tone: "primary"
+    }
   ];
 }
 
@@ -1058,7 +1106,11 @@ function renderClockView() {
     const button = document.createElement("button");
     button.type = "button";
     button.className = `clock-button ${action.tone === "secondary" ? "clock-button-secondary" : "clock-button-primary"}`;
-    button.textContent = action.label;
+    button.innerHTML = `
+      <span class="clock-button-icon">${action.icon}</span>
+      <span class="clock-button-label">${action.label}</span>
+      <span class="clock-button-note">${action.note}</span>
+    `;
     button.addEventListener("click", () => {
       setClockRecord(currentUser.id, action.nextStatus, action.actionType);
       renderClockView();
@@ -1406,6 +1458,8 @@ async function init() {
   if (!restoreActiveUser()) {
     focusUserIdInput();
   }
+  renderClockNow();
+  window.setInterval(renderClockNow, 1000);
   await registerServiceWorker();
 }
 
