@@ -766,6 +766,74 @@ p {
   opacity: 0.82;
 }
 
+.clock-history {
+  width: min(720px, 100%);
+  display: grid;
+  gap: 14px;
+  padding: 18px 20px;
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.clock-history-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.clock-history-label {
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.clock-export-button {
+  width: auto;
+  min-width: 140px;
+}
+
+.clock-history-list {
+  display: grid;
+  gap: 10px;
+}
+
+.clock-history-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 14px;
+  align-items: center;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.clock-history-action,
+.clock-history-time {
+  display: grid;
+  gap: 4px;
+}
+
+.clock-history-action strong,
+.clock-history-time strong {
+  font-size: 0.98rem;
+}
+
+.clock-history-action small,
+.clock-history-time small,
+.clock-history-empty {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.clock-history-time {
+  text-align: right;
+}
+
 .view-card-empty {
   place-content: center;
   text-align: center;
@@ -882,6 +950,11 @@ p {
   .clock-actions.is-single {
     width: 100%;
   }
+
+  .clock-history-head {
+    grid-template-columns: 1fr;
+    display: grid;
+  }
 }
 
 @media (max-width: 720px) {
@@ -908,5 +981,13 @@ p {
 
   .clock-button {
     min-height: 110px;
+  }
+
+  .clock-history-item {
+    grid-template-columns: 1fr;
+  }
+
+  .clock-history-time {
+    text-align: left;
   }
 }

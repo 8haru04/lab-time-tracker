@@ -3,6 +3,7 @@ const ACTIVE_USER_KEY = "ergonomics-lab-active-user-v1";
 const DISPLAY_NAME_OVERRIDES_KEY = "ergonomics-lab-display-names-v1";
 const PRESENCE_PLANS_KEY = "ergonomics-lab-presence-plans-v1";
 const CLOCK_RECORDS_KEY = "ergonomics-lab-clock-records-v1";
+const CLOCK_LOGS_KEY = "ergonomics-lab-clock-logs-v1";
 const CATEGORIES = [
   {
     key: "presence",
@@ -186,6 +187,9 @@ const clockCurrentDate = document.getElementById("clockCurrentDate");
 const clockStatusText = document.getElementById("clockStatusText");
 const clockStatusSubtext = document.getElementById("clockStatusSubtext");
 const clockActionButtons = document.getElementById("clockActionButtons");
+const clockSummaryText = document.getElementById("clockSummaryText");
+const clockExportButton = document.getElementById("clockExportButton");
+const clockHistoryList = document.getElementById("clockHistoryList");
 const currentUserCard = document.getElementById("currentUserCard");
 const permissionSummary = document.getElementById("permissionSummary");
 const settingsNotice = document.getElementById("settingsNotice");
@@ -208,6 +212,7 @@ let displayNameStatusMessage =
 let presencePlans = {};
 let presenceMonthKey = "";
 let clockRecords = {};
+let clockLogs = {};
 
 function loadDisplayNameOverrides() {
   try {
@@ -235,6 +240,21 @@ function saveClockRecords() {
   window.localStorage.setItem(CLOCK_RECORDS_KEY, JSON.stringify(clockRecords));
 }
 
+function loadClockLogs() {
+  try {
+    const raw = window.localStorage.getItem(CLOCK_LOGS_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch (error) {
+    console.warn("Could not load clock logs. Using defaults.", error);
+    return {};
+  }
+}
+
+function saveClockLogs() {
+  window.localStorage.setItem(CLOCK_LOGS_KEY, JSON.stringify(clockLogs));
+}
+
 function saveDisplayNameOverrides() {
   window.localStorage.setItem(DISPLAY_NAME_OVERRIDES_KEY, JSON.stringify(displayNameOverrides));
 }
@@ -255,6 +275,34 @@ function formatDateTime(date) {
     hour: "2-digit",
     minute: "2-digit"
   }).format(date);
+}
+
+function formatDate(date) {
+  return new Intl.DateTimeFormat("ja-JP", {
+    year: "numeric",
+    month: "numeric",
+    day: "numeric"
+  }).format(date);
+}
+
+function formatTime(date) {
+  return new Intl.DateTimeFormat("ja-JP", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  }).format(date);
+}
+
+function formatDurationFromMinutes(totalMinutes) {
+  const safeMinutes = Math.max(0, Math.floor(totalMinutes));
+  const hours = Math.floor(safeMinutes / 60);
+  const minutes = safeMinutes % 60;
+
+  if (hours > 0) {
+    return `${hours}\u6642\u9593${minutes}\u5206`;
+  }
+
+  return `${minutes}\u5206`;
 }
 
 function renderClockNow() {
@@ -300,6 +348,32 @@ function getClockRecord(userId) {
   return normalizeClockRecord(clockRecords[userId]);
 }
 
+function getClockLogsForUser(userId) {
+  const rawLogs = Array.isArray(clockLogs[userId]) ? clockLogs[userId] : [];
+
+  return rawLogs
+    .filter((entry) => entry && typeof entry === "object" && typeof entry.timestamp === "string")
+    .map((entry) => ({
+      actionType: typeof entry.actionType === "string" ? entry.actionType : "",
+      status: typeof entry.status === "string" ? entry.status : "out",
+      timestamp: entry.timestamp
+    }))
+    .sort((left, right) => new Date(left.timestamp) - new Date(right.timestamp));
+}
+
+function appendClockLog(userId, actionType, status) {
+  if (!Array.isArray(clockLogs[userId])) {
+    clockLogs[userId] = [];
+  }
+
+  clockLogs[userId].push({
+    actionType,
+    status,
+    timestamp: new Date().toISOString()
+  });
+  saveClockLogs();
+}
+
 function setClockRecord(userId, status, actionType) {
   clockRecords[userId] = {
     status,
@@ -307,6 +381,7 @@ function setClockRecord(userId, status, actionType) {
     lastActionAt: new Date().toISOString()
   };
   saveClockRecords();
+  appendClockLog(userId, actionType, status);
 }
 
 function getClockStatusMeta(status) {
@@ -341,6 +416,17 @@ function getClockActionLabel(actionType) {
       return "\u4f11\u61a9\u7d42\u4e86";
     default:
       return "";
+  }
+}
+
+function getClockStatusLabel(status) {
+  switch (status) {
+    case "in":
+      return "\u5165\u5ba4\u4e2d";
+    case "break":
+      return "\u4f11\u61a9\u4e2d";
+    default:
+      return "\u9000\u5ba4\u4e2d";
   }
 }
 
@@ -389,6 +475,162 @@ function buildClockActions(status) {
       tone: "primary"
     }
   ];
+}
+
+function getClockStartedAt(record, logs) {
+  const reversed = [...logs].reverse();
+
+  if (record.status === "in") {
+    const event = reversed.find((entry) =>
+      entry.actionType === "checkin" || entry.actionType === "breakEnd"
+    );
+    return event?.timestamp || record.lastActionAt;
+  }
+
+  if (record.status === "break") {
+    const event = reversed.find((entry) => entry.actionType === "breakStart");
+    return event?.timestamp || record.lastActionAt;
+  }
+
+  const event = reversed.find((entry) => entry.actionType === "checkout");
+  return event?.timestamp || record.lastActionAt;
+}
+
+function getTodayClockLogs(logs, now = new Date()) {
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const end = new Date(start);
+  end.setDate(end.getDate() + 1);
+
+  return logs.filter((entry) => {
+    const entryDate = new Date(entry.timestamp);
+    return entryDate >= start && entryDate < end;
+  });
+}
+
+function getTodayClockSummary(logs, currentStatus, now = new Date()) {
+  let checkedInAt = null;
+  let breakStartedAt = null;
+  let stayMinutes = 0;
+  let breakMinutes = 0;
+
+  logs.forEach((entry) => {
+    const entryDate = new Date(entry.timestamp);
+
+    if (entry.actionType === "checkin") {
+      checkedInAt = entryDate;
+      breakStartedAt = null;
+      return;
+    }
+
+    if (entry.actionType === "breakStart" && checkedInAt && !breakStartedAt) {
+      breakStartedAt = entryDate;
+      return;
+    }
+
+    if (entry.actionType === "breakEnd" && breakStartedAt) {
+      breakMinutes += (entryDate - breakStartedAt) / 60000;
+      breakStartedAt = null;
+      return;
+    }
+
+    if (entry.actionType === "checkout" && checkedInAt) {
+      stayMinutes += (entryDate - checkedInAt) / 60000;
+      if (breakStartedAt) {
+        breakMinutes += (entryDate - breakStartedAt) / 60000;
+        breakStartedAt = null;
+      }
+      checkedInAt = null;
+    }
+  });
+
+  if (checkedInAt) {
+    stayMinutes += (now - checkedInAt) / 60000;
+  }
+
+  if (breakStartedAt && currentStatus === "break") {
+    breakMinutes += (now - breakStartedAt) / 60000;
+  }
+
+  return {
+    stayMinutes,
+    breakMinutes,
+    activeMinutes: Math.max(0, stayMinutes - breakMinutes)
+  };
+}
+
+function createClockHistoryItem(entry) {
+  const row = document.createElement("article");
+  const action = document.createElement("div");
+  const time = document.createElement("div");
+  const stamp = new Date(entry.timestamp);
+
+  row.className = "clock-history-item";
+  action.className = "clock-history-action";
+  time.className = "clock-history-time";
+
+  action.innerHTML = `
+    <strong>${getClockActionLabel(entry.actionType)}</strong>
+    <small>${getClockStatusLabel(entry.status)}</small>
+  `;
+  time.innerHTML = `
+    <strong>${formatTime(stamp)}</strong>
+    <small>${formatDate(stamp)}</small>
+  `;
+
+  row.append(action, time);
+  return row;
+}
+
+function buildClockCsv(user, logs) {
+  const lines = [
+    ["\u5b66\u7c4d\u756a\u53f7", "\u8868\u793a\u540d", "\u30e6\u30fc\u30b6\u30fc\u533a\u5206", "\u64cd\u4f5c", "\u72b6\u614b", "\u65e5\u4ed8", "\u6642\u523b", "ISO\u65e5\u6642"]
+  ];
+
+  logs.forEach((entry) => {
+    const stamp = new Date(entry.timestamp);
+    lines.push([
+      user.id,
+      user.displayName,
+      user.role,
+      getClockActionLabel(entry.actionType),
+      getClockStatusLabel(entry.status),
+      formatDate(stamp),
+      formatTime(stamp),
+      entry.timestamp
+    ]);
+  });
+
+  return `\uFEFF${lines
+    .map((row) =>
+      row
+        .map((value) => `"${String(value).replace(/"/g, '""')}"`)
+        .join(",")
+    )
+    .join("\n")}`;
+}
+
+function downloadClockCsv() {
+  if (!currentUser) {
+    return;
+  }
+
+  const logs = getClockLogsForUser(currentUser.id);
+  if (logs.length === 0) {
+    clockSummaryText.textContent = "\u307e\u3060 CSV \u306b\u51fa\u305b\u308b\u6253\u523b\u8a18\u9332\u304c\u3042\u308a\u307e\u305b\u3093\u3002";
+    return;
+  }
+
+  const csv = buildClockCsv(currentUser, logs);
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+
+  anchor.href = url;
+  anchor.download = `clock-log-${currentUser.id}-${toDateKey(new Date())}.csv`;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
 }
 
 function getAvailabilityMeta(value) {
@@ -1092,13 +1334,20 @@ function renderClockView() {
   }
 
   const record = getClockRecord(currentUser.id);
+  const logs = getClockLogsForUser(currentUser.id);
+  const todayLogs = getTodayClockLogs(logs);
   const statusMeta = getClockStatusMeta(record.status);
   const actions = buildClockActions(record.status);
+  const statusStartedAt = getClockStartedAt(record, logs);
+  const todaySummary = getTodayClockSummary(todayLogs, record.status);
 
   clockStatusText.textContent = statusMeta.title;
-  clockStatusSubtext.textContent = record.lastActionAt
-    ? `${getClockActionLabel(record.lastActionType)} / ${formatDateTime(new Date(record.lastActionAt))}`
+  clockStatusSubtext.textContent = statusStartedAt
+    ? `${statusMeta.title} / ${formatDateTime(new Date(statusStartedAt))}\u304b\u3089`
     : statusMeta.subtext;
+  clockSummaryText.textContent = todayLogs.length > 0
+    ? `\u672c\u65e5: \u5728\u5ba4 ${formatDurationFromMinutes(todaySummary.stayMinutes)} / \u4f11\u61a9 ${formatDurationFromMinutes(todaySummary.breakMinutes)} / \u5b9f\u50cd ${formatDurationFromMinutes(todaySummary.activeMinutes)}`
+    : "\u307e\u3060\u672c\u65e5\u306e\u6253\u523b\u8a18\u9332\u306f\u3042\u308a\u307e\u305b\u3093\u3002";
 
   clockActionButtons.replaceChildren();
   clockActionButtons.className = `clock-actions${actions.length === 1 ? " is-single" : ""}`;
@@ -1118,6 +1367,20 @@ function renderClockView() {
     });
     clockActionButtons.appendChild(button);
   });
+
+  clockHistoryList.replaceChildren();
+
+  const recentEntries = [...todayLogs].reverse();
+  if (recentEntries.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "clock-history-empty";
+    empty.textContent = "\u672c\u65e5\u306e\u6253\u523b\u306f\u307e\u3060\u3042\u308a\u307e\u305b\u3093\u3002";
+    clockHistoryList.appendChild(empty);
+  } else {
+    recentEntries.forEach((entry) => {
+      clockHistoryList.appendChild(createClockHistoryItem(entry));
+    });
+  }
 }
 
 function renderSettings() {
@@ -1433,6 +1696,10 @@ logoutButton.addEventListener("click", () => {
   resetToLogin();
 });
 
+clockExportButton.addEventListener("click", () => {
+  downloadClockCsv();
+});
+
 window.addEventListener("hashchange", () => {
   if (!currentUser) {
     return;
@@ -1451,6 +1718,7 @@ async function init() {
   displayNameOverrides = loadDisplayNameOverrides();
   presencePlans = loadPresencePlans();
   clockRecords = loadClockRecords();
+  clockLogs = loadClockLogs();
   presenceMonthKey = getMonthKey(new Date());
   memberDirectory = loadStoredDirectory(appConfig);
   renderConfig(appConfig);
