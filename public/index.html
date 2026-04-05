@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lab Shared Hub</title>
+  <meta name="description" content="Public-first foundation for a lab management tool.">
+  <meta name="theme-color" content="#b65d2d">
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Lab Hub">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css">
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <main class="app-shell">
+    <aside class="sidebar">
+      <section class="brand-card">
+        <p class="eyebrow">Public Foundation</p>
+        <h1 id="labName">Lab Shared Hub</h1>
+        <p id="tagline" class="lead">
+          A base that anyone with the URL can open from desktop or mobile.
+        </p>
+      </section>
+
+      <nav class="nav-card" aria-label="In-page navigation">
+        <a href="#overviewSection">Overview</a>
+        <a href="#modulesSection">Planned Modules</a>
+        <a href="#principlesSection">Principles</a>
+        <a href="#notesSection">Notes</a>
+      </nav>
+    </aside>
+
+    <section class="main-content">
+      <section class="hero-card" id="overviewSection">
+        <div class="hero-copy">
+          <p class="eyebrow">Lab Shared Hub</p>
+          <h2 id="heroTitle">Set up the public URL first, then grow the tool later</h2>
+          <p id="heroDescription">
+            This phase focuses on deployment, access, and a clean foundation so the lab can start sharing one entry point before the detailed UI is designed.
+          </p>
+          <p class="small-note">
+            Search indexing is discouraged, but authentication is not added yet.
+          </p>
+        </div>
+
+        <div class="status-panel">
+          <button id="installButton" class="primary-button" type="button">Install As App</button>
+          <p id="installHint" class="muted">
+            Open this over HTTPS or localhost for the best PWA behavior.
+          </p>
+
+          <dl class="status-grid">
+            <div>
+              <dt>Current URL</dt>
+              <dd id="urlValue">-</dd>
+            </div>
+            <div>
+              <dt>Connection</dt>
+              <dd id="connectionValue">online</dd>
+            </div>
+            <div>
+              <dt>Display Mode</dt>
+              <dd id="modeValue">browser</dd>
+            </div>
+            <div>
+              <dt>Secure Context</dt>
+              <dd id="securityValue">checking</dd>
+            </div>
+            <div>
+              <dt>Visibility</dt>
+              <dd id="visibilityValue">loading</dd>
+            </div>
+            <div>
+              <dt>API Base</dt>
+              <dd id="apiValue">loading</dd>
+            </div>
+          </dl>
+        </div>
+      </section>
+
+      <section class="card-section" id="modulesSection">
+        <div class="section-heading">
+          <p class="eyebrow">Planned Modules</p>
+          <h2>Places for future features</h2>
+        </div>
+        <div id="moduleGrid" class="module-grid" aria-live="polite"></div>
+      </section>
+
+      <section class="split-grid" id="principlesSection">
+        <article class="info-card">
+          <p class="eyebrow">Principles</p>
+          <h2>Design Rules</h2>
+          <ul id="principlesList" class="list-block"></ul>
+        </article>
+
+        <article class="info-card">
+          <p class="eyebrow">Next Decisions</p>
+          <h2>What To Decide Next</h2>
+          <ul id="nextDecisionsList" class="list-block"></ul>
+        </article>
+      </section>
+
+      <section class="notes-card" id="notesSection">
+        <div class="section-heading">
+          <p class="eyebrow">Notes</p>
+          <h2>Operating Notes</h2>
+        </div>
+        <ul id="notesList" class="list-block"></ul>
+        <p class="foot-note">
+          <span>Version</span>
+          <strong id="versionValue">foundation</strong>
+        </p>
+      </section>
+    </section>
+  </main>
+</body>
+</html>
