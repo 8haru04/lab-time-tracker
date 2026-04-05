@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>人間工学研究室 共有ダッシュボード</title>
-  <meta name="description" content="人間工学研究室の共有ツールを公開URL前提で始めるためのダッシュボードUIです。">
+  <title>人間工学研究室 ログイン</title>
+  <meta name="description" content="人間工学研究室の共有ツール ログイン画面">
   <meta name="theme-color" content="#b65d2d">
   <meta name="robots" content="noindex, nofollow, noarchive">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -15,320 +15,149 @@
   <script src="./app.js" defer></script>
 </head>
 <body>
-  <main class="app-shell">
-    <aside class="sidebar">
-      <div class="sidebar-surface">
-        <section class="brand-card">
+  <main class="app-page">
+    <section id="authView" class="auth-page">
+      <section class="auth-card" aria-labelledby="loginTitle">
+        <div class="auth-brand">
           <p class="eyebrow">Human Ergonomics Lab</p>
           <h1 id="labName">人間工学研究室</h1>
-          <p id="tagline" class="lead">
-            URL を知っているメンバーが、PC とスマートフォンから開ける共有ダッシュボードです。
+          <p id="tagline" class="auth-copy">
+            研究室の在室管理、スケジュール管理、マイタスク、打刻を一つの入口から利用するための共有ツールです。
           </p>
-        </section>
 
-        <nav class="sidebar-nav" aria-label="管理カテゴリ">
-          <a class="sidebar-link is-active" href="#presenceSection" data-section="presenceSection">
-            <span class="link-index">01</span>
-            <span class="link-copy">
-              <strong>在室管理</strong>
-              <small>研究室の在室状況</small>
-            </span>
-          </a>
-          <a class="sidebar-link" href="#scheduleSection" data-section="scheduleSection">
-            <span class="link-index">02</span>
-            <span class="link-copy">
-              <strong>スケジュール管理</strong>
-              <small>予定と締切の共有</small>
-            </span>
-          </a>
-          <a class="sidebar-link" href="#tasksSection" data-section="tasksSection">
-            <span class="link-index">03</span>
-            <span class="link-copy">
-              <strong>マイタスク</strong>
-              <small>個人の進行管理</small>
-            </span>
-          </a>
-          <a class="sidebar-link" href="#clockSection" data-section="clockSection">
-            <span class="link-index">04</span>
-            <span class="link-copy">
-              <strong>打刻</strong>
-              <small>入室と退室の記録</small>
-            </span>
-          </a>
-          <a class="sidebar-link" href="#settingsSection" data-section="settingsSection">
-            <span class="link-index">05</span>
-            <span class="link-copy">
-              <strong>設定</strong>
-              <small>公開URLと利用環境</small>
-            </span>
-          </a>
-        </nav>
-
-        <section class="sidebar-note">
-          <p class="note-title">固定サイドバー</p>
-          <p>PC では常に左側に表示し、画面をスクロールしても主要カテゴリへすぐ移動できます。</p>
-        </section>
-      </div>
-    </aside>
-
-    <section class="content-area">
-      <header class="hero-card">
-        <div class="hero-copy">
-          <p class="eyebrow">Lab Dashboard</p>
-          <h2 id="heroTitle">研究室業務を一つの画面に集約する</h2>
-          <p id="heroDescription">
-            左側の固定サイドバーから、在室管理、スケジュール管理、マイタスク、打刻、設定へ移動できる初期UIです。
-          </p>
+          <div class="feature-list" aria-label="利用カテゴリ">
+            <span class="feature-chip">在室管理</span>
+            <span class="feature-chip">スケジュール管理</span>
+            <span class="feature-chip">マイタスク</span>
+            <span class="feature-chip">打刻</span>
+            <span class="feature-chip">設定</span>
+            <span class="feature-chip">権限管理</span>
+          </div>
         </div>
 
-        <div id="summaryGrid" class="summary-grid" aria-live="polite"></div>
+        <div class="auth-panel">
+          <div class="card-head">
+            <p class="eyebrow">Login</p>
+            <h2 id="loginTitle">ログイン</h2>
+            <p id="loginDescription" class="card-copy">
+              利用者番号とユーザー区分でサインインしてください。
+            </p>
+          </div>
+
+          <form id="loginForm" class="login-form">
+            <label class="field">
+              <span>利用者番号</span>
+              <input id="userIdInput" type="text" name="userId" inputmode="numeric" placeholder="例: 202304193">
+            </label>
+
+            <label class="field">
+              <span>ユーザー区分</span>
+              <select id="roleSelect" name="role"></select>
+            </label>
+
+            <label class="field">
+              <span>パスワード</span>
+              <input type="password" name="password" autocomplete="current-password" placeholder="パスワードを入力">
+            </label>
+
+            <button class="primary-button" type="submit">ログイン</button>
+            <button id="installButton" class="secondary-button" type="button">アプリとして追加</button>
+
+            <p id="loginMessage" class="helper-text">
+              管理者は 202304193 / 学部4年 としてログインできます。
+            </p>
+
+            <p id="installHint" class="helper-text">
+              HTTPS または localhost で開くと、アプリとして追加しやすくなります。
+            </p>
+          </form>
+
+          <dl class="status-panel">
+            <div>
+              <dt>現在のURL</dt>
+              <dd id="urlValue">-</dd>
+            </div>
+            <div>
+              <dt>接続状態</dt>
+              <dd id="connectionValue">オンライン</dd>
+            </div>
+            <div>
+              <dt>表示モード</dt>
+              <dd id="modeValue">ブラウザ</dd>
+            </div>
+            <div>
+              <dt>バージョン</dt>
+              <dd id="versionValue">基盤-2026-04</dd>
+            </div>
+          </dl>
+        </div>
+      </section>
+    </section>
+
+    <section id="appView" class="dashboard-page" hidden>
+      <header class="dashboard-header">
+        <div>
+          <p class="eyebrow">Permission Control</p>
+          <h2>権限管理ダッシュボード</h2>
+          <p class="dashboard-copy">管理者だけが他ユーザーの権限を設定できます。</p>
+        </div>
+
+        <div class="header-actions">
+          <button id="backToLoginButton" class="secondary-button" type="button">ログアウト</button>
+        </div>
       </header>
 
-      <section class="content-section" id="presenceSection">
-        <div class="section-heading">
-          <p class="section-kicker">在室管理</p>
-          <h2>研究室の在室状況をひと目で把握</h2>
-          <p>誰が研究室にいるか、離席中か、来室予定があるかを整理するための最初の置き場です。</p>
-        </div>
+      <section class="dashboard-grid">
+        <article class="panel">
+          <p class="section-kicker">現在のユーザー</p>
+          <div id="currentUserCard" class="current-user-card"></div>
+        </article>
 
-        <div class="section-grid section-grid-wide">
-          <article class="panel panel-highlight">
-            <div class="metric-row">
-              <div class="metric-card">
-                <span class="metric-label">現在在室中</span>
-                <strong>8人</strong>
-                <small>表示は試作値です</small>
-              </div>
-              <div class="metric-card">
-                <span class="metric-label">離席中</span>
-                <strong>3人</strong>
-                <small>実装時はリアルタイム化</small>
-              </div>
-              <div class="metric-card">
-                <span class="metric-label">本日の来室予定</span>
-                <strong>2件</strong>
-                <small>打刻や予定表と連携可能</small>
-              </div>
-            </div>
-
-            <div class="table-card">
-              <div class="table-head">
-                <span>メンバー</span>
-                <span>状態</span>
-                <span>最終更新</span>
-              </div>
-              <div class="table-row">
-                <span>院生A</span>
-                <span class="pill pill-green">在室中</span>
-                <span>10:12</span>
-              </div>
-              <div class="table-row">
-                <span>院生B</span>
-                <span class="pill pill-amber">離席中</span>
-                <span>11:05</span>
-              </div>
-              <div class="table-row">
-                <span>学部生C</span>
-                <span class="pill pill-green">在室中</span>
-                <span>09:48</span>
-              </div>
-              <div class="table-row">
-                <span>教員</span>
-                <span class="pill pill-blue">打合せ中</span>
-                <span>13:30</span>
-              </div>
-            </div>
-          </article>
-
-          <article class="panel panel-stack">
-            <h3>将来の拡張候補</h3>
-            <ul class="bullet-list">
-              <li>在室中メンバーだけを一覧表示</li>
-              <li>研究テーマや所属グループで絞り込み</li>
-              <li>最終打刻から状態を自動更新</li>
-              <li>学外からの閲覧権限を分離</li>
-            </ul>
-          </article>
-        </div>
+        <article class="panel">
+          <p class="section-kicker">利用可能な権限</p>
+          <div id="permissionSummary" class="permission-summary"></div>
+        </article>
       </section>
 
-      <section class="content-section" id="scheduleSection">
-        <div class="section-heading">
-          <p class="section-kicker">スケジュール管理</p>
-          <h2>輪講、締切、来訪予定を同じ画面で共有</h2>
-          <p>研究室全体の予定を俯瞰しながら、個別イベントへ拡張しやすいレイアウトにしています。</p>
-        </div>
-
-        <div class="section-grid">
-          <article class="panel">
-            <h3>本日の予定</h3>
-            <div class="timeline">
-              <div class="timeline-item">
-                <span class="timeline-time">09:30</span>
-                <div>
-                  <strong>朝ミーティング</strong>
-                  <p>短い共有と在室確認</p>
-                </div>
-              </div>
-              <div class="timeline-item">
-                <span class="timeline-time">13:00</span>
-                <div>
-                  <strong>研究進捗打合せ</strong>
-                  <p>テーマごとの進行確認</p>
-                </div>
-              </div>
-              <div class="timeline-item">
-                <span class="timeline-time">16:30</span>
-                <div>
-                  <strong>輪講準備</strong>
-                  <p>発表資料の確認</p>
-                </div>
-              </div>
+      <section class="dashboard-grid">
+        <article class="panel panel-wide">
+          <div class="panel-header">
+            <div>
+              <p class="section-kicker">ユーザー一覧</p>
+              <h3>権限の割り当て</h3>
             </div>
-          </article>
+            <p id="adminNotice" class="helper-text"></p>
+          </div>
 
-          <article class="panel">
-            <h3>次に入れたい機能</h3>
-            <ul class="bullet-list">
-              <li>カレンダー表示とリスト表示の切り替え</li>
-              <li>締切が近いタスクの強調表示</li>
-              <li>Google カレンダー等との連携検討</li>
-              <li>来訪者や予約枠の表示</li>
-            </ul>
-          </article>
-        </div>
-      </section>
+          <div id="memberTable" class="member-table" aria-live="polite"></div>
+        </article>
 
-      <section class="content-section" id="tasksSection">
-        <div class="section-heading">
-          <p class="section-kicker">マイタスク</p>
-          <h2>個人作業を研究室全体の流れに接続</h2>
-          <p>今後は個人タスクと研究室共通の締切を並べて見られるようにできます。</p>
-        </div>
+        <article id="adminPanel" class="panel" hidden>
+          <p class="section-kicker">管理者操作</p>
+          <h3>ユーザー追加</h3>
+          <form id="memberForm" class="member-form">
+            <label class="field">
+              <span>表示名</span>
+              <input id="memberNameInput" type="text" name="displayName" placeholder="例: 学部4年A">
+            </label>
 
-        <div class="task-board">
-          <article class="task-column">
-            <h3>未着手</h3>
-            <div class="task-card">
-              <strong>被験者募集の文面確認</strong>
-              <p>告知文と日程の見直し</p>
-            </div>
-            <div class="task-card">
-              <strong>輪講資料の下書き</strong>
-              <p>参考論文の要点整理</p>
-            </div>
-          </article>
+            <label class="field">
+              <span>利用者番号</span>
+              <input id="memberIdInput" type="text" name="memberId" inputmode="numeric" placeholder="例: 202399999">
+            </label>
 
-          <article class="task-column">
-            <h3>進行中</h3>
-            <div class="task-card active-task">
-              <strong>実験ログの整理</strong>
-              <p>欠損データの確認中</p>
-            </div>
-            <div class="task-card">
-              <strong>アンケート修正</strong>
-              <p>指摘点を反映中</p>
-            </div>
-          </article>
+            <label class="field">
+              <span>ユーザー区分</span>
+              <select id="memberRoleSelect" name="memberRole"></select>
+            </label>
 
-          <article class="task-column">
-            <h3>完了待ち</h3>
-            <div class="task-card">
-              <strong>装置予約の依頼</strong>
-              <p>承認待ち</p>
-            </div>
-            <div class="task-card">
-              <strong>共有フォルダ更新</strong>
-              <p>教員確認待ち</p>
-            </div>
-          </article>
-        </div>
-      </section>
+            <button class="primary-button" type="submit">ユーザーを追加</button>
+          </form>
 
-      <section class="content-section" id="clockSection">
-        <div class="section-heading">
-          <p class="section-kicker">打刻</p>
-          <h2>入室・退室の起点になる操作エリア</h2>
-          <p>将来ここに打刻ボタンや履歴表示を載せ、在室管理と連動できるようにします。</p>
-        </div>
-
-        <div class="section-grid">
-          <article class="panel">
-            <h3>打刻操作</h3>
-            <div class="clock-actions">
-              <button class="primary-button" type="button">入室する</button>
-              <button class="secondary-button" type="button">退室する</button>
-            </div>
-            <p class="panel-note">現段階では操作の見た目だけを配置しています。次に保存先や認証方法を決めると実装に進めます。</p>
-          </article>
-
-          <article class="panel">
-            <h3>直近の記録</h3>
-            <ul class="log-list">
-              <li><span>09:12</span><strong>院生A</strong><em>入室</em></li>
-              <li><span>10:41</span><strong>学部生C</strong><em>入室</em></li>
-              <li><span>12:05</span><strong>院生B</strong><em>退室</em></li>
-              <li><span>13:18</span><strong>教員</strong><em>入室</em></li>
-            </ul>
-          </article>
-        </div>
-      </section>
-
-      <section class="content-section" id="settingsSection">
-        <div class="section-heading">
-          <p class="section-kicker">設定</p>
-          <h2>公開URLと動作状態の確認</h2>
-          <p>本番URLの共有、PWA追加、今後のAPI接続先の確認をこのエリアにまとめています。</p>
-        </div>
-
-        <div class="section-grid section-grid-wide">
-          <article class="panel panel-highlight">
-            <div class="settings-actions">
-              <button id="installButton" class="primary-button" type="button">アプリとして追加</button>
-              <p id="installHint" class="panel-note">
-                HTTPS または localhost で開くと、アプリとして追加しやすくなります。
-              </p>
-            </div>
-
-            <dl class="status-grid">
-              <div>
-                <dt>現在のURL</dt>
-                <dd id="urlValue">-</dd>
-              </div>
-              <div>
-                <dt>接続状態</dt>
-                <dd id="connectionValue">オンライン</dd>
-              </div>
-              <div>
-                <dt>表示モード</dt>
-                <dd id="modeValue">ブラウザ</dd>
-              </div>
-              <div>
-                <dt>安全な接続</dt>
-                <dd id="securityValue">確認中</dd>
-              </div>
-              <div>
-                <dt>公開範囲</dt>
-                <dd id="visibilityValue">読み込み中</dd>
-              </div>
-              <div>
-                <dt>API 接続</dt>
-                <dd id="apiValue">読み込み中</dd>
-              </div>
-            </dl>
-          </article>
-
-          <article class="panel panel-stack">
-            <h3>今後の設定候補</h3>
-            <ul class="bullet-list">
-              <li>編集者だけに制限する認証の追加</li>
-              <li>学内限定公開への切り替え</li>
-              <li>バックアップ保存先の決定</li>
-              <li>通知方法の整理</li>
-            </ul>
-            <p class="version-note">バージョン <strong id="versionValue">基盤-2026-04</strong></p>
-          </article>
-        </div>
+          <p id="memberFormMessage" class="helper-text">
+            追加したユーザーには、最初は権限が付与されません。
+          </p>
+        </article>
       </section>
     </section>
   </main>
