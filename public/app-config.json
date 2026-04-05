@@ -16,5 +16,42 @@
     "displayName": "202304193",
     "role": "\u5b66\u90e84\u5e74"
   },
+  "seedUsers": [
+    {
+      "id": "202304161",
+      "displayName": "202304161",
+      "role": "\u5b66\u90e84\u5e74"
+    },
+    {
+      "id": "202304179",
+      "displayName": "202304179",
+      "role": "\u5b66\u90e84\u5e74"
+    },
+    {
+      "id": "202304177",
+      "displayName": "202304177",
+      "role": "\u5b66\u90e84\u5e74"
+    },
+    {
+      "id": "202304154",
+      "displayName": "202304154",
+      "role": "\u5b66\u90e84\u5e74"
+    },
+    {
+      "id": "202304167",
+      "displayName": "202304167",
+      "role": "\u5b66\u90e84\u5e74"
+    },
+    {
+      "id": "202304181",
+      "displayName": "202304181",
+      "role": "\u5b66\u90e84\u5e74"
+    },
+    {
+      "id": "202304200",
+      "displayName": "202304200",
+      "role": "\u5b66\u90e84\u5e74"
+    }
+  ],
   "version": "\u57fa\u76e4-2026-04"
 }

@@ -48,6 +48,15 @@ const FALLBACK_CONFIG = {
     displayName: "202304193",
     role: "\u5b66\u90e84\u5e74"
   },
+  seedUsers: [
+    { id: "202304161", displayName: "202304161", role: "\u5b66\u90e84\u5e74" },
+    { id: "202304179", displayName: "202304179", role: "\u5b66\u90e84\u5e74" },
+    { id: "202304177", displayName: "202304177", role: "\u5b66\u90e84\u5e74" },
+    { id: "202304154", displayName: "202304154", role: "\u5b66\u90e84\u5e74" },
+    { id: "202304167", displayName: "202304167", role: "\u5b66\u90e84\u5e74" },
+    { id: "202304181", displayName: "202304181", role: "\u5b66\u90e84\u5e74" },
+    { id: "202304200", displayName: "202304200", role: "\u5b66\u90e84\u5e74" }
+  ],
   version: "\u57fa\u76e4-2026-04"
 };
 
@@ -137,20 +146,46 @@ function normalizeMember(rawMember) {
   };
 }
 
+function buildSeedMembers(config) {
+  const seedUsers = Array.isArray(config.seedUsers) ? config.seedUsers : [];
+
+  return seedUsers
+    .map((member) =>
+      normalizeMember({
+        ...member,
+        permissions: createEmptyPermissions()
+      })
+    )
+    .filter(Boolean)
+    .filter((member) => member.id !== config.ownerUser.id);
+}
+
 function loadStoredDirectory(config) {
   const owner = buildOwnerRecord(config);
+  const seededMembers = buildSeedMembers(config);
 
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     const parsed = raw ? JSON.parse(raw) : [];
-    const others = Array.isArray(parsed)
+    const storedMembers = Array.isArray(parsed)
       ? parsed.map(normalizeMember).filter(Boolean).filter((member) => member.id !== owner.id)
       : [];
+    const memberMap = new Map();
+
+    seededMembers.forEach((member) => {
+      memberMap.set(member.id, member);
+    });
+
+    storedMembers.forEach((member) => {
+      memberMap.set(member.id, member);
+    });
+
+    const others = Array.from(memberMap.values());
 
     return [owner, ...others];
   } catch (error) {
     console.warn("Could not load stored user directory. Using initial state.", error);
-    return [owner];
+    return [owner, ...seededMembers];
   }
 }
 
@@ -483,7 +518,8 @@ async function loadConfig() {
       ownerUser: {
         ...FALLBACK_CONFIG.ownerUser,
         ...(config.ownerUser || {})
-      }
+      },
+      seedUsers: Array.isArray(config.seedUsers) ? config.seedUsers : FALLBACK_CONFIG.seedUsers
     };
   } catch (error) {
     console.warn("Could not load config file. Using fallback config.", error);
