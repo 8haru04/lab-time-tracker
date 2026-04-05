@@ -5,26 +5,31 @@ const CATEGORIES = [
   {
     key: "presence",
     label: "\u5728\u5ba4\u7ba1\u7406",
+    short: "\u5728\u5ba4\u72b6\u6cc1\u3092\u78ba\u8a8d",
     description: "\u7814\u7a76\u5ba4\u30e1\u30f3\u30d0\u30fc\u306e\u5728\u5ba4\u72b6\u6cc1\u3092\u6271\u3046\u753b\u9762\u3067\u3059\u3002"
   },
   {
     key: "schedule",
     label: "\u30b9\u30b1\u30b8\u30e5\u30fc\u30eb\u7ba1\u7406",
+    short: "\u4e88\u5b9a\u3092\u5171\u6709",
     description: "\u7814\u7a76\u5ba4\u306e\u4e88\u5b9a\u3084\u5171\u6709\u30b9\u30b1\u30b8\u30e5\u30fc\u30eb\u3092\u6271\u3046\u753b\u9762\u3067\u3059\u3002"
   },
   {
     key: "tasks",
     label: "\u30de\u30a4\u30bf\u30b9\u30af",
+    short: "\u500b\u4eba\u30bf\u30b9\u30af\u3092\u6574\u7406",
     description: "\u500b\u4eba\u306e\u30bf\u30b9\u30af\u3092\u6574\u7406\u3059\u308b\u753b\u9762\u3067\u3059\u3002"
   },
   {
     key: "clock",
     label: "\u6253\u523b",
+    short: "\u5165\u9000\u5ba4\u3092\u8a18\u9332",
     description: "\u5165\u5ba4\u30fb\u9000\u5ba4\u306a\u3069\u306e\u6253\u523b\u3092\u6271\u3046\u753b\u9762\u3067\u3059\u3002"
   },
   {
     key: "settings",
     label: "\u8a2d\u5b9a",
+    short: "\u8868\u793a\u540d\u3068\u767b\u9332\u8a2d\u5b9a",
     description: "\u30ed\u30b0\u30a4\u30f3\u60c5\u5831\u3084\u6a29\u9650\u7ba1\u7406\u3092\u6271\u3046\u753b\u9762\u3067\u3059\u3002"
   }
 ];
@@ -322,7 +327,7 @@ function createNavButton(category) {
   button.className = `nav-button${active ? " is-active" : ""}${allowed ? "" : " is-disabled"}`;
   button.disabled = !allowed;
   button.setAttribute("aria-current", active ? "page" : "false");
-  button.innerHTML = `<strong>${category.label}</strong><small>${allowed ? "\u753b\u9762\u3092\u958b\u304f" : "\u6a29\u9650\u304c\u3042\u308a\u307e\u305b\u3093"}</small>`;
+  button.innerHTML = `<strong>${category.label}</strong><small>${allowed ? category.short : "\u6a29\u9650\u304c\u3042\u308a\u307e\u305b\u3093"}</small>`;
 
   if (allowed) {
     button.addEventListener("click", () => {

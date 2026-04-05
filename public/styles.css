@@ -136,6 +136,10 @@ p {
 .nav-button small {
   color: var(--muted);
   line-height: 1.8;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .auth-form-block,
