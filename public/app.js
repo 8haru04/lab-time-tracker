@@ -4,10 +4,7 @@ const labName = document.getElementById("labName");
 const tagline = document.getElementById("tagline");
 const heroTitle = document.getElementById("heroTitle");
 const heroDescription = document.getElementById("heroDescription");
-const moduleGrid = document.getElementById("moduleGrid");
-const principlesList = document.getElementById("principlesList");
-const nextDecisionsList = document.getElementById("nextDecisionsList");
-const notesList = document.getElementById("notesList");
+const summaryGrid = document.getElementById("summaryGrid");
 const versionValue = document.getElementById("versionValue");
 const urlValue = document.getElementById("urlValue");
 const connectionValue = document.getElementById("connectionValue");
@@ -15,51 +12,40 @@ const modeValue = document.getElementById("modeValue");
 const securityValue = document.getElementById("securityValue");
 const visibilityValue = document.getElementById("visibilityValue");
 const apiValue = document.getElementById("apiValue");
+const sidebarLinks = Array.from(document.querySelectorAll(".sidebar-link"));
+const sections = sidebarLinks
+  .map((link) => document.getElementById(link.dataset.section))
+  .filter(Boolean);
 
 const FALLBACK_CONFIG = {
-  appName: "Lab Shared Hub",
-  labName: "Lab Shared Hub",
-  tagline: "A base that anyone with the URL can open from desktop or mobile.",
-  heroTitle: "Set up the public URL first, then grow the tool later",
-  description:
-    "This foundation keeps deployment simple now and leaves room for attendance, schedules, bookings, and other lab workflows later.",
+  appName: "人間工学研究室 共有ダッシュボード",
+  labName: "人間工学研究室",
+  tagline: "URL を知っているメンバーが、PC とスマートフォンから開ける共有ダッシュボードです。",
+  heroTitle: "研究室業務を一つの画面に集約する",
+  heroDescription:
+    "左側の固定サイドバーから、在室管理、スケジュール管理、マイタスク、打刻、設定へ移動できる初期UIです。",
   deployment: {
-    visibility: "Anyone who knows the URL",
+    visibility: "URL を知っている人が利用可能",
     apiBaseUrl: ""
   },
-  modules: [
+  summaryCards: [
     {
-      title: "Attendance And Presence",
-      summary: "Start with a simple list and manual updates, then expand to check-in history if needed.",
-      status: "planned"
+      label: "カテゴリ数",
+      value: "5",
+      note: "在室管理から設定まで"
     },
     {
-      title: "Lab Schedule",
-      summary: "Add shared events, deadlines, seminars, and visitors without changing the public entry point.",
-      status: "planned"
+      label: "公開方式",
+      value: "公開URL",
+      note: "静的サイトとして配信中"
     },
     {
-      title: "Equipment Booking",
-      summary: "Use the same foundation later for room or equipment reservations.",
-      status: "planned"
+      label: "現在の段階",
+      value: "試作UI",
+      note: "次に各カテゴリを詳細化"
     }
   ],
-  principles: [
-    "Make the shared URL usable before adding complex features.",
-    "Delay authentication and edit permissions until the need is clear.",
-    "Keep the frontend decoupled from any future API."
-  ],
-  nextDecisions: [
-    "Who can only view and who can edit.",
-    "Where data should live: browser storage, an API, or a database.",
-    "Whether editing should stay public-by-URL or become restricted."
-  ],
-  notes: [
-    "The app includes noindex and robots.txt to reduce accidental search discovery.",
-    "This is not strong security. Anyone with the URL can still open it.",
-    "A backend can be added later without replacing the current entry page."
-  ],
-  version: "foundation"
+  version: "基盤-2026-04"
 };
 
 let deferredPrompt = null;
@@ -72,17 +58,14 @@ function mergeConfig(config) {
       ...FALLBACK_CONFIG.deployment,
       ...(config.deployment || {})
     },
-    modules: Array.isArray(config.modules) ? config.modules : FALLBACK_CONFIG.modules,
-    principles: Array.isArray(config.principles) ? config.principles : FALLBACK_CONFIG.principles,
-    nextDecisions: Array.isArray(config.nextDecisions)
-      ? config.nextDecisions
-      : FALLBACK_CONFIG.nextDecisions,
-    notes: Array.isArray(config.notes) ? config.notes : FALLBACK_CONFIG.notes
+    summaryCards: Array.isArray(config.summaryCards)
+      ? config.summaryCards
+      : FALLBACK_CONFIG.summaryCards
   };
 }
 
 function updateConnectionState() {
-  connectionValue.textContent = navigator.onLine ? "online" : "offline";
+  connectionValue.textContent = navigator.onLine ? "オンライン" : "オフライン";
 }
 
 function updateDisplayMode() {
@@ -90,14 +73,14 @@ function updateDisplayMode() {
     window.matchMedia("(display-mode: standalone)").matches ||
     window.navigator.standalone === true;
 
-  modeValue.textContent = isStandalone ? "app" : "browser";
+  modeValue.textContent = isStandalone ? "アプリ" : "ブラウザ";
 }
 
 function updateRuntimeDetails(config) {
   urlValue.textContent = window.location.href;
-  securityValue.textContent = window.isSecureContext ? "secure" : "not secure";
+  securityValue.textContent = window.isSecureContext ? "はい" : "いいえ";
   visibilityValue.textContent = config.deployment.visibility;
-  apiValue.textContent = config.deployment.apiBaseUrl || "not connected";
+  apiValue.textContent = config.deployment.apiBaseUrl || "未接続";
 }
 
 function setInstallState(options) {
@@ -105,62 +88,60 @@ function setInstallState(options) {
   installHint.textContent = options.text;
 }
 
-function renderList(target, items) {
-  target.replaceChildren();
+function renderSummaryCards(items) {
+  summaryGrid.replaceChildren();
 
   items.forEach((item) => {
-    const li = document.createElement("li");
-    li.textContent = item;
-    target.appendChild(li);
+    const article = document.createElement("article");
+    article.className = "summary-card";
+
+    const label = document.createElement("span");
+    label.textContent = item.label;
+
+    const value = document.createElement("strong");
+    value.textContent = item.value;
+
+    const note = document.createElement("small");
+    note.textContent = item.note;
+
+    article.append(label, value, note);
+    summaryGrid.appendChild(article);
   });
 }
 
-function getStatusLabel(status) {
-  switch (status) {
-    case "draft":
-      return "draft";
-    case "ready":
-      return "ready";
-    default:
-      return "planned";
-  }
+function setActiveSidebarLink(sectionId) {
+  sidebarLinks.forEach((link) => {
+    const isActive = link.dataset.section === sectionId;
+    link.classList.toggle("is-active", isActive);
+  });
 }
 
-function renderModules(items) {
-  moduleGrid.replaceChildren();
+function setupSidebarNavigation() {
+  sidebarLinks.forEach((link) => {
+    link.addEventListener("click", () => {
+      setActiveSidebarLink(link.dataset.section);
+    });
+  });
 
-  if (items.length === 0) {
-    const empty = document.createElement("p");
-    empty.className = "empty-state";
-    empty.textContent = "Future modules will appear here.";
-    moduleGrid.appendChild(empty);
+  if (!("IntersectionObserver" in window)) {
     return;
   }
 
-  items.forEach((item, index) => {
-    const article = document.createElement("article");
-    const toneClass = `tone-${(index % 3) + 1}`;
-    const status = getStatusLabel(item.status);
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          setActiveSidebarLink(entry.target.id);
+        }
+      });
+    },
+    {
+      rootMargin: "-20% 0px -60% 0px",
+      threshold: 0.15
+    }
+  );
 
-    article.className = `module-card ${toneClass}`;
-
-    const kicker = document.createElement("p");
-    kicker.className = "module-kicker";
-    kicker.textContent = "Module";
-
-    const title = document.createElement("h3");
-    title.textContent = item.title;
-
-    const summary = document.createElement("p");
-    summary.textContent = item.summary;
-
-    const badge = document.createElement("span");
-    badge.className = `status-badge status-${status}`;
-    badge.textContent = status;
-
-    article.append(kicker, title, summary, badge);
-    moduleGrid.appendChild(article);
-  });
+  sections.forEach((section) => observer.observe(section));
 }
 
 function renderConfig(config) {
@@ -168,13 +149,10 @@ function renderConfig(config) {
   labName.textContent = config.labName;
   tagline.textContent = config.tagline;
   heroTitle.textContent = config.heroTitle;
-  heroDescription.textContent = config.description;
-  versionValue.textContent = config.version || "foundation";
+  heroDescription.textContent = config.heroDescription;
+  versionValue.textContent = config.version || "基盤";
 
-  renderModules(config.modules);
-  renderList(principlesList, config.principles);
-  renderList(nextDecisionsList, config.nextDecisions);
-  renderList(notesList, config.notes);
+  renderSummaryCards(config.summaryCards);
   updateRuntimeDetails(config);
 }
 
@@ -189,7 +167,7 @@ async function loadConfig() {
     const config = await response.json();
     return mergeConfig(config);
   } catch (error) {
-    console.warn("Falling back to built-in config.", error);
+    console.warn("設定ファイルの読み込みに失敗したため、既定値を使います。", error);
     return FALLBACK_CONFIG;
   }
 }
@@ -198,7 +176,7 @@ async function registerServiceWorker() {
   if (!("serviceWorker" in navigator)) {
     setInstallState({
       enabled: false,
-      text: "This browser does not support service workers."
+      text: "このブラウザは Service Worker に対応していません。"
     });
     return;
   }
@@ -206,7 +184,7 @@ async function registerServiceWorker() {
   if (!window.isSecureContext) {
     setInstallState({
       enabled: false,
-      text: "PWA behavior is most reliable on HTTPS or localhost."
+      text: "PWA は HTTPS または localhost で最も安定して動作します。"
     });
     return;
   }
@@ -216,7 +194,7 @@ async function registerServiceWorker() {
   } catch (error) {
     setInstallState({
       enabled: false,
-      text: "Service worker registration failed. Check HTTPS delivery."
+      text: "Service Worker の登録に失敗しました。HTTPS 配信を確認してください。"
     });
   }
 }
@@ -227,7 +205,7 @@ window.addEventListener("beforeinstallprompt", (event) => {
 
   setInstallState({
     enabled: true,
-    text: "This device can install the app."
+    text: "この端末ではアプリとして追加できます。"
   });
 });
 
@@ -236,7 +214,7 @@ window.addEventListener("appinstalled", () => {
   updateDisplayMode();
   setInstallState({
     enabled: false,
-    text: "The app was installed."
+    text: "アプリとして追加されました。"
   });
 });
 
@@ -244,7 +222,7 @@ installButton.addEventListener("click", async () => {
   if (!deferredPrompt) {
     setInstallState({
       enabled: false,
-      text: "The install prompt is not available yet in this browser."
+      text: "このブラウザでは、まだインストール案内が表示されていません。"
     });
     return;
   }
@@ -255,7 +233,7 @@ installButton.addEventListener("click", async () => {
 
   setInstallState({
     enabled: false,
-    text: "Install state was checked."
+    text: "インストール状態を確認しました。"
   });
 });
 
@@ -267,11 +245,12 @@ async function init() {
   updateDisplayMode();
   setInstallState({
     enabled: false,
-    text: "Open this over HTTPS or localhost to make app installation easier."
+    text: "HTTPS または localhost で開くと、アプリとして追加しやすくなります。"
   });
 
   const config = await loadConfig();
   renderConfig(config);
+  setupSidebarNavigation();
   await registerServiceWorker();
 }
 

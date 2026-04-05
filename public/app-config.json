@@ -1,44 +1,29 @@
 {
-  "appName": "Lab Shared Hub",
-  "labName": "Lab Shared Hub",
-  "tagline": "A base that anyone with the URL can open from desktop or mobile.",
-  "heroTitle": "Set up the public URL first, then grow the tool later",
-  "description": "This base makes public hosting easy first, so UI design and concrete lab workflows can be added later without replacing the entry point.",
+  "appName": "人間工学研究室 共有ダッシュボード",
+  "labName": "人間工学研究室",
+  "tagline": "URL を知っているメンバーが、PC とスマートフォンから開ける共有ダッシュボードです。",
+  "heroTitle": "研究室業務を一つの画面に集約する",
+  "heroDescription": "左側の固定サイドバーから、在室管理、スケジュール管理、マイタスク、打刻、設定へ移動できる初期UIです。",
   "deployment": {
-    "visibility": "Anyone who knows the URL",
+    "visibility": "URL を知っている人が利用可能",
     "apiBaseUrl": ""
   },
-  "modules": [
+  "summaryCards": [
     {
-      "title": "Attendance And Presence",
-      "summary": "Start with a simple list and manual updates, then expand to check-in history when needed.",
-      "status": "planned"
+      "label": "カテゴリ数",
+      "value": "5",
+      "note": "在室管理から設定まで"
     },
     {
-      "title": "Lab Schedule",
-      "summary": "Add shared events, deadlines, seminars, and visitors on top of the same public shell.",
-      "status": "planned"
+      "label": "公開方式",
+      "value": "公開URL",
+      "note": "静的サイトとして配信中"
     },
     {
-      "title": "Equipment Booking",
-      "summary": "Use the same entry point later for room or equipment reservations.",
-      "status": "planned"
+      "label": "現在の段階",
+      "value": "試作UI",
+      "note": "次に各カテゴリを詳細化"
     }
   ],
-  "principles": [
-    "Make the shared URL usable before adding complex features.",
-    "Delay authentication and edit permissions until the need is clear.",
-    "Keep the frontend decoupled from any future API."
-  ],
-  "nextDecisions": [
-    "Who can only view and who can edit.",
-    "Where data should live: browser storage, an API, or a database.",
-    "Whether editing should stay public-by-URL or become restricted."
-  ],
-  "notes": [
-    "The app includes noindex and robots.txt to reduce accidental search discovery.",
-    "This is not strong security. Anyone with the URL can still open it.",
-    "A backend can be added later without replacing the current entry page."
-  ],
-  "version": "foundation-2026-04"
+  "version": "基盤-2026-04"
 }

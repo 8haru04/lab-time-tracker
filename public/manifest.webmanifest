@@ -1,13 +1,13 @@
 {
-  "name": "Lab Shared Hub",
-  "short_name": "Lab Hub",
-  "description": "Public-first PWA foundation for a lab management tool.",
+  "name": "人間工学研究室",
+  "short_name": "人間工学研",
+  "description": "人間工学研究室の共有ツールを公開URL前提で始めるためのPWA土台です。",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "background_color": "#f7f0e6",
   "theme_color": "#b65d2d",
-  "lang": "en",
+  "lang": "ja",
   "icons": [
     {
       "src": "./icon.svg",
