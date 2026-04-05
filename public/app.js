@@ -1,52 +1,59 @@
-const STORAGE_KEY = "ergonomics-lab-permissions-v3";
+const STORAGE_KEY = "ergonomics-lab-permissions-v4";
 const CATEGORIES = [
   {
     key: "presence",
-    label: "在室管理",
-    description: "研究室メンバーの在室状況を扱う画面です。"
+    label: "\u5728\u5ba4\u7ba1\u7406",
+    description: "\u7814\u7a76\u5ba4\u30e1\u30f3\u30d0\u30fc\u306e\u5728\u5ba4\u72b6\u6cc1\u3092\u6271\u3046\u753b\u9762\u3067\u3059\u3002"
   },
   {
     key: "schedule",
-    label: "スケジュール管理",
-    description: "研究室の予定や共有スケジュールを扱う画面です。"
+    label: "\u30b9\u30b1\u30b8\u30e5\u30fc\u30eb\u7ba1\u7406",
+    description: "\u7814\u7a76\u5ba4\u306e\u4e88\u5b9a\u3084\u5171\u6709\u30b9\u30b1\u30b8\u30e5\u30fc\u30eb\u3092\u6271\u3046\u753b\u9762\u3067\u3059\u3002"
   },
   {
     key: "tasks",
-    label: "マイタスク",
-    description: "個人のタスクを整理する画面です。"
+    label: "\u30de\u30a4\u30bf\u30b9\u30af",
+    description: "\u500b\u4eba\u306e\u30bf\u30b9\u30af\u3092\u6574\u7406\u3059\u308b\u753b\u9762\u3067\u3059\u3002"
   },
   {
     key: "clock",
-    label: "打刻",
-    description: "入室・退出などの打刻を扱う画面です。"
+    label: "\u6253\u523b",
+    description: "\u5165\u5ba4\u30fb\u9000\u5ba4\u306a\u3069\u306e\u6253\u523b\u3092\u6271\u3046\u753b\u9762\u3067\u3059\u3002"
   },
   {
     key: "settings",
-    label: "設定",
-    description: "ログイン情報や権限管理を扱う画面です。"
+    label: "\u8a2d\u5b9a",
+    description: "\u30ed\u30b0\u30a4\u30f3\u60c5\u5831\u3084\u6a29\u9650\u7ba1\u7406\u3092\u6271\u3046\u753b\u9762\u3067\u3059\u3002"
   }
 ];
 
 const FALLBACK_CONFIG = {
-  appName: "人間工学研究室 共有ツール",
-  labName: "人間工学研究室",
+  appName: "\u4eba\u9593\u5de5\u5b66\u7814\u7a76\u5ba4 \u5171\u6709\u30c4\u30fc\u30eb",
+  labName: "\u4eba\u9593\u5de5\u5b66\u7814\u7a76\u5ba4",
   tagline:
-    "研究室の在室管理、スケジュール管理、マイタスク、打刻を一つの入口から利用するための共有ツールです。",
-  loginDescription: "利用者番号とユーザー区分でサインインしてください。",
-  userRoles: ["教授", "助教", "学部3年", "学部4年", "院1年", "院2年"],
+    "\u7814\u7a76\u5ba4\u306e\u5728\u5ba4\u7ba1\u7406\u3001\u30b9\u30b1\u30b8\u30e5\u30fc\u30eb\u7ba1\u7406\u3001\u30de\u30a4\u30bf\u30b9\u30af\u3001\u6253\u523b\u3092\u4e00\u3064\u306e\u5165\u53e3\u304b\u3089\u5229\u7528\u3059\u308b\u305f\u3081\u306e\u5171\u6709\u30c4\u30fc\u30eb\u3067\u3059\u3002",
+  loginDescription:
+    "\u30da\u30fc\u30b8\u3092\u958b\u3044\u305f\u3068\u304d\u306f\u3001\u5229\u7528\u8005\u756a\u53f7\u3092\u5165\u529b\u3057\u3066\u30ed\u30b0\u30a4\u30f3\u3057\u3066\u304f\u3060\u3055\u3044\u3002",
+  userRoles: [
+    "\u6559\u6388",
+    "\u52a9\u6559",
+    "\u5b66\u90e83\u5e74",
+    "\u5b66\u90e84\u5e74",
+    "\u96621\u5e74",
+    "\u96622\u5e74"
+  ],
   ownerUser: {
     id: "202304193",
     displayName: "202304193",
-    role: "学部4年"
+    role: "\u5b66\u90e84\u5e74"
   },
-  version: "基盤-2026-04"
+  version: "\u57fa\u76e4-2026-04"
 };
 
 const authView = document.getElementById("authView");
 const workspaceView = document.getElementById("workspaceView");
 const loginForm = document.getElementById("loginForm");
 const loginMessage = document.getElementById("loginMessage");
-const roleSelect = document.getElementById("roleSelect");
 const userIdInput = document.getElementById("userIdInput");
 const labName = document.getElementById("labName");
 const sidebarLabName = document.getElementById("sidebarLabName");
@@ -141,7 +148,7 @@ function loadStoredDirectory(config) {
 
     return [owner, ...others];
   } catch (error) {
-    console.warn("保存済みユーザーデータを読み込めませんでした。初期状態を利用します。", error);
+    console.warn("Could not load stored user directory. Using initial state.", error);
     return [owner];
   }
 }
@@ -172,10 +179,6 @@ function findMemberById(id) {
 }
 
 function renderRoleOptions(target, roles) {
-  if (!target) {
-    return;
-  }
-
   target.replaceChildren();
 
   roles.forEach((role) => {
@@ -192,7 +195,6 @@ function renderConfig(config) {
   sidebarLabName.textContent = config.labName;
   tagline.textContent = config.tagline;
   loginDescription.textContent = config.loginDescription;
-  renderRoleOptions(roleSelect, config.userRoles);
   renderRoleOptions(memberRoleSelect, config.userRoles);
 }
 
@@ -242,7 +244,7 @@ function createNavButton(category) {
   button.className = `nav-button${active ? " is-active" : ""}${allowed ? "" : " is-disabled"}`;
   button.disabled = !allowed;
   button.setAttribute("aria-current", active ? "page" : "false");
-  button.innerHTML = `<strong>${category.label}</strong><small>${allowed ? "画面を開く" : "権限がありません"}</small>`;
+  button.innerHTML = `<strong>${category.label}</strong><small>${allowed ? "\u753b\u9762\u3092\u958b\u304f" : "\u6a29\u9650\u304c\u3042\u308a\u307e\u305b\u3093"}</small>`;
 
   if (allowed) {
     button.addEventListener("click", () => {
@@ -263,8 +265,9 @@ function renderSidebar() {
 
 function renderHeader() {
   if (activeCategory === "empty") {
-    workspaceTitle.textContent = "利用できるカテゴリがありません";
-    workspaceDescription.textContent = "管理者が権限を付与すると、ここから各画面へ切り替えられます。";
+    workspaceTitle.textContent = "\u5229\u7528\u3067\u304d\u308b\u30ab\u30c6\u30b4\u30ea\u304c\u3042\u308a\u307e\u305b\u3093";
+    workspaceDescription.textContent =
+      "\u7ba1\u7406\u8005\u304c\u30ab\u30c6\u30b4\u30ea\u6a29\u9650\u3092\u4ed8\u4e0e\u3059\u308b\u3068\u3001\u3053\u3053\u304b\u3089\u5404\u753b\u9762\u3078\u5207\u308a\u66ff\u3048\u3089\u308c\u307e\u3059\u3002";
     return;
   }
 
@@ -289,10 +292,10 @@ function renderCurrentUserSummary() {
   permissionSummary.replaceChildren();
 
   currentUserCard.append(
-    createInfoBox("表示名", currentUser.displayName),
-    createInfoBox("利用者番号", currentUser.id),
-    createInfoBox("ユーザー区分", currentUser.role),
-    createInfoBox("権限レベル", isOwner(currentUser) ? "最上位管理者" : "一般ユーザー")
+    createInfoBox("\u8868\u793a\u540d", currentUser.displayName),
+    createInfoBox("\u5229\u7528\u8005\u756a\u53f7", currentUser.id),
+    createInfoBox("\u30e6\u30fc\u30b6\u30fc\u533a\u5206", currentUser.role),
+    createInfoBox("\u6a29\u9650\u30ec\u30d9\u30eb", isOwner(currentUser) ? "\u6700\u4e0a\u4f4d\u7ba1\u7406\u8005" : "\u4e00\u822c\u30e6\u30fc\u30b6\u30fc")
   );
 
   CATEGORIES.forEach((category) => {
@@ -349,7 +352,7 @@ function renderMemberTable() {
     memberCard.innerHTML = `
       <strong>${member.displayName}</strong>
       <small>${member.id}</small>
-      <small>${member.role}${member.isOwner ? " / 最上位管理者" : ""}</small>
+      <small>${member.role}${member.isOwner ? " / \u6700\u4e0a\u4f4d\u7ba1\u7406\u8005" : ""}</small>
     `;
 
     const permissionGrid = document.createElement("div");
@@ -367,10 +370,10 @@ function renderMemberTable() {
 function renderSettings() {
   renderCurrentUserSummary();
 
-  const ownerMessage = "202304193 のみが、すべてのユーザーに対するカテゴリ権限を変更できます。";
-  const userMessage = "権限変更は最上位管理者のみが実行できます。";
+  settingsNotice.textContent = canManagePermissions(currentUser)
+    ? "202304193 \u306e\u307f\u304c\u3001\u3059\u3079\u3066\u306e\u30e6\u30fc\u30b6\u30fc\u306b\u5bfe\u3059\u308b\u30ab\u30c6\u30b4\u30ea\u6a29\u9650\u3092\u5909\u66f4\u3067\u304d\u307e\u3059\u3002"
+    : "\u6a29\u9650\u5909\u66f4\u306f\u6700\u4e0a\u4f4d\u7ba1\u7406\u8005\u306e\u307f\u304c\u5b9f\u884c\u3067\u304d\u307e\u3059\u3002";
 
-  settingsNotice.textContent = canManagePermissions(currentUser) ? ownerMessage : userMessage;
   adminSection.hidden = !canManagePermissions(currentUser);
   memberSection.hidden = !canManagePermissions(currentUser);
 
@@ -401,7 +404,9 @@ function renderWorkspace() {
   authView.hidden = true;
   workspaceView.hidden = false;
   sidebarUserText.textContent = `${currentUser.displayName} / ${currentUser.id}`;
-  currentUserBadge.textContent = isOwner(currentUser) ? "最上位管理者" : currentUser.role;
+  currentUserBadge.textContent = isOwner(currentUser)
+    ? `\u6700\u4e0a\u4f4d\u7ba1\u7406\u8005 / ${currentUser.role}`
+    : currentUser.role;
 
   renderSidebar();
   renderHeader();
@@ -409,8 +414,15 @@ function renderWorkspace() {
   updateHash(activeCategory);
 }
 
+function focusUserIdInput() {
+  window.requestAnimationFrame(() => {
+    userIdInput.focus();
+  });
+}
+
 function resetLoginFormMessage() {
-  loginMessage.textContent = "ページを開き直した場合は、利用者番号をもう一度入力してください。";
+  loginMessage.textContent =
+    "\u30da\u30fc\u30b8\u3092\u958b\u304d\u76f4\u3057\u305f\u5834\u5408\u306f\u3001\u5229\u7528\u8005\u756a\u53f7\u3092\u3082\u3046\u4e00\u5ea6\u5165\u529b\u3057\u3066\u304f\u3060\u3055\u3044\u3002";
 }
 
 function resetToLogin() {
@@ -419,9 +431,9 @@ function resetToLogin() {
   workspaceView.hidden = true;
   authView.hidden = false;
   loginForm.reset();
-  roleSelect.value = appConfig.userRoles[0];
   history.replaceState(null, "", window.location.pathname);
   resetLoginFormMessage();
+  focusUserIdInput();
 }
 
 async function loadConfig() {
@@ -442,7 +454,7 @@ async function loadConfig() {
       }
     };
   } catch (error) {
-    console.warn("設定ファイルを読み込めなかったため、既定値を使用します。", error);
+    console.warn("Could not load config file. Using fallback config.", error);
     return FALLBACK_CONFIG;
   }
 }
@@ -456,7 +468,7 @@ async function registerServiceWorker() {
     const registration = await navigator.serviceWorker.register("./service-worker.js");
     await registration.update();
   } catch (error) {
-    console.warn("Service Worker の登録に失敗しました。", error);
+    console.warn("Service Worker registration failed.", error);
   }
 }
 
@@ -464,16 +476,16 @@ loginForm.addEventListener("submit", (event) => {
   event.preventDefault();
 
   const userId = userIdInput.value.trim();
-  const selectedRole = roleSelect.value;
   const member = findMemberById(userId);
 
-  if (!member) {
-    loginMessage.textContent = "その利用者番号はまだ登録されていません。管理者に登録を依頼してください。";
+  if (!userId) {
+    loginMessage.textContent = "\u5229\u7528\u8005\u756a\u53f7\u3092\u5165\u529b\u3057\u3066\u304f\u3060\u3055\u3044\u3002";
     return;
   }
 
-  if (member.role !== selectedRole) {
-    loginMessage.textContent = "利用者番号とユーザー区分が一致していません。";
+  if (!member) {
+    loginMessage.textContent =
+      "\u305d\u306e\u5229\u7528\u8005\u756a\u53f7\u306f\u307e\u3060\u767b\u9332\u3055\u308c\u3066\u3044\u307e\u305b\u3093\u3002\u7ba1\u7406\u8005\u306b\u767b\u9332\u3092\u4f9d\u983c\u3057\u3066\u304f\u3060\u3055\u3044\u3002";
     return;
   }
 
@@ -486,7 +498,8 @@ memberForm.addEventListener("submit", (event) => {
   event.preventDefault();
 
   if (!canManagePermissions(currentUser)) {
-    memberFormMessage.textContent = "ユーザー追加は最上位管理者のみが実行できます。";
+    memberFormMessage.textContent =
+      "\u30e6\u30fc\u30b6\u30fc\u8ffd\u52a0\u306f\u6700\u4e0a\u4f4d\u7ba1\u7406\u8005\u306e\u307f\u304c\u5b9f\u884c\u3067\u304d\u307e\u3059\u3002";
     return;
   }
 
@@ -495,12 +508,14 @@ memberForm.addEventListener("submit", (event) => {
   const role = memberRoleSelect.value;
 
   if (!displayName || !memberId) {
-    memberFormMessage.textContent = "表示名と利用者番号を入力してください。";
+    memberFormMessage.textContent =
+      "\u8868\u793a\u540d\u3068\u5229\u7528\u8005\u756a\u53f7\u3092\u5165\u529b\u3057\u3066\u304f\u3060\u3055\u3044\u3002";
     return;
   }
 
   if (findMemberById(memberId)) {
-    memberFormMessage.textContent = "その利用者番号はすでに登録されています。";
+    memberFormMessage.textContent =
+      "\u305d\u306e\u5229\u7528\u8005\u756a\u53f7\u306f\u3059\u3067\u306b\u767b\u9332\u3055\u308c\u3066\u3044\u307e\u3059\u3002";
     return;
   }
 
@@ -515,7 +530,7 @@ memberForm.addEventListener("submit", (event) => {
   saveDirectory();
   memberForm.reset();
   memberRoleSelect.value = appConfig.userRoles[0];
-  memberFormMessage.textContent = `${displayName} を追加しました。カテゴリ権限を設定してください。`;
+  memberFormMessage.textContent = `${displayName} \u3092\u8ffd\u52a0\u3057\u307e\u3057\u305f\u3002\u30ab\u30c6\u30b4\u30ea\u6a29\u9650\u3092\u8a2d\u5b9a\u3057\u3066\u304f\u3060\u3055\u3044\u3002`;
   renderSettings();
 });
 
@@ -540,8 +555,9 @@ async function init() {
   memberDirectory = loadStoredDirectory(appConfig);
   renderConfig(appConfig);
   loginForm.reset();
-  roleSelect.value = appConfig.userRoles[0];
+  memberRoleSelect.value = appConfig.userRoles[0];
   resetLoginFormMessage();
+  focusUserIdInput();
   await registerServiceWorker();
 }
 

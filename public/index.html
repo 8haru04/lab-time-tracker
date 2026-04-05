@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>人間工学研究室 共有ツール</title>
   <meta name="description" content="人間工学研究室の共有ツール">
-  <meta name="theme-color" content="#8c5a35">
+  <meta name="theme-color" content="#191970">
   <meta name="robots" content="noindex, nofollow, noarchive">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="人間工学研究室">
@@ -16,34 +16,23 @@
 </head>
 <body>
   <main class="shell">
-    <section id="authView" class="auth-view">
-      <div class="auth-layout">
-        <section class="auth-hero">
-          <p class="eyebrow">Human Ergonomics Lab</p>
-          <h1 id="labName">人間工学研究室</h1>
-          <p id="tagline" class="lead">
-            研究室の在室管理、スケジュール管理、マイタスク、打刻を一つの入口から利用するための共有ツールです。
+    <section id="authView" class="auth-screen">
+      <section class="auth-card" aria-labelledby="loginTitle">
+        <div class="auth-orb" aria-hidden="true"></div>
+        <p class="auth-label">Human Ergonomics Lab</p>
+        <h1 id="labName">人間工学研究室</h1>
+        <p id="tagline" class="auth-copy">
+          研究室の在室管理、スケジュール管理、マイタスク、打刻を一つの入口から利用するための共有ツールです。
+        </p>
+
+        <div class="auth-form-block">
+          <h2 id="loginTitle">利用者番号でログイン</h2>
+          <p id="loginDescription" class="auth-copy">
+            ページを開いたときは、利用者番号を入力してログインしてください。
           </p>
-          <div class="tag-list" aria-label="利用カテゴリ">
-            <span class="tag">在室管理</span>
-            <span class="tag">スケジュール管理</span>
-            <span class="tag">マイタスク</span>
-            <span class="tag">打刻</span>
-            <span class="tag">設定</span>
-          </div>
-        </section>
 
-        <section class="auth-card" aria-labelledby="loginTitle">
-          <div class="section-head">
-            <p class="eyebrow">Login</p>
-            <h2 id="loginTitle">ログイン</h2>
-            <p id="loginDescription" class="muted">
-              利用者番号とユーザー区分でサインインしてください。
-            </p>
-          </div>
-
-          <form id="loginForm" class="form-stack" novalidate autocomplete="off">
-            <label class="field">
+          <form id="loginForm" class="login-form" novalidate autocomplete="off">
+            <label class="field field-centered">
               <span>利用者番号</span>
               <input
                 id="userIdInput"
@@ -51,41 +40,38 @@
                 name="userId"
                 inputmode="numeric"
                 autocomplete="off"
-                placeholder="例: 202304193"
+                placeholder="202304193"
               >
             </label>
 
-            <label class="field">
-              <span>ユーザー区分</span>
-              <select id="roleSelect" name="role"></select>
-            </label>
-
             <button class="primary-button" type="submit">ログイン</button>
-            <p id="loginMessage" class="helper-text">ページを開き直した場合は、利用者番号をもう一度入力してください。</p>
           </form>
-        </section>
-      </div>
+
+          <p id="loginMessage" class="helper-text">
+            ページを開き直した場合は、利用者番号をもう一度入力してください。
+          </p>
+        </div>
+      </section>
     </section>
 
     <section id="workspaceView" class="workspace-shell" hidden>
       <aside class="sidebar">
         <div class="sidebar-card">
-          <p class="eyebrow">Workspace</p>
+          <p class="sidebar-label">Workspace</p>
           <h2 id="sidebarLabName">人間工学研究室</h2>
-          <p id="sidebarUserText" class="muted"></p>
+          <p id="sidebarUserText" class="sidebar-copy"></p>
         </div>
 
         <nav id="workspaceNav" class="sidebar-nav" aria-label="カテゴリ一覧"></nav>
-
         <button id="logoutButton" class="secondary-button" type="button">ログアウト</button>
       </aside>
 
       <section class="workspace-main">
         <header class="workspace-header">
-          <div class="section-head section-head-compact">
-            <p class="eyebrow">Category</p>
+          <div class="workspace-heading">
+            <p class="workspace-label">Category</p>
             <h2 id="workspaceTitle">在室管理</h2>
-            <p id="workspaceDescription" class="muted"></p>
+            <p id="workspaceDescription" class="workspace-copy"></p>
           </div>
           <span id="currentUserBadge" class="user-badge"></span>
         </header>
@@ -93,41 +79,41 @@
         <section class="workspace-stage">
           <article id="view-presence" class="workspace-view">
             <section class="view-card">
-              <p class="section-label">在室管理</p>
+              <p class="view-label">在室管理</p>
               <h3>在室管理画面</h3>
-              <p class="muted">このカテゴリの内容は、次の指示に合わせて個別に実装します。</p>
+              <p class="view-copy">このカテゴリの内容は、次の指示に合わせて個別に実装します。</p>
             </section>
           </article>
 
           <article id="view-schedule" class="workspace-view" hidden>
             <section class="view-card">
-              <p class="section-label">スケジュール管理</p>
+              <p class="view-label">スケジュール管理</p>
               <h3>スケジュール管理画面</h3>
-              <p class="muted">このカテゴリの内容は、次の指示に合わせて個別に実装します。</p>
+              <p class="view-copy">このカテゴリの内容は、次の指示に合わせて個別に実装します。</p>
             </section>
           </article>
 
           <article id="view-tasks" class="workspace-view" hidden>
             <section class="view-card">
-              <p class="section-label">マイタスク</p>
+              <p class="view-label">マイタスク</p>
               <h3>マイタスク画面</h3>
-              <p class="muted">このカテゴリの内容は、次の指示に合わせて個別に実装します。</p>
+              <p class="view-copy">このカテゴリの内容は、次の指示に合わせて個別に実装します。</p>
             </section>
           </article>
 
           <article id="view-clock" class="workspace-view" hidden>
             <section class="view-card">
-              <p class="section-label">打刻</p>
+              <p class="view-label">打刻</p>
               <h3>打刻画面</h3>
-              <p class="muted">このカテゴリの内容は、次の指示に合わせて個別に実装します。</p>
+              <p class="view-copy">このカテゴリの内容は、次の指示に合わせて個別に実装します。</p>
             </section>
           </article>
 
           <article id="view-settings" class="workspace-view" hidden>
             <div class="settings-layout">
               <section class="panel">
-                <div class="section-head section-head-compact">
-                  <p class="section-label">現在のユーザー</p>
+                <div class="panel-head">
+                  <p class="view-label">現在のユーザー</p>
                   <h3>ログイン情報</h3>
                 </div>
                 <div id="currentUserCard" class="info-grid"></div>
@@ -135,16 +121,16 @@
               </section>
 
               <section class="panel">
-                <div class="section-head section-head-compact">
-                  <p class="section-label">権限管理</p>
+                <div class="panel-head">
+                  <p class="view-label">権限管理</p>
                   <h3>管理者メモ</h3>
                 </div>
-                <p id="settingsNotice" class="muted"></p>
+                <p id="settingsNotice" class="view-copy"></p>
               </section>
 
               <section id="adminSection" class="panel" hidden>
-                <div class="section-head section-head-compact">
-                  <p class="section-label">ユーザー追加</p>
+                <div class="panel-head">
+                  <p class="view-label">ユーザー追加</p>
                   <h3>新しいユーザーを登録</h3>
                 </div>
 
@@ -167,12 +153,14 @@
                   <button class="primary-button" type="submit">ユーザーを追加</button>
                 </form>
 
-                <p id="memberFormMessage" class="helper-text">追加したユーザーの権限は、下の一覧で個別に設定します。</p>
+                <p id="memberFormMessage" class="helper-text">
+                  追加したユーザーの権限は、下の一覧で個別に設定します。
+                </p>
               </section>
 
               <section id="memberSection" class="panel" hidden>
-                <div class="section-head section-head-compact">
-                  <p class="section-label">ユーザー権限</p>
+                <div class="panel-head">
+                  <p class="view-label">ユーザー権限</p>
                   <h3>カテゴリごとの権限一覧</h3>
                 </div>
                 <div id="memberTable" class="member-table" aria-live="polite"></div>
@@ -181,10 +169,10 @@
           </article>
 
           <article id="view-empty" class="workspace-view" hidden>
-            <section class="view-card empty-card">
-              <p class="section-label">権限待ち</p>
+            <section class="view-card view-card-empty">
+              <p class="view-label">権限待ち</p>
               <h3>利用できるカテゴリがありません</h3>
-              <p class="muted">管理者がカテゴリ権限を付与すると、この画面から利用を開始できます。</p>
+              <p class="view-copy">管理者がカテゴリ権限を付与すると、この画面から利用を開始できます。</p>
             </section>
           </article>
         </section>
