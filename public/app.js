@@ -1,5 +1,6 @@
 const STORAGE_KEY = "ergonomics-lab-permissions-v4";
 const ACTIVE_USER_KEY = "ergonomics-lab-active-user-v1";
+const DISPLAY_NAME_OVERRIDES_KEY = "ergonomics-lab-display-names-v1";
 const CATEGORIES = [
   {
     key: "presence",
@@ -65,6 +66,9 @@ const workspaceView = document.getElementById("workspaceView");
 const loginForm = document.getElementById("loginForm");
 const loginMessage = document.getElementById("loginMessage");
 const userIdInput = document.getElementById("userIdInput");
+const displayNameForm = document.getElementById("displayNameForm");
+const displayNameInput = document.getElementById("displayNameInput");
+const displayNameMessage = document.getElementById("displayNameMessage");
 const labName = document.getElementById("labName");
 const sidebarLabName = document.getElementById("sidebarLabName");
 const tagline = document.getElementById("tagline");
@@ -91,6 +95,29 @@ let appConfig = FALLBACK_CONFIG;
 let memberDirectory = [];
 let currentUser = null;
 let activeCategory = null;
+let displayNameOverrides = {};
+let displayNameStatusMessage =
+  "\u8868\u793a\u540d\u306f\u3053\u306e\u7aef\u672b\u306e\u30ed\u30b0\u30a4\u30f3\u60c5\u5831\u3068\u4e00\u7dd2\u306b\u4fdd\u5b58\u3055\u308c\u307e\u3059\u3002";
+
+function loadDisplayNameOverrides() {
+  try {
+    const raw = window.localStorage.getItem(DISPLAY_NAME_OVERRIDES_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch (error) {
+    console.warn("Could not load display name overrides. Using defaults.", error);
+    return {};
+  }
+}
+
+function saveDisplayNameOverrides() {
+  window.localStorage.setItem(DISPLAY_NAME_OVERRIDES_KEY, JSON.stringify(displayNameOverrides));
+}
+
+function getDisplayName(id, fallback) {
+  const override = displayNameOverrides[id];
+  return typeof override === "string" && override.trim() ? override.trim() : fallback;
+}
 
 function buildOwnerRecord(config) {
   const permissions = {};
@@ -101,7 +128,10 @@ function buildOwnerRecord(config) {
 
   return {
     id: config.ownerUser.id,
-    displayName: config.ownerUser.displayName || config.ownerUser.id,
+    displayName: getDisplayName(
+      config.ownerUser.id,
+      config.ownerUser.displayName || config.ownerUser.id
+    ),
     role: config.ownerUser.role,
     isOwner: true,
     permissions
@@ -139,7 +169,7 @@ function normalizeMember(rawMember) {
 
   return {
     id,
-    displayName: String(rawMember.displayName || id).trim() || id,
+    displayName: getDisplayName(id, String(rawMember.displayName || id).trim() || id),
     role,
     isOwner: false,
     permissions: normalizePermissions(rawMember.permissions)
@@ -215,7 +245,7 @@ function canManagePermissions(member) {
 }
 
 function hasCategoryAccess(member, categoryKey) {
-  return Boolean(member && member.permissions && member.permissions[categoryKey]);
+  return Boolean(member && categoryKey);
 }
 
 function getAccessibleCategories(member) {
@@ -335,9 +365,19 @@ function createInfoBox(title, value) {
   return box;
 }
 
+function createPermissionChip(text, isOff = false) {
+  const chip = document.createElement("span");
+  chip.className = `permission-chip${isOff ? " is-off" : ""}`;
+  chip.textContent = text;
+  return chip;
+}
+
 function renderCurrentUserSummary() {
   currentUserCard.replaceChildren();
   permissionSummary.replaceChildren();
+
+  displayNameInput.value = currentUser.displayName;
+  displayNameMessage.textContent = displayNameStatusMessage;
 
   currentUserCard.append(
     createInfoBox("\u8868\u793a\u540d", currentUser.displayName),
@@ -346,46 +386,15 @@ function renderCurrentUserSummary() {
     createInfoBox("\u6a29\u9650\u30ec\u30d9\u30eb", isOwner(currentUser) ? "\u6700\u4e0a\u4f4d\u7ba1\u7406\u8005" : "\u4e00\u822c\u30e6\u30fc\u30b6\u30fc")
   );
 
-  CATEGORIES.forEach((category) => {
-    const chip = document.createElement("span");
-    chip.className = `permission-chip${hasCategoryAccess(currentUser, category.key) ? "" : " is-off"}`;
-    chip.textContent = category.label;
-    permissionSummary.appendChild(chip);
-  });
-}
-
-function createPermissionControl(member, category) {
-  if (!canManagePermissions(currentUser)) {
-    const chip = document.createElement("span");
-    chip.className = `permission-chip${hasCategoryAccess(member, category.key) ? "" : " is-off"}`;
-    chip.textContent = category.label;
-    return chip;
-  }
-
-  const label = document.createElement("label");
-  label.className = "permission-item";
-
-  const checkbox = document.createElement("input");
-  checkbox.type = "checkbox";
-  checkbox.checked = hasCategoryAccess(member, category.key);
-  checkbox.disabled = member.isOwner;
-  checkbox.addEventListener("change", () => {
-    member.permissions[category.key] = checkbox.checked;
-    saveDirectory();
-
-    if (currentUser && currentUser.id === member.id) {
-      currentUser = member;
-      activeCategory = resolvePreferredCategory();
-    }
-
-    renderWorkspace();
-  });
-
-  const text = document.createElement("span");
-  text.textContent = category.label;
-
-  label.append(checkbox, text);
-  return label;
+  permissionSummary.append(
+    createPermissionChip("\u57fa\u672c\u6a5f\u80fd / \u5229\u7528\u53ef"),
+    createPermissionChip(
+      canManagePermissions(currentUser)
+        ? "\u30e6\u30fc\u30b6\u30fc\u767b\u9332 / \u64cd\u4f5c\u53ef"
+        : "\u30e6\u30fc\u30b6\u30fc\u767b\u9332 / \u4e0d\u53ef",
+      !canManagePermissions(currentUser)
+    )
+  );
 }
 
 function renderMemberTable() {
@@ -406,9 +415,22 @@ function renderMemberTable() {
     const permissionGrid = document.createElement("div");
     permissionGrid.className = "permission-grid";
 
-    CATEGORIES.forEach((category) => {
-      permissionGrid.appendChild(createPermissionControl(member, category));
-    });
+    permissionGrid.append(
+      createPermissionChip("\u57fa\u672c\u6a5f\u80fd / \u5229\u7528\u53ef"),
+      createPermissionChip("\u8a2d\u5b9a\u753b\u9762 / \u5229\u7528\u53ef"),
+      createPermissionChip(
+        member.isOwner
+          ? "\u30e6\u30fc\u30b6\u30fc\u767b\u9332 / \u64cd\u4f5c\u53ef"
+          : "\u30e6\u30fc\u30b6\u30fc\u767b\u9332 / \u64cd\u4f5c\u4e0d\u53ef",
+        !member.isOwner
+      ),
+      createPermissionChip(
+        member.isOwner
+          ? "\u6700\u4e0a\u4f4d\u7ba1\u7406\u8005"
+          : "\u4eca\u5f8c\u306e\u8ffd\u52a0\u6a29\u9650\u306f\u672a\u8a2d\u5b9a",
+        !member.isOwner
+      )
+    );
 
     row.append(memberCard, permissionGrid);
     memberTable.appendChild(row);
@@ -419,8 +441,8 @@ function renderSettings() {
   renderCurrentUserSummary();
 
   settingsNotice.textContent = canManagePermissions(currentUser)
-    ? "202304193 \u306e\u307f\u304c\u3001\u3059\u3079\u3066\u306e\u30e6\u30fc\u30b6\u30fc\u306b\u5bfe\u3059\u308b\u30ab\u30c6\u30b4\u30ea\u6a29\u9650\u3092\u5909\u66f4\u3067\u304d\u307e\u3059\u3002"
-    : "\u6a29\u9650\u5909\u66f4\u306f\u6700\u4e0a\u4f4d\u7ba1\u7406\u8005\u306e\u307f\u304c\u5b9f\u884c\u3067\u304d\u307e\u3059\u3002";
+    ? "\u73fe\u5728\u306f\u3001\u3059\u3079\u3066\u306e\u30e6\u30fc\u30b6\u30fc\u304c\u57fa\u672c\u6a5f\u80fd\u3092\u5229\u7528\u3067\u304d\u307e\u3059\u3002\u30e6\u30fc\u30b6\u30fc\u767b\u9332\u3060\u3051\u304c\u7ba1\u7406\u8005\u306e\u64cd\u4f5c\u5bfe\u8c61\u3067\u3059\u3002"
+    : "\u73fe\u5728\u306f\u3001\u3059\u3079\u3066\u306e\u57fa\u672c\u6a5f\u80fd\u3092\u5229\u7528\u3067\u304d\u307e\u3059\u3002\u30e6\u30fc\u30b6\u30fc\u767b\u9332\u3060\u3051\u304c\u7ba1\u7406\u8005\u9650\u5b9a\u3067\u3059\u3002";
 
   adminSection.hidden = !canManagePermissions(currentUser);
   memberSection.hidden = !canManagePermissions(currentUser);
@@ -500,6 +522,8 @@ function resetToLogin() {
   clearActiveUser();
   history.replaceState(null, "", window.location.pathname);
   resetLoginFormMessage();
+  displayNameStatusMessage =
+    "\u8868\u793a\u540d\u306f\u3053\u306e\u7aef\u672b\u306e\u30ed\u30b0\u30a4\u30f3\u60c5\u5831\u3068\u4e00\u7dd2\u306b\u4fdd\u5b58\u3055\u308c\u307e\u3059\u3002";
   focusUserIdInput();
 }
 
@@ -563,6 +587,27 @@ loginForm.addEventListener("submit", (event) => {
   renderWorkspace();
 });
 
+displayNameForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+
+  if (!currentUser) {
+    return;
+  }
+
+  const nextDisplayName = displayNameInput.value.trim();
+  if (!nextDisplayName) {
+    displayNameMessage.textContent = "\u8868\u793a\u540d\u3092\u5165\u529b\u3057\u3066\u304f\u3060\u3055\u3044\u3002";
+    return;
+  }
+
+  currentUser.displayName = nextDisplayName;
+  displayNameOverrides[currentUser.id] = nextDisplayName;
+  saveDisplayNameOverrides();
+  saveDirectory();
+  displayNameStatusMessage = "\u8868\u793a\u540d\u3092\u66f4\u65b0\u3057\u307e\u3057\u305f\u3002";
+  renderWorkspace();
+});
+
 memberForm.addEventListener("submit", (event) => {
   event.preventDefault();
 
@@ -599,7 +644,7 @@ memberForm.addEventListener("submit", (event) => {
   saveDirectory();
   memberForm.reset();
   memberRoleSelect.value = appConfig.userRoles[0];
-  memberFormMessage.textContent = `${displayName} \u3092\u8ffd\u52a0\u3057\u307e\u3057\u305f\u3002\u30ab\u30c6\u30b4\u30ea\u6a29\u9650\u3092\u8a2d\u5b9a\u3057\u3066\u304f\u3060\u3055\u3044\u3002`;
+  memberFormMessage.textContent = `${displayName} \u3092\u8ffd\u52a0\u3057\u307e\u3057\u305f\u3002\u57fa\u672c\u6a5f\u80fd\u306f\u3059\u3050\u306b\u5229\u7528\u3067\u304d\u307e\u3059\u3002`;
   renderSettings();
 });
 
@@ -621,6 +666,7 @@ window.addEventListener("hashchange", () => {
 
 async function init() {
   appConfig = await loadConfig();
+  displayNameOverrides = loadDisplayNameOverrides();
   memberDirectory = loadStoredDirectory(appConfig);
   renderConfig(appConfig);
   loginForm.reset();
