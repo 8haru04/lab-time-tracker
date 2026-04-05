@@ -98,7 +98,10 @@ const FALLBACK_CONFIG = {
     { id: "202304154", displayName: "202304154", role: "\u5b66\u90e84\u5e74" },
     { id: "202304167", displayName: "202304167", role: "\u5b66\u90e84\u5e74" },
     { id: "202304181", displayName: "202304181", role: "\u5b66\u90e84\u5e74" },
-    { id: "202304200", displayName: "202304200", role: "\u5b66\u90e84\u5e74" }
+    { id: "202304200", displayName: "202304200", role: "\u5b66\u90e84\u5e74" },
+    { id: "01", displayName: "01", role: "\u672a\u8a2d\u5b9a" },
+    { id: "02", displayName: "02", role: "\u672a\u8a2d\u5b9a" },
+    { id: "202670231", displayName: "202670231", role: "\u672a\u8a2d\u5b9a" }
   ],
   version: "\u57fa\u76e4-2026-04"
 };
@@ -410,9 +413,9 @@ function normalizeMember(rawMember) {
   }
 
   const id = String(rawMember.id || "").trim();
-  const role = String(rawMember.role || "").trim();
+  const role = String(rawMember.role || "\u672a\u8a2d\u5b9a").trim() || "\u672a\u8a2d\u5b9a";
 
-  if (!id || !role) {
+  if (!id) {
     return null;
   }
 
@@ -517,8 +520,8 @@ function getOrderedMembers() {
       return 1;
     }
 
-    const leftRoleIndex = roleOrder.indexOf(left.role);
-    const rightRoleIndex = roleOrder.indexOf(right.role);
+    const leftRoleIndex = roleOrder.indexOf(left.role) === -1 ? Number.MAX_SAFE_INTEGER : roleOrder.indexOf(left.role);
+    const rightRoleIndex = roleOrder.indexOf(right.role) === -1 ? Number.MAX_SAFE_INTEGER : roleOrder.indexOf(right.role);
 
     if (leftRoleIndex !== rightRoleIndex) {
       return leftRoleIndex - rightRoleIndex;
