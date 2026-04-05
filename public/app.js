@@ -70,6 +70,45 @@ const AVAILABILITY_OPTIONS = [
 ];
 
 const DEFAULT_AVAILABILITY = AVAILABILITY_OPTIONS[0].value;
+const SCHEDULE_DAYS = ["\u6708", "\u706b", "\u6c34", "\u6728", "\u91d1"];
+const SCHEDULE_SLOTS = [
+  {
+    type: "period",
+    key: "p1",
+    label: "1\u9650",
+    time: "9:00-10:40"
+  },
+  {
+    type: "period",
+    key: "p2",
+    label: "2\u9650",
+    time: "10:50-12:30"
+  },
+  {
+    type: "break",
+    key: "lunch",
+    label: "\u663c\u4f11\u307f",
+    time: "12:30-13:30"
+  },
+  {
+    type: "period",
+    key: "p3",
+    label: "3\u9650",
+    time: "13:30-15:10"
+  },
+  {
+    type: "period",
+    key: "p4",
+    label: "4\u9650",
+    time: "15:20-17:00"
+  },
+  {
+    type: "period",
+    key: "p5",
+    label: "5\u9650",
+    time: "17:10-18:50"
+  }
+];
 
 const FALLBACK_CONFIG = {
   appName: "\u4eba\u9593\u5de5\u5b66\u7814\u7a76\u5ba4 \u5171\u6709\u30c4\u30fc\u30eb",
@@ -139,6 +178,8 @@ const presenceAvailabilitySelect = document.getElementById("presenceAvailability
 const presenceSummaryPreview = document.getElementById("presenceSummaryPreview");
 const presenceDeleteButton = document.getElementById("presenceDeleteButton");
 const presenceInputMessage = document.getElementById("presenceInputMessage");
+const scheduleTableHead = document.getElementById("scheduleTableHead");
+const scheduleTableBody = document.getElementById("scheduleTableBody");
 const currentUserCard = document.getElementById("currentUserCard");
 const permissionSummary = document.getElementById("permissionSummary");
 const settingsNotice = document.getElementById("settingsNotice");
@@ -819,6 +860,66 @@ function renderPresenceInput() {
   syncPresenceInputFields();
 }
 
+function renderScheduleBoard() {
+  scheduleTableHead.replaceChildren();
+  scheduleTableBody.replaceChildren();
+
+  const headRow = document.createElement("tr");
+  const corner = document.createElement("th");
+  corner.textContent = "\u30b3\u30de";
+  headRow.appendChild(corner);
+
+  SCHEDULE_DAYS.forEach((dayLabel) => {
+    const dayCell = document.createElement("th");
+    dayCell.textContent = `${dayLabel}\u66dc`;
+    headRow.appendChild(dayCell);
+  });
+
+  scheduleTableHead.appendChild(headRow);
+
+  SCHEDULE_SLOTS.forEach((slot) => {
+    const row = document.createElement("tr");
+
+    if (slot.type === "break") {
+      row.className = "schedule-break-row";
+
+      const breakLabel = document.createElement("th");
+      breakLabel.innerHTML = `
+        <span class="schedule-slot-name">${slot.label}</span>
+        <span class="schedule-slot-time">${slot.time}</span>
+      `;
+      row.appendChild(breakLabel);
+
+      const breakCell = document.createElement("td");
+      breakCell.colSpan = SCHEDULE_DAYS.length;
+      breakCell.className = "schedule-break-cell";
+      breakCell.textContent = "\u663c\u98df\u30fb\u79fb\u52d5\u30fb\u4f11\u61a9\u306e\u6642\u9593";
+      row.appendChild(breakCell);
+
+      scheduleTableBody.appendChild(row);
+      return;
+    }
+
+    const slotCell = document.createElement("th");
+    slotCell.innerHTML = `
+      <span class="schedule-slot-name">${slot.label}</span>
+      <span class="schedule-slot-time">${slot.time}</span>
+    `;
+    row.appendChild(slotCell);
+
+    SCHEDULE_DAYS.forEach(() => {
+      const cell = document.createElement("td");
+      const empty = document.createElement("span");
+      empty.className = "schedule-cell-empty";
+      empty.textContent = "\u672a\u5165\u529b";
+      cell.appendChild(empty);
+      row.appendChild(cell);
+    });
+
+    scheduleTableBody.appendChild(row);
+  });
+}
+
 function renderSettings() {
   renderCurrentUserSummary();
 
@@ -847,6 +948,10 @@ function renderViews() {
 
   if (activeCategory === "presenceInput") {
     renderPresenceInput();
+  }
+
+  if (activeCategory === "schedule") {
+    renderScheduleBoard();
   }
 
   if (activeCategory === "settings") {
