@@ -708,8 +708,31 @@ p {
   color: var(--muted);
 }
 
+.clock-center-row {
+  width: min(1080px, 100%);
+  display: grid;
+  grid-template-columns: minmax(180px, 220px) minmax(320px, 1fr) minmax(180px, 220px);
+  gap: 24px;
+  align-items: center;
+}
+
+.clock-metric-card {
+  padding: 18px 16px;
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.05);
+  display: grid;
+  gap: 8px;
+  text-align: center;
+}
+
+.clock-metric-value {
+  font-size: clamp(1.5rem, 3vw, 2.4rem);
+  line-height: 1.1;
+}
+
 .clock-actions {
-  width: min(760px, 100%);
+  width: 100%;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18px;
@@ -949,6 +972,10 @@ p {
   .clock-actions,
   .clock-actions.is-single {
     width: 100%;
+  }
+
+  .clock-center-row {
+    grid-template-columns: 1fr;
   }
 
   .clock-history-head {

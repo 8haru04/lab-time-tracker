@@ -184,6 +184,10 @@ const scheduleTableHead = document.getElementById("scheduleTableHead");
 const scheduleTableBody = document.getElementById("scheduleTableBody");
 const clockCurrentTime = document.getElementById("clockCurrentTime");
 const clockCurrentDate = document.getElementById("clockCurrentDate");
+const clockMonthTotalValue = document.getElementById("clockMonthTotalValue");
+const clockMonthTotalNote = document.getElementById("clockMonthTotalNote");
+const clockTotalValue = document.getElementById("clockTotalValue");
+const clockTotalNote = document.getElementById("clockTotalNote");
 const clockStatusText = document.getElementById("clockStatusText");
 const clockStatusSubtext = document.getElementById("clockStatusSubtext");
 const clockActionButtons = document.getElementById("clockActionButtons");
@@ -303,6 +307,12 @@ function formatDurationFromMinutes(totalMinutes) {
   }
 
   return `${minutes}\u5206`;
+}
+
+function formatMonthRangeLabel(date) {
+  return new Intl.DateTimeFormat("ja-JP", {
+    month: "numeric"
+  }).format(date);
 }
 
 function renderClockNow() {
@@ -507,7 +517,17 @@ function getTodayClockLogs(logs, now = new Date()) {
   });
 }
 
-function getTodayClockSummary(logs, currentStatus, now = new Date()) {
+function getMonthClockLogs(logs, now = new Date()) {
+  const start = new Date(now.getFullYear(), now.getMonth(), 1);
+  const end = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+  return logs.filter((entry) => {
+    const entryDate = new Date(entry.timestamp);
+    return entryDate >= start && entryDate < end;
+  });
+}
+
+function getClockSummary(logs, currentStatus, now = new Date()) {
   let checkedInAt = null;
   let breakStartedAt = null;
   let stayMinutes = 0;
@@ -556,6 +576,26 @@ function getTodayClockSummary(logs, currentStatus, now = new Date()) {
     breakMinutes,
     activeMinutes: Math.max(0, stayMinutes - breakMinutes)
   };
+}
+
+function getStatusStartedText(record, logs) {
+  const statusStartedAt = getClockStartedAt(record, logs);
+
+  if (!statusStartedAt) {
+    return getClockStatusMeta(record.status).subtext;
+  }
+
+  const stamp = new Date(statusStartedAt);
+
+  if (record.status === "in") {
+    return `\u5165\u5ba4 / ${formatDateTime(stamp)}\u304b\u3089`;
+  }
+
+  if (record.status === "break") {
+    return `\u4f11\u61a9 / ${formatDateTime(stamp)}\u304b\u3089`;
+  }
+
+  return `\u9000\u5ba4 / ${formatDateTime(stamp)}`;
 }
 
 function createClockHistoryItem(entry) {
@@ -1336,18 +1376,24 @@ function renderClockView() {
   const record = getClockRecord(currentUser.id);
   const logs = getClockLogsForUser(currentUser.id);
   const todayLogs = getTodayClockLogs(logs);
+  const monthLogs = getMonthClockLogs(logs);
   const statusMeta = getClockStatusMeta(record.status);
   const actions = buildClockActions(record.status);
-  const statusStartedAt = getClockStartedAt(record, logs);
-  const todaySummary = getTodayClockSummary(todayLogs, record.status);
+  const todaySummary = getClockSummary(todayLogs, record.status);
+  const monthSummary = getClockSummary(monthLogs, record.status);
+  const totalSummary = getClockSummary(logs, record.status);
 
   clockStatusText.textContent = statusMeta.title;
-  clockStatusSubtext.textContent = statusStartedAt
-    ? `${statusMeta.title} / ${formatDateTime(new Date(statusStartedAt))}\u304b\u3089`
-    : statusMeta.subtext;
+  clockStatusSubtext.textContent = getStatusStartedText(record, logs);
   clockSummaryText.textContent = todayLogs.length > 0
     ? `\u672c\u65e5: \u5728\u5ba4 ${formatDurationFromMinutes(todaySummary.stayMinutes)} / \u4f11\u61a9 ${formatDurationFromMinutes(todaySummary.breakMinutes)} / \u5b9f\u50cd ${formatDurationFromMinutes(todaySummary.activeMinutes)}`
     : "\u307e\u3060\u672c\u65e5\u306e\u6253\u523b\u8a18\u9332\u306f\u3042\u308a\u307e\u305b\u3093\u3002";
+  clockMonthTotalValue.textContent = formatDurationFromMinutes(monthSummary.activeMinutes);
+  clockMonthTotalNote.textContent = `${formatMonthRangeLabel(new Date())}\u306e1\u65e5\u304b\u3089\u4eca\u65e5\u307e\u3067\u306e\u5b9f\u50cd\u7d2f\u8a08`;
+  clockTotalValue.textContent = formatDurationFromMinutes(totalSummary.activeMinutes);
+  clockTotalNote.textContent = logs.length > 0
+    ? `\u8a18\u9332\u958b\u59cb\u304b\u3089\u4eca\u65e5\u307e\u3067\u306e\u5b9f\u50cd\u7d2f\u8a08`
+    : "\u307e\u3060\u7d2f\u8a08\u3067\u304d\u308b\u6253\u523b\u304c\u3042\u308a\u307e\u305b\u3093";
 
   clockActionButtons.replaceChildren();
   clockActionButtons.className = `clock-actions${actions.length === 1 ? " is-single" : ""}`;
