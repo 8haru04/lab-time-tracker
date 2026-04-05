@@ -803,6 +803,7 @@ function setActiveCategory(categoryKey) {
 
   activeCategory = categoryKey;
   updateHash(categoryKey);
+  window.scrollTo({ top: 0 });
   renderWorkspace();
 }
 
@@ -1440,6 +1441,7 @@ window.addEventListener("hashchange", () => {
   const nextKey = window.location.hash.replace(/^#/, "");
   if (nextKey && hasCategoryAccess(currentUser, nextKey)) {
     activeCategory = nextKey;
+    window.scrollTo({ top: 0 });
     renderWorkspace();
   }
 });

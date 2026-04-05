@@ -372,10 +372,7 @@ p {
 }
 
 .workspace-header {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  align-items: flex-start;
+  display: none;
 }
 
 .workspace-stage {
