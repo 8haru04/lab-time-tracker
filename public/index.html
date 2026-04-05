@@ -110,7 +110,7 @@
                 <div>
                   <p class="view-label">&#x4e88;&#x5b9a;&#x5165;&#x529b;</p>
                   <h3>&#x6708;&#x306e;&#x72b6;&#x6cc1;&#x3092;&#x5165;&#x529b;</h3>
-                  <p class="view-copy">&#x65e5;&#x4ed8;&#x3068;&#x30e6;&#x30fc;&#x30b6;&#x30fc;&#x3092;&#x9078;&#x3073;&#x3001;&#x5728;&#x5ba4;&#x7ba1;&#x7406;&#x306b;&#x8868;&#x793a;&#x3059;&#x308b;&#x72b6;&#x6cc1;&#x3092;&#x767b;&#x9332;&#x3057;&#x307e;&#x3059;&#x3002;</p>
+                  <p class="view-copy">&#x65e5;&#x4ed8;&#x3001;&#x6642;&#x9593;&#x5e2f;&#x3001;&#x5bfe;&#x5fdc;&#x53ef;&#x5426;&#x3092;&#x767b;&#x9332;&#x3057;&#x3001;&#x5728;&#x5ba4;&#x7ba1;&#x7406;&#x306e;&#x6708;&#x6b21;&#x8868;&#x306b;&#x53cd;&#x6620;&#x3055;&#x305b;&#x307e;&#x3059;&#x3002;</p>
                 </div>
 
                 <form id="presenceInputForm" class="form-stack">
@@ -120,24 +120,42 @@
                       <input id="presenceDateInput" type="date" name="presenceDate">
                     </label>
 
-                    <label class="field">
-                      <span>&#x30e6;&#x30fc;&#x30b6;&#x30fc;</span>
-                      <select id="presenceUserSelect" name="presenceUser"></select>
-                    </label>
+                    <div class="info-box presence-owner-box">
+                      <strong>&#x5165;&#x529b;&#x5bfe;&#x8c61;</strong>
+                      <small id="presenceOwnerText">&#x30ed;&#x30b0;&#x30a4;&#x30f3;&#x4e2d;&#x306e;&#x5b66;&#x7c4d;&#x756a;&#x53f7;&#x304c;&#x8868;&#x793a;&#x3055;&#x308c;&#x307e;&#x3059;&#x3002;</small>
+                    </div>
                   </div>
 
                   <div class="presence-input-grid">
                     <label class="field">
-                      <span>&#x72b6;&#x6cc1;&#xff08;&#x77ed;&#x304f;&#xff09;</span>
-                      <input id="presenceStatusInput" type="text" name="presenceStatus" maxlength="6" placeholder="">
+                      <span>&#x958b;&#x59cb;&#x6642;&#x9593;</span>
+                      <input id="presenceStartTimeInput" type="time" name="presenceStartTime">
                     </label>
 
                     <label class="field">
-                      <span>&#x88dc;&#x8db3;</span>
-                      <input id="presenceNoteInput" type="text" name="presenceNote" maxlength="40" placeholder="">
+                      <span>&#x7d42;&#x4e86;&#x6642;&#x9593;</span>
+                      <input id="presenceEndTimeInput" type="time" name="presenceEndTime">
                     </label>
                   </div>
 
+                  <label class="field">
+                    <span>&#x5bfe;&#x5fdc;&#x53ef;&#x5426;</span>
+                    <select id="presenceAvailabilitySelect" name="presenceAvailability"></select>
+                  </label>
+
+                  <div class="presence-note">
+                    <p class="helper-text">
+                      &#x5165;&#x529b;&#x306f;&#x73fe;&#x5728;&#x30ed;&#x30b0;&#x30a4;&#x30f3;&#x3057;&#x3066;&#x3044;&#x308b;&#x5b66;&#x7c4d;&#x756a;&#x53f7;&#x306b;&#x7d10;&#x4ed8;&#x3044;&#x3066;&#x4fdd;&#x5b58;&#x3055;&#x308c;&#x307e;&#x3059;&#x3002;
+                    </p>
+                  </div>
+                  
+                  <div class="presence-input-grid">
+                    <label class="field">
+                      <span>&#x78ba;&#x8a8d;&#x7528;</span>
+                      <input id="presenceSummaryPreview" type="text" value="" readonly>
+                    </label>
+                  </div>
+                  
                   <div class="presence-actions">
                     <button class="primary-button" type="submit">&#x5165;&#x529b;&#x3092;&#x4fdd;&#x5b58;</button>
                     <button id="presenceDeleteButton" class="secondary-button" type="button">&#x3053;&#x306e;&#x5165;&#x529b;&#x3092;&#x524a;&#x9664;</button>

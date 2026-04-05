@@ -12,8 +12,8 @@ const CATEGORIES = [
   {
     key: "presenceInput",
     label: "\u4e88\u5b9a\u5165\u529b",
-    short: "\u6708\u306e\u72b6\u6cc1\u3092\u5165\u529b",
-    description: "\u5728\u5ba4\u7ba1\u7406\u306b\u53cd\u6620\u3059\u308b\u6708\u6b21\u306e\u72b6\u6cc1\u3092\u5165\u529b\u3059\u308b\u753b\u9762\u3067\u3059\u3002",
+    short: "\u6642\u9593\u3068\u53ef\u5426\u3092\u5165\u529b",
+    description: "\u30ed\u30b0\u30a4\u30f3\u4e2d\u306e\u30e6\u30fc\u30b6\u30fc\u306e\u4e88\u5b9a\u3092\u65e5\u4ed8\u30fb\u6642\u9593\u5e2f\u30fb4\u6bb5\u968e\u306e\u5bfe\u5fdc\u53ef\u5426\u3067\u767b\u9332\u3059\u308b\u753b\u9762\u3067\u3059\u3002",
     isChild: true
   },
   {
@@ -41,6 +41,35 @@ const CATEGORIES = [
     description: "\u30ed\u30b0\u30a4\u30f3\u60c5\u5831\u3084\u6a29\u9650\u7ba1\u7406\u3092\u6271\u3046\u753b\u9762\u3067\u3059\u3002"
   }
 ];
+
+const AVAILABILITY_OPTIONS = [
+  {
+    value: "available",
+    label: "\u5bfe\u5fdc\u53ef",
+    symbol: "\u25ce",
+    className: "is-available"
+  },
+  {
+    value: "limited",
+    label: "\u4e00\u90e8\u5bfe\u5fdc\u53ef",
+    symbol: "\u25cb",
+    className: "is-limited"
+  },
+  {
+    value: "consult",
+    label: "\u8981\u76f8\u8ac7",
+    symbol: "\u25b3",
+    className: "is-consult"
+  },
+  {
+    value: "unavailable",
+    label: "\u5bfe\u5fdc\u4e0d\u53ef",
+    symbol: "\u00d7",
+    className: "is-unavailable"
+  }
+];
+
+const DEFAULT_AVAILABILITY = AVAILABILITY_OPTIONS[0].value;
 
 const FALLBACK_CONFIG = {
   appName: "\u4eba\u9593\u5de5\u5b66\u7814\u7a76\u5ba4 \u5171\u6709\u30c4\u30fc\u30eb",
@@ -100,9 +129,11 @@ const presenceTableHead = document.getElementById("presenceTableHead");
 const presenceTableBody = document.getElementById("presenceTableBody");
 const presenceInputForm = document.getElementById("presenceInputForm");
 const presenceDateInput = document.getElementById("presenceDateInput");
-const presenceUserSelect = document.getElementById("presenceUserSelect");
-const presenceStatusInput = document.getElementById("presenceStatusInput");
-const presenceNoteInput = document.getElementById("presenceNoteInput");
+const presenceOwnerText = document.getElementById("presenceOwnerText");
+const presenceStartTimeInput = document.getElementById("presenceStartTimeInput");
+const presenceEndTimeInput = document.getElementById("presenceEndTimeInput");
+const presenceAvailabilitySelect = document.getElementById("presenceAvailabilitySelect");
+const presenceSummaryPreview = document.getElementById("presenceSummaryPreview");
 const presenceDeleteButton = document.getElementById("presenceDeleteButton");
 const presenceInputMessage = document.getElementById("presenceInputMessage");
 const currentUserCard = document.getElementById("currentUserCard");
@@ -144,6 +175,19 @@ function saveDisplayNameOverrides() {
 
 function padNumber(value) {
   return String(value).padStart(2, "0");
+}
+
+function normalizeTimeValue(value) {
+  const text = typeof value === "string" ? value.trim() : "";
+  return /^\d{2}:\d{2}$/.test(text) ? text : "";
+}
+
+function getAvailabilityMeta(value) {
+  return AVAILABILITY_OPTIONS.find((option) => option.value === value) || null;
+}
+
+function normalizeAvailability(value) {
+  return getAvailabilityMeta(value)?.value || "";
 }
 
 function toDateKey(date) {
@@ -190,11 +234,91 @@ function getDaysForMonth(monthKey) {
   });
 }
 
+function normalizePresenceEntry(rawEntry) {
+  if (!rawEntry || typeof rawEntry !== "object") {
+    return null;
+  }
+
+  const availability = normalizeAvailability(rawEntry.availability);
+  const startTime = normalizeTimeValue(rawEntry.startTime);
+  const endTime = normalizeTimeValue(rawEntry.endTime);
+  const note = typeof rawEntry.note === "string" ? rawEntry.note.trim() : "";
+  const legacyStatus = typeof rawEntry.status === "string" ? rawEntry.status.trim() : "";
+  const legacyNote = typeof rawEntry.note === "string" ? rawEntry.note.trim() : "";
+
+  if (availability || startTime || endTime || note || legacyStatus || legacyNote) {
+    return {
+      availability: availability || "consult",
+      startTime,
+      endTime,
+      note: note || [legacyStatus, legacyNote].filter(Boolean).join(" / ")
+    };
+  }
+
+  return null;
+}
+
+function formatTimeRange(startTime, endTime) {
+  if (startTime && endTime) {
+    return `${startTime}-${endTime}`;
+  }
+
+  if (startTime || endTime) {
+    return [startTime || "--:--", endTime || "--:--"].join("-");
+  }
+
+  return "\u6642\u9593\u672a\u8a2d\u5b9a";
+}
+
+function buildPresencePreview(entry) {
+  if (!entry) {
+    return "";
+  }
+
+  const availability = getAvailabilityMeta(entry.availability) || getAvailabilityMeta(DEFAULT_AVAILABILITY);
+  const parts = [availability?.label || "\u5bfe\u5fdc\u53ef\u5426\u672a\u8a2d\u5b9a"];
+
+  if (entry.startTime || entry.endTime) {
+    parts.push(formatTimeRange(entry.startTime, entry.endTime));
+  }
+
+  if (entry.note) {
+    parts.push(entry.note);
+  }
+
+  return parts.join(" / ");
+}
+
 function loadPresencePlans() {
   try {
     const raw = window.localStorage.getItem(PRESENCE_PLANS_KEY);
     const parsed = raw ? JSON.parse(raw) : {};
-    return parsed && typeof parsed === "object" ? parsed : {};
+    if (!parsed || typeof parsed !== "object") {
+      return {};
+    }
+
+    const normalizedPlans = {};
+
+    Object.entries(parsed).forEach(([dateKey, byUser]) => {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey) || !byUser || typeof byUser !== "object") {
+        return;
+      }
+
+      const normalizedByUser = {};
+
+      Object.entries(byUser).forEach(([userId, entry]) => {
+        const normalizedEntry = normalizePresenceEntry(entry);
+        if (normalizedEntry) {
+          normalizedByUser[String(userId).trim()] = normalizedEntry;
+        }
+      });
+
+      if (Object.keys(normalizedByUser).length > 0) {
+        normalizedPlans[dateKey] = normalizedByUser;
+      }
+    });
+
+    return normalizedPlans;
   } catch (error) {
     console.warn("Could not load presence plans. Using defaults.", error);
     return {};
@@ -210,11 +334,12 @@ function getPresenceEntry(userId, dateKey) {
   return byDate && typeof byDate === "object" ? byDate[userId] || null : null;
 }
 
-function setPresenceEntry(userId, dateKey, status, note) {
-  const nextStatus = status.trim();
-  const nextNote = note.trim();
+function setPresenceEntry(userId, dateKey, availability, startTime, endTime) {
+  const nextAvailability = normalizeAvailability(availability);
+  const nextStartTime = normalizeTimeValue(startTime);
+  const nextEndTime = normalizeTimeValue(endTime);
 
-  if (!nextStatus && !nextNote) {
+  if (!nextAvailability && !nextStartTime && !nextEndTime) {
     if (presencePlans[dateKey]) {
       delete presencePlans[dateKey][userId];
       if (Object.keys(presencePlans[dateKey]).length === 0) {
@@ -230,8 +355,10 @@ function setPresenceEntry(userId, dateKey, status, note) {
   }
 
   presencePlans[dateKey][userId] = {
-    status: nextStatus,
-    note: nextNote
+    availability: nextAvailability,
+    startTime: nextStartTime,
+    endTime: nextEndTime,
+    note: ""
   };
   savePresencePlans();
 }
@@ -412,6 +539,17 @@ function renderRoleOptions(target, roles) {
   });
 }
 
+function renderAvailabilityOptions(target) {
+  target.replaceChildren();
+
+  AVAILABILITY_OPTIONS.forEach((option) => {
+    const element = document.createElement("option");
+    element.value = option.value;
+    element.textContent = option.label;
+    target.appendChild(element);
+  });
+}
+
 function renderConfig(config) {
   document.title = config.appName;
   labName.textContent = config.labName;
@@ -419,6 +557,7 @@ function renderConfig(config) {
   tagline.textContent = config.tagline;
   loginDescription.textContent = config.loginDescription;
   renderRoleOptions(memberRoleSelect, config.userRoles);
+  renderAvailabilityOptions(presenceAvailabilitySelect);
 }
 
 function updateHash(categoryKey) {
@@ -582,37 +721,21 @@ function renderMemberTable() {
   });
 }
 
-function renderPresenceUserOptions() {
-  const selectedUserId = presenceUserSelect.value || currentUser?.id || "";
-  const orderedMembers = getOrderedMembers();
-
-  presenceUserSelect.replaceChildren();
-
-  orderedMembers.forEach((member) => {
-    const option = document.createElement("option");
-    option.value = member.id;
-    option.textContent = `${member.displayName} / ${member.role}`;
-    presenceUserSelect.appendChild(option);
-  });
-
-  if (orderedMembers.some((member) => member.id === selectedUserId)) {
-    presenceUserSelect.value = selectedUserId;
-  } else if (currentUser) {
-    presenceUserSelect.value = currentUser.id;
-  } else if (orderedMembers[0]) {
-    presenceUserSelect.value = orderedMembers[0].id;
-  }
-}
-
 function syncPresenceInputFields() {
-  const dateKey = presenceDateInput.value || getTodayDateKey();
-  const userId = presenceUserSelect.value;
-  const entry = getPresenceEntry(userId, dateKey);
+  if (!currentUser) {
+    return;
+  }
 
-  presenceStatusInput.value = entry?.status || "";
-  presenceNoteInput.value = entry?.note || "";
+  const dateKey = presenceDateInput.value || getTodayDateKey();
+  const entry = getPresenceEntry(currentUser.id, dateKey);
+
+  presenceOwnerText.textContent = `${currentUser.displayName} / ${currentUser.id}`;
+  presenceStartTimeInput.value = entry?.startTime || "";
+  presenceEndTimeInput.value = entry?.endTime || "";
+  presenceAvailabilitySelect.value = entry?.availability || DEFAULT_AVAILABILITY;
+  presenceSummaryPreview.value = buildPresencePreview(entry);
   presenceInputMessage.textContent = entry
-    ? "\u3053\u306e\u65e5\u306e\u5165\u529b\u304c\u3059\u3067\u306b\u4fdd\u5b58\u3055\u308c\u3066\u3044\u307e\u3059\u3002"
+    ? "\u3053\u306e\u65e5\u306e\u4e88\u5b9a\u304c\u3059\u3067\u306b\u4fdd\u5b58\u3055\u308c\u3066\u3044\u307e\u3059\u3002\u4fdd\u5b58\u3059\u308b\u3068\u4e0a\u66f8\u304d\u3055\u308c\u307e\u3059\u3002"
     : "\u5165\u529b\u3057\u305f\u5185\u5bb9\u306f\u5728\u5ba4\u7ba1\u7406\u306e\u6708\u6b21\u8868\u306b\u53cd\u6620\u3055\u308c\u307e\u3059\u3002";
 }
 
@@ -653,14 +776,23 @@ function renderPresenceBoard() {
       const cell = document.createElement("td");
       const entry = getPresenceEntry(member.id, day.key);
 
-      if (entry && entry.status) {
+      if (entry) {
+        const availability = getAvailabilityMeta(entry.availability) || getAvailabilityMeta("consult");
+        const wrapper = document.createElement("div");
         const badge = document.createElement("span");
-        badge.className = "presence-cell-value";
-        badge.textContent = entry.status;
-        if (entry.note) {
-          badge.title = entry.note;
-        }
-        cell.appendChild(badge);
+        const time = document.createElement("span");
+
+        wrapper.className = "presence-cell-entry";
+        wrapper.title = buildPresencePreview(entry);
+        badge.className = `presence-cell-value ${availability?.className || ""}`.trim();
+        badge.textContent = availability?.symbol || "\u25b3";
+        time.className = "presence-cell-time";
+        time.textContent = entry.startTime || entry.endTime
+          ? formatTimeRange(entry.startTime, entry.endTime)
+          : entry.note || "\u4e88\u5b9a\u3042\u308a";
+
+        wrapper.append(badge, time);
+        cell.appendChild(wrapper);
       } else {
         const empty = document.createElement("span");
         empty.className = "presence-cell-empty";
@@ -676,12 +808,11 @@ function renderPresenceBoard() {
 }
 
 function renderPresenceInput() {
-  renderPresenceUserOptions();
-
   if (!presenceDateInput.value) {
     presenceDateInput.value = getTodayDateKey();
   }
 
+  presenceAvailabilitySelect.value = presenceAvailabilitySelect.value || DEFAULT_AVAILABILITY;
   syncPresenceInputFields();
 }
 
@@ -879,10 +1010,6 @@ presenceNextButton.addEventListener("click", () => {
   renderPresenceBoard();
 });
 
-presenceUserSelect.addEventListener("change", () => {
-  syncPresenceInputFields();
-});
-
 presenceDateInput.addEventListener("change", () => {
   syncPresenceInputFields();
 });
@@ -891,47 +1018,63 @@ presenceInputForm.addEventListener("submit", (event) => {
   event.preventDefault();
 
   const dateKey = presenceDateInput.value;
-  const userId = presenceUserSelect.value;
-  const status = presenceStatusInput.value.trim();
-  const note = presenceNoteInput.value.trim();
+  const userId = currentUser?.id;
+  const startTime = presenceStartTimeInput.value;
+  const endTime = presenceEndTimeInput.value;
+  const availability = presenceAvailabilitySelect.value;
 
   if (!dateKey || !userId) {
     presenceInputMessage.textContent =
-      "\u65e5\u4ed8\u3068\u30e6\u30fc\u30b6\u30fc\u3092\u9078\u3093\u3067\u304f\u3060\u3055\u3044\u3002";
+      "\u65e5\u4ed8\u3092\u9078\u3093\u3067\u304f\u3060\u3055\u3044\u3002";
     return;
   }
 
-  if (!status) {
+  if (!startTime || !endTime) {
     presenceInputMessage.textContent =
-      "\u72b6\u6cc1\u306f\u77ed\u3044\u8a00\u8449\u3067\u5165\u529b\u3057\u3066\u304f\u3060\u3055\u3044\u3002";
+      "\u958b\u59cb\u6642\u9593\u3068\u7d42\u4e86\u6642\u9593\u3092\u5165\u529b\u3057\u3066\u304f\u3060\u3055\u3044\u3002";
     return;
   }
 
-  setPresenceEntry(userId, dateKey, status, note);
+  if (startTime >= endTime) {
+    presenceInputMessage.textContent =
+      "\u7d42\u4e86\u6642\u9593\u306f\u958b\u59cb\u6642\u9593\u3088\u308a\u5f8c\u306b\u8a2d\u5b9a\u3057\u3066\u304f\u3060\u3055\u3044\u3002";
+    return;
+  }
+
+  if (!availability) {
+    presenceInputMessage.textContent =
+      "\u5bfe\u5fdc\u53ef\u5426\u3092\u9078\u3093\u3067\u304f\u3060\u3055\u3044\u3002";
+    return;
+  }
+
+  setPresenceEntry(userId, dateKey, availability, startTime, endTime);
   presenceMonthKey = dateKey.slice(0, 7);
   presenceInputMessage.textContent =
-    "\u5165\u529b\u3092\u4fdd\u5b58\u3057\u307e\u3057\u305f\u3002\u5728\u5ba4\u7ba1\u7406\u306e\u6708\u6b21\u8868\u306b\u53cd\u6620\u3055\u308c\u307e\u3059\u3002";
+    "\u4e88\u5b9a\u3092\u4fdd\u5b58\u3057\u307e\u3057\u305f\u3002\u5728\u5ba4\u7ba1\u7406\u306e\u6708\u6b21\u8868\u306b\u53cd\u6620\u3055\u308c\u307e\u3059\u3002";
   renderPresenceBoard();
   syncPresenceInputFields();
 });
 
 presenceDeleteButton.addEventListener("click", () => {
   const dateKey = presenceDateInput.value;
-  const userId = presenceUserSelect.value;
+  const userId = currentUser?.id;
 
   if (!dateKey || !userId) {
     presenceInputMessage.textContent =
-      "\u524a\u9664\u3059\u308b\u306b\u306f\u3001\u65e5\u4ed8\u3068\u30e6\u30fc\u30b6\u30fc\u3092\u9078\u3093\u3067\u304f\u3060\u3055\u3044\u3002";
+      "\u524a\u9664\u3059\u308b\u65e5\u4ed8\u3092\u9078\u3093\u3067\u304f\u3060\u3055\u3044\u3002";
     return;
   }
 
-  setPresenceEntry(userId, dateKey, "", "");
-  presenceStatusInput.value = "";
-  presenceNoteInput.value = "";
+  setPresenceEntry(userId, dateKey, "", "", "");
+  presenceStartTimeInput.value = "";
+  presenceEndTimeInput.value = "";
+  presenceAvailabilitySelect.value = DEFAULT_AVAILABILITY;
+  presenceSummaryPreview.value = "";
   presenceMonthKey = dateKey.slice(0, 7);
   presenceInputMessage.textContent =
-    "\u3053\u306e\u65e5\u306e\u5165\u529b\u3092\u524a\u9664\u3057\u307e\u3057\u305f\u3002";
+    "\u3053\u306e\u65e5\u306e\u4e88\u5b9a\u3092\u524a\u9664\u3057\u307e\u3057\u305f\u3002";
   renderPresenceBoard();
+  syncPresenceInputFields();
 });
 
 memberForm.addEventListener("submit", (event) => {
