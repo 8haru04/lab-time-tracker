@@ -665,31 +665,32 @@ p {
   display: grid;
   place-content: center;
   justify-items: center;
-  gap: 24px;
+  gap: 20px;
   text-align: center;
 }
 
 .clock-now {
   display: grid;
-  gap: 8px;
+  gap: 10px;
   justify-items: center;
 }
 
 .clock-current-time {
-  font-size: clamp(3.6rem, 12vw, 7rem);
-  line-height: 0.9;
+  font-size: clamp(3rem, 10vw, 5.6rem);
+  line-height: 0.94;
   letter-spacing: 0.04em;
   font-variant-numeric: tabular-nums;
 }
 
 .clock-current-date {
-  font-size: 0.98rem;
+  font-size: 1.02rem;
+  letter-spacing: 0.04em;
 }
 
 .clock-status-line {
   width: min(520px, 100%);
   display: grid;
-  gap: 8px;
+  gap: 6px;
   justify-items: center;
 }
 
@@ -702,7 +703,7 @@ p {
 }
 
 .clock-status-text {
-  font-size: 1rem;
+  font-size: 0.98rem;
   font-weight: 700;
   color: var(--muted);
 }
