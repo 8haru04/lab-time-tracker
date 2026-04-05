@@ -1,4 +1,5 @@
 const STORAGE_KEY = "ergonomics-lab-permissions-v4";
+const ACTIVE_USER_KEY = "ergonomics-lab-active-user-v1";
 const CATEGORIES = [
   {
     key: "presence",
@@ -156,6 +157,18 @@ function loadStoredDirectory(config) {
 function saveDirectory() {
   const others = memberDirectory.filter((member) => !member.isOwner);
   window.localStorage.setItem(STORAGE_KEY, JSON.stringify(others));
+}
+
+function saveActiveUser(member) {
+  if (!member) {
+    return;
+  }
+
+  window.localStorage.setItem(ACTIVE_USER_KEY, member.id);
+}
+
+function clearActiveUser() {
+  window.localStorage.removeItem(ACTIVE_USER_KEY);
 }
 
 function isOwner(member) {
@@ -414,6 +427,24 @@ function renderWorkspace() {
   updateHash(activeCategory);
 }
 
+function restoreActiveUser() {
+  const activeUserId = window.localStorage.getItem(ACTIVE_USER_KEY);
+  if (!activeUserId) {
+    return false;
+  }
+
+  const member = findMemberById(activeUserId);
+  if (!member) {
+    clearActiveUser();
+    return false;
+  }
+
+  currentUser = member;
+  activeCategory = resolvePreferredCategory();
+  renderWorkspace();
+  return true;
+}
+
 function focusUserIdInput() {
   window.requestAnimationFrame(() => {
     userIdInput.focus();
@@ -422,7 +453,7 @@ function focusUserIdInput() {
 
 function resetLoginFormMessage() {
   loginMessage.textContent =
-    "\u30da\u30fc\u30b8\u3092\u958b\u304d\u76f4\u3057\u305f\u5834\u5408\u306f\u3001\u5229\u7528\u8005\u756a\u53f7\u3092\u3082\u3046\u4e00\u5ea6\u5165\u529b\u3057\u3066\u304f\u3060\u3055\u3044\u3002";
+    "\u5229\u7528\u8005\u756a\u53f7\u3092\u5165\u529b\u3057\u3066\u304f\u3060\u3055\u3044\u3002";
 }
 
 function resetToLogin() {
@@ -431,6 +462,7 @@ function resetToLogin() {
   workspaceView.hidden = true;
   authView.hidden = false;
   loginForm.reset();
+  clearActiveUser();
   history.replaceState(null, "", window.location.pathname);
   resetLoginFormMessage();
   focusUserIdInput();
@@ -491,6 +523,7 @@ loginForm.addEventListener("submit", (event) => {
 
   currentUser = member;
   activeCategory = resolvePreferredCategory();
+  saveActiveUser(member);
   renderWorkspace();
 });
 
@@ -557,7 +590,9 @@ async function init() {
   loginForm.reset();
   memberRoleSelect.value = appConfig.userRoles[0];
   resetLoginFormMessage();
-  focusUserIdInput();
+  if (!restoreActiveUser()) {
+    focusUserIdInput();
+  }
   await registerServiceWorker();
 }
 

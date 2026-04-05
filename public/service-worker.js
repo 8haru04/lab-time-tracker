@@ -1,5 +1,5 @@
-const SHELL_CACHE = "ergonomics-lab-shell-v3";
-const DATA_CACHE = "ergonomics-lab-data-v3";
+const SHELL_CACHE = "ergonomics-lab-shell-v4";
+const DATA_CACHE = "ergonomics-lab-data-v4";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -100,7 +100,7 @@ self.addEventListener("fetch", (event) => {
     event.request.destination === "style" ||
     event.request.destination === "manifest"
   ) {
-    event.respondWith(staleWhileRevalidate(event.request));
+    event.respondWith(networkFirst(event.request));
     return;
   }
 

@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>人間工学研究室 共有ツール</title>
-  <meta name="description" content="人間工学研究室の共有ツール">
+  <title>&#x4eba;&#x9593;&#x5de5;&#x5b66;&#x7814;&#x7a76;&#x5ba4; &#x5171;&#x6709;&#x30c4;&#x30fc;&#x30eb;</title>
+  <meta name="description" content="&#x4eba;&#x9593;&#x5de5;&#x5b66;&#x7814;&#x7a76;&#x5ba4;&#x306e;&#x5171;&#x6709;&#x30c4;&#x30fc;&#x30eb;">
   <meta name="theme-color" content="#191970">
   <meta name="robots" content="noindex, nofollow, noarchive">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="人間工学研究室">
+  <meta name="apple-mobile-web-app-title" content="&#x4eba;&#x9593;&#x5de5;&#x5b66;&#x7814;&#x7a76;&#x5ba4;">
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="icon" href="./icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./styles.css">
@@ -20,35 +20,35 @@
       <section class="auth-card" aria-labelledby="loginTitle">
         <div class="auth-orb" aria-hidden="true"></div>
         <p class="auth-label">Human Ergonomics Lab</p>
-        <h1 id="labName">人間工学研究室</h1>
+        <h1 id="labName">&#x4eba;&#x9593;&#x5de5;&#x5b66;&#x7814;&#x7a76;&#x5ba4;</h1>
         <p id="tagline" class="auth-copy">
-          研究室の在室管理、スケジュール管理、マイタスク、打刻を一つの入口から利用するための共有ツールです。
+          &#x7814;&#x7a76;&#x5ba4;&#x306e;&#x5728;&#x5ba4;&#x7ba1;&#x7406;&#x3001;&#x30b9;&#x30b1;&#x30b8;&#x30e5;&#x30fc;&#x30eb;&#x7ba1;&#x7406;&#x3001;&#x30de;&#x30a4;&#x30bf;&#x30b9;&#x30af;&#x3001;&#x6253;&#x523b;&#x3092;&#x4e00;&#x3064;&#x306e;&#x5165;&#x53e3;&#x304b;&#x3089;&#x5229;&#x7528;&#x3059;&#x308b;&#x305f;&#x3081;&#x306e;&#x5171;&#x6709;&#x30c4;&#x30fc;&#x30eb;&#x3067;&#x3059;&#x3002;
         </p>
 
         <div class="auth-form-block">
-          <h2 id="loginTitle">利用者番号でログイン</h2>
+          <h2 id="loginTitle">&#x5229;&#x7528;&#x8005;&#x756a;&#x53f7;&#x3067;&#x30ed;&#x30b0;&#x30a4;&#x30f3;</h2>
           <p id="loginDescription" class="auth-copy">
-            ページを開いたときは、利用者番号を入力してログインしてください。
+            &#x30da;&#x30fc;&#x30b8;&#x3092;&#x958b;&#x3044;&#x305f;&#x3068;&#x304d;&#x306f;&#x3001;&#x5229;&#x7528;&#x8005;&#x756a;&#x53f7;&#x3092;&#x5165;&#x529b;&#x3057;&#x3066;&#x30ed;&#x30b0;&#x30a4;&#x30f3;&#x3057;&#x3066;&#x304f;&#x3060;&#x3055;&#x3044;&#x3002;
           </p>
 
-          <form id="loginForm" class="login-form" novalidate autocomplete="off">
+          <form id="loginForm" class="login-form" novalidate autocomplete="on">
             <label class="field field-centered">
-              <span>利用者番号</span>
+              <span>&#x5229;&#x7528;&#x8005;&#x756a;&#x53f7;</span>
               <input
                 id="userIdInput"
                 type="text"
                 name="userId"
                 inputmode="numeric"
-                autocomplete="off"
-                placeholder="202304193"
+                autocomplete="username"
+                placeholder=""
               >
             </label>
 
-            <button class="primary-button" type="submit">ログイン</button>
+            <button class="primary-button" type="submit">&#x30ed;&#x30b0;&#x30a4;&#x30f3;</button>
           </form>
 
           <p id="loginMessage" class="helper-text">
-            ページを開き直した場合は、利用者番号をもう一度入力してください。
+            &#x5229;&#x7528;&#x8005;&#x756a;&#x53f7;&#x3092;&#x5165;&#x529b;&#x3057;&#x3066;&#x304f;&#x3060;&#x3055;&#x3044;&#x3002;
           </p>
         </div>
       </section>
@@ -58,19 +58,19 @@
       <aside class="sidebar">
         <div class="sidebar-card">
           <p class="sidebar-label">Workspace</p>
-          <h2 id="sidebarLabName">人間工学研究室</h2>
+          <h2 id="sidebarLabName">&#x4eba;&#x9593;&#x5de5;&#x5b66;&#x7814;&#x7a76;&#x5ba4;</h2>
           <p id="sidebarUserText" class="sidebar-copy"></p>
         </div>
 
-        <nav id="workspaceNav" class="sidebar-nav" aria-label="カテゴリ一覧"></nav>
-        <button id="logoutButton" class="secondary-button" type="button">ログアウト</button>
+        <nav id="workspaceNav" class="sidebar-nav" aria-label="&#x30ab;&#x30c6;&#x30b4;&#x30ea;&#x4e00;&#x89a7;"></nav>
+        <button id="logoutButton" class="secondary-button" type="button">&#x30ed;&#x30b0;&#x30a2;&#x30a6;&#x30c8;</button>
       </aside>
 
       <section class="workspace-main">
         <header class="workspace-header">
           <div class="workspace-heading">
             <p class="workspace-label">Category</p>
-            <h2 id="workspaceTitle">在室管理</h2>
+            <h2 id="workspaceTitle">&#x5728;&#x5ba4;&#x7ba1;&#x7406;</h2>
             <p id="workspaceDescription" class="workspace-copy"></p>
           </div>
           <span id="currentUserBadge" class="user-badge"></span>
@@ -79,33 +79,33 @@
         <section class="workspace-stage">
           <article id="view-presence" class="workspace-view">
             <section class="view-card">
-              <p class="view-label">在室管理</p>
-              <h3>在室管理画面</h3>
-              <p class="view-copy">このカテゴリの内容は、次の指示に合わせて個別に実装します。</p>
+              <p class="view-label">&#x5728;&#x5ba4;&#x7ba1;&#x7406;</p>
+              <h3>&#x5728;&#x5ba4;&#x7ba1;&#x7406;&#x753b;&#x9762;</h3>
+              <p class="view-copy">&#x3053;&#x306e;&#x30ab;&#x30c6;&#x30b4;&#x30ea;&#x306e;&#x5185;&#x5bb9;&#x306f;&#x3001;&#x6b21;&#x306e;&#x6307;&#x793a;&#x306b;&#x5408;&#x308f;&#x305b;&#x3066;&#x500b;&#x5225;&#x306b;&#x5b9f;&#x88c5;&#x3057;&#x307e;&#x3059;&#x3002;</p>
             </section>
           </article>
 
           <article id="view-schedule" class="workspace-view" hidden>
             <section class="view-card">
-              <p class="view-label">スケジュール管理</p>
-              <h3>スケジュール管理画面</h3>
-              <p class="view-copy">このカテゴリの内容は、次の指示に合わせて個別に実装します。</p>
+              <p class="view-label">&#x30b9;&#x30b1;&#x30b8;&#x30e5;&#x30fc;&#x30eb;&#x7ba1;&#x7406;</p>
+              <h3>&#x30b9;&#x30b1;&#x30b8;&#x30e5;&#x30fc;&#x30eb;&#x7ba1;&#x7406;&#x753b;&#x9762;</h3>
+              <p class="view-copy">&#x3053;&#x306e;&#x30ab;&#x30c6;&#x30b4;&#x30ea;&#x306e;&#x5185;&#x5bb9;&#x306f;&#x3001;&#x6b21;&#x306e;&#x6307;&#x793a;&#x306b;&#x5408;&#x308f;&#x305b;&#x3066;&#x500b;&#x5225;&#x306b;&#x5b9f;&#x88c5;&#x3057;&#x307e;&#x3059;&#x3002;</p>
             </section>
           </article>
 
           <article id="view-tasks" class="workspace-view" hidden>
             <section class="view-card">
-              <p class="view-label">マイタスク</p>
-              <h3>マイタスク画面</h3>
-              <p class="view-copy">このカテゴリの内容は、次の指示に合わせて個別に実装します。</p>
+              <p class="view-label">&#x30de;&#x30a4;&#x30bf;&#x30b9;&#x30af;</p>
+              <h3>&#x30de;&#x30a4;&#x30bf;&#x30b9;&#x30af;&#x753b;&#x9762;</h3>
+              <p class="view-copy">&#x3053;&#x306e;&#x30ab;&#x30c6;&#x30b4;&#x30ea;&#x306e;&#x5185;&#x5bb9;&#x306f;&#x3001;&#x6b21;&#x306e;&#x6307;&#x793a;&#x306b;&#x5408;&#x308f;&#x305b;&#x3066;&#x500b;&#x5225;&#x306b;&#x5b9f;&#x88c5;&#x3057;&#x307e;&#x3059;&#x3002;</p>
             </section>
           </article>
 
           <article id="view-clock" class="workspace-view" hidden>
             <section class="view-card">
-              <p class="view-label">打刻</p>
-              <h3>打刻画面</h3>
-              <p class="view-copy">このカテゴリの内容は、次の指示に合わせて個別に実装します。</p>
+              <p class="view-label">&#x6253;&#x523b;</p>
+              <h3>&#x6253;&#x523b;&#x753b;&#x9762;</h3>
+              <p class="view-copy">&#x3053;&#x306e;&#x30ab;&#x30c6;&#x30b4;&#x30ea;&#x306e;&#x5185;&#x5bb9;&#x306f;&#x3001;&#x6b21;&#x306e;&#x6307;&#x793a;&#x306b;&#x5408;&#x308f;&#x305b;&#x3066;&#x500b;&#x5225;&#x306b;&#x5b9f;&#x88c5;&#x3057;&#x307e;&#x3059;&#x3002;</p>
             </section>
           </article>
 
@@ -113,8 +113,8 @@
             <div class="settings-layout">
               <section class="panel">
                 <div class="panel-head">
-                  <p class="view-label">現在のユーザー</p>
-                  <h3>ログイン情報</h3>
+                  <p class="view-label">&#x73fe;&#x5728;&#x306e;&#x30e6;&#x30fc;&#x30b6;&#x30fc;</p>
+                  <h3>&#x30ed;&#x30b0;&#x30a4;&#x30f3;&#x60c5;&#x5831;</h3>
                 </div>
                 <div id="currentUserCard" class="info-grid"></div>
                 <div id="permissionSummary" class="chip-list"></div>
@@ -122,46 +122,46 @@
 
               <section class="panel">
                 <div class="panel-head">
-                  <p class="view-label">権限管理</p>
-                  <h3>管理者メモ</h3>
+                  <p class="view-label">&#x6a29;&#x9650;&#x7ba1;&#x7406;</p>
+                  <h3>&#x7ba1;&#x7406;&#x8005;&#x30e1;&#x30e2;</h3>
                 </div>
                 <p id="settingsNotice" class="view-copy"></p>
               </section>
 
               <section id="adminSection" class="panel" hidden>
                 <div class="panel-head">
-                  <p class="view-label">ユーザー追加</p>
-                  <h3>新しいユーザーを登録</h3>
+                  <p class="view-label">&#x30e6;&#x30fc;&#x30b6;&#x30fc;&#x8ffd;&#x52a0;</p>
+                  <h3>&#x65b0;&#x3057;&#x3044;&#x30e6;&#x30fc;&#x30b6;&#x30fc;&#x3092;&#x767b;&#x9332;</h3>
                 </div>
 
                 <form id="memberForm" class="form-stack">
                   <label class="field">
-                    <span>表示名</span>
-                    <input id="memberNameInput" type="text" name="displayName" placeholder="例: 学部4年A">
+                    <span>&#x8868;&#x793a;&#x540d;</span>
+                    <input id="memberNameInput" type="text" name="displayName" placeholder="">
                   </label>
 
                   <label class="field">
-                    <span>利用者番号</span>
-                    <input id="memberIdInput" type="text" name="memberId" inputmode="numeric" placeholder="例: 202399999">
+                    <span>&#x5229;&#x7528;&#x8005;&#x756a;&#x53f7;</span>
+                    <input id="memberIdInput" type="text" name="memberId" inputmode="numeric" placeholder="">
                   </label>
 
                   <label class="field">
-                    <span>ユーザー区分</span>
+                    <span>&#x30e6;&#x30fc;&#x30b6;&#x30fc;&#x533a;&#x5206;</span>
                     <select id="memberRoleSelect" name="memberRole"></select>
                   </label>
 
-                  <button class="primary-button" type="submit">ユーザーを追加</button>
+                  <button class="primary-button" type="submit">&#x30e6;&#x30fc;&#x30b6;&#x30fc;&#x3092;&#x8ffd;&#x52a0;</button>
                 </form>
 
                 <p id="memberFormMessage" class="helper-text">
-                  追加したユーザーの権限は、下の一覧で個別に設定します。
+                  &#x8ffd;&#x52a0;&#x3057;&#x305f;&#x30e6;&#x30fc;&#x30b6;&#x30fc;&#x306e;&#x6a29;&#x9650;&#x306f;&#x3001;&#x4e0b;&#x306e;&#x4e00;&#x89a7;&#x3067;&#x500b;&#x5225;&#x306b;&#x8a2d;&#x5b9a;&#x3057;&#x307e;&#x3059;&#x3002;
                 </p>
               </section>
 
               <section id="memberSection" class="panel" hidden>
                 <div class="panel-head">
-                  <p class="view-label">ユーザー権限</p>
-                  <h3>カテゴリごとの権限一覧</h3>
+                  <p class="view-label">&#x30e6;&#x30fc;&#x30b6;&#x30fc;&#x6a29;&#x9650;</p>
+                  <h3>&#x30ab;&#x30c6;&#x30b4;&#x30ea;&#x3054;&#x3068;&#x306e;&#x6a29;&#x9650;&#x4e00;&#x89a7;</h3>
                 </div>
                 <div id="memberTable" class="member-table" aria-live="polite"></div>
               </section>
@@ -170,9 +170,9 @@
 
           <article id="view-empty" class="workspace-view" hidden>
             <section class="view-card view-card-empty">
-              <p class="view-label">権限待ち</p>
-              <h3>利用できるカテゴリがありません</h3>
-              <p class="view-copy">管理者がカテゴリ権限を付与すると、この画面から利用を開始できます。</p>
+              <p class="view-label">&#x6a29;&#x9650;&#x5f85;&#x3061;</p>
+              <h3>&#x5229;&#x7528;&#x3067;&#x304d;&#x308b;&#x30ab;&#x30c6;&#x30b4;&#x30ea;&#x304c;&#x3042;&#x308a;&#x307e;&#x305b;&#x3093;</h3>
+              <p class="view-copy">&#x7ba1;&#x7406;&#x8005;&#x304c;&#x30ab;&#x30c6;&#x30b4;&#x30ea;&#x6a29;&#x9650;&#x3092;&#x4ed8;&#x4e0e;&#x3059;&#x308b;&#x3068;&#x3001;&#x3053;&#x306e;&#x753b;&#x9762;&#x304b;&#x3089;&#x5229;&#x7528;&#x3092;&#x958b;&#x59cb;&#x3067;&#x304d;&#x307e;&#x3059;&#x3002;</p>
             </section>
           </article>
         </section>
