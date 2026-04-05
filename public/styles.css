@@ -1,4 +1,5 @@
 :root {
+  color-scheme: dark;
   --bg: #191970;
   --bg-deep: #0a1028;
   --panel: rgba(14, 20, 45, 0.76);
@@ -7,6 +8,10 @@
   --muted: #bbc5e6;
   --accent: #e8c07d;
   --accent-strong: #f4d298;
+  --control-bg: rgba(6, 12, 30, 0.92);
+  --control-bg-focus: rgba(10, 18, 42, 0.96);
+  --control-line: rgba(255, 255, 255, 0.18);
+  --control-text: #f8faff;
   --shadow: 0 24px 70px rgba(0, 0, 0, 0.32);
   --radius-xl: 32px;
   --radius-lg: 24px;
@@ -183,14 +188,15 @@ p {
 .field input,
 .field select {
   width: 100%;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 1px solid var(--control-line);
   border-radius: var(--radius-md);
   padding: 15px 18px;
-  color: var(--text);
-  background: rgba(255, 255, 255, 0.08);
+  color: var(--control-text);
+  background: var(--control-bg);
   outline: none;
   transition: border-color 140ms ease, box-shadow 140ms ease, background 140ms ease;
   appearance: none;
+  caret-color: var(--accent-strong);
 }
 
 .field-centered input {
@@ -200,18 +206,33 @@ p {
 }
 
 .field input::placeholder {
-  color: rgba(244, 247, 255, 0.72);
+  color: rgba(244, 247, 255, 0.56);
 }
 
 .field select {
-  color: rgba(244, 247, 255, 0.88);
+  color: var(--control-text);
 }
 
 .field input:focus,
 .field select:focus {
   border-color: rgba(232, 192, 125, 0.62);
   box-shadow: 0 0 0 4px rgba(232, 192, 125, 0.14);
-  background: rgba(255, 255, 255, 0.11);
+  background: var(--control-bg-focus);
+}
+
+.field select option,
+.field select optgroup {
+  color: var(--control-text);
+  background: #101936;
+}
+
+.field input[type="date"] {
+  color-scheme: dark;
+}
+
+.field input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(1.2);
+  opacity: 0.88;
 }
 
 .primary-button,
