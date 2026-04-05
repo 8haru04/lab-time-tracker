@@ -2,6 +2,7 @@ const STORAGE_KEY = "ergonomics-lab-permissions-v4";
 const ACTIVE_USER_KEY = "ergonomics-lab-active-user-v1";
 const DISPLAY_NAME_OVERRIDES_KEY = "ergonomics-lab-display-names-v1";
 const PRESENCE_PLANS_KEY = "ergonomics-lab-presence-plans-v1";
+const CLOCK_RECORDS_KEY = "ergonomics-lab-clock-records-v1";
 const CATEGORIES = [
   {
     key: "presence",
@@ -180,6 +181,9 @@ const presenceDeleteButton = document.getElementById("presenceDeleteButton");
 const presenceInputMessage = document.getElementById("presenceInputMessage");
 const scheduleTableHead = document.getElementById("scheduleTableHead");
 const scheduleTableBody = document.getElementById("scheduleTableBody");
+const clockStatusText = document.getElementById("clockStatusText");
+const clockStatusSubtext = document.getElementById("clockStatusSubtext");
+const clockActionButtons = document.getElementById("clockActionButtons");
 const currentUserCard = document.getElementById("currentUserCard");
 const permissionSummary = document.getElementById("permissionSummary");
 const settingsNotice = document.getElementById("settingsNotice");
@@ -201,6 +205,7 @@ let displayNameStatusMessage =
   "\u8868\u793a\u540d\u306f\u3053\u306e\u7aef\u672b\u306e\u30ed\u30b0\u30a4\u30f3\u60c5\u5831\u3068\u4e00\u7dd2\u306b\u4fdd\u5b58\u3055\u308c\u307e\u3059\u3002";
 let presencePlans = {};
 let presenceMonthKey = "";
+let clockRecords = {};
 
 function loadDisplayNameOverrides() {
   try {
@@ -211,6 +216,21 @@ function loadDisplayNameOverrides() {
     console.warn("Could not load display name overrides. Using defaults.", error);
     return {};
   }
+}
+
+function loadClockRecords() {
+  try {
+    const raw = window.localStorage.getItem(CLOCK_RECORDS_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch (error) {
+    console.warn("Could not load clock records. Using defaults.", error);
+    return {};
+  }
+}
+
+function saveClockRecords() {
+  window.localStorage.setItem(CLOCK_RECORDS_KEY, JSON.stringify(clockRecords));
 }
 
 function saveDisplayNameOverrides() {
@@ -224,6 +244,103 @@ function padNumber(value) {
 function normalizeTimeValue(value) {
   const text = typeof value === "string" ? value.trim() : "";
   return /^\d{2}:\d{2}$/.test(text) ? text : "";
+}
+
+function formatDateTime(date) {
+  return new Intl.DateTimeFormat("ja-JP", {
+    month: "numeric",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(date);
+}
+
+function normalizeClockRecord(rawRecord) {
+  if (!rawRecord || typeof rawRecord !== "object") {
+    return {
+      status: "out",
+      lastActionType: "",
+      lastActionAt: ""
+    };
+  }
+
+  const allowed = ["out", "in", "break"];
+  const status = allowed.includes(rawRecord.status) ? rawRecord.status : "out";
+  const lastActionType = typeof rawRecord.lastActionType === "string" ? rawRecord.lastActionType : "";
+  const lastActionAt = typeof rawRecord.lastActionAt === "string" ? rawRecord.lastActionAt : "";
+
+  return {
+    status,
+    lastActionType,
+    lastActionAt
+  };
+}
+
+function getClockRecord(userId) {
+  return normalizeClockRecord(clockRecords[userId]);
+}
+
+function setClockRecord(userId, status, actionType) {
+  clockRecords[userId] = {
+    status,
+    lastActionType: actionType,
+    lastActionAt: new Date().toISOString()
+  };
+  saveClockRecords();
+}
+
+function getClockStatusMeta(status) {
+  switch (status) {
+    case "in":
+      return {
+        title: "\u5165\u5ba4\u4e2d",
+        subtext: "\u9000\u5ba4\u307e\u305f\u306f\u4f11\u61a9\u3092\u9078\u3079\u307e\u3059\u3002"
+      };
+    case "break":
+      return {
+        title: "\u4f11\u61a9\u4e2d",
+        subtext: "\u4f11\u61a9\u304c\u7d42\u308f\u3063\u305f\u3089\u4f11\u61a9\u7d42\u4e86\u3092\u62bc\u3057\u307e\u3059\u3002"
+      };
+    default:
+      return {
+        title: "\u9000\u5ba4\u4e2d",
+        subtext: "\u5165\u5ba4\u3059\u308b\u3068\u3001\u9000\u5ba4\u3068\u4f11\u61a9\u304c\u9078\u3079\u308b\u3088\u3046\u306b\u306a\u308a\u307e\u3059\u3002"
+      };
+  }
+}
+
+function getClockActionLabel(actionType) {
+  switch (actionType) {
+    case "checkin":
+      return "\u5165\u5ba4";
+    case "checkout":
+      return "\u9000\u5ba4";
+    case "breakStart":
+      return "\u4f11\u61a9";
+    case "breakEnd":
+      return "\u4f11\u61a9\u7d42\u4e86";
+    default:
+      return "";
+  }
+}
+
+function buildClockActions(status) {
+  if (status === "in") {
+    return [
+      { label: "\u9000\u5ba4", actionType: "checkout", nextStatus: "out", tone: "secondary" },
+      { label: "\u4f11\u61a9", actionType: "breakStart", nextStatus: "break", tone: "primary" }
+    ];
+  }
+
+  if (status === "break") {
+    return [
+      { label: "\u4f11\u61a9\u7d42\u4e86", actionType: "breakEnd", nextStatus: "in", tone: "primary" }
+    ];
+  }
+
+  return [
+    { label: "\u5165\u5ba4", actionType: "checkin", nextStatus: "in", tone: "primary" }
+  ];
 }
 
 function getAvailabilityMeta(value) {
@@ -920,6 +1037,36 @@ function renderScheduleBoard() {
   });
 }
 
+function renderClockView() {
+  if (!currentUser) {
+    return;
+  }
+
+  const record = getClockRecord(currentUser.id);
+  const statusMeta = getClockStatusMeta(record.status);
+  const actions = buildClockActions(record.status);
+
+  clockStatusText.textContent = statusMeta.title;
+  clockStatusSubtext.textContent = record.lastActionAt
+    ? `${getClockActionLabel(record.lastActionType)} / ${formatDateTime(new Date(record.lastActionAt))}`
+    : statusMeta.subtext;
+
+  clockActionButtons.replaceChildren();
+  clockActionButtons.className = `clock-actions${actions.length === 1 ? " is-single" : ""}`;
+
+  actions.forEach((action) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `clock-button ${action.tone === "secondary" ? "clock-button-secondary" : "clock-button-primary"}`;
+    button.textContent = action.label;
+    button.addEventListener("click", () => {
+      setClockRecord(currentUser.id, action.nextStatus, action.actionType);
+      renderClockView();
+    });
+    clockActionButtons.appendChild(button);
+  });
+}
+
 function renderSettings() {
   renderCurrentUserSummary();
 
@@ -952,6 +1099,10 @@ function renderViews() {
 
   if (activeCategory === "schedule") {
     renderScheduleBoard();
+  }
+
+  if (activeCategory === "clock") {
+    renderClockView();
   }
 
   if (activeCategory === "settings") {
@@ -1245,6 +1396,7 @@ async function init() {
   appConfig = await loadConfig();
   displayNameOverrides = loadDisplayNameOverrides();
   presencePlans = loadPresencePlans();
+  clockRecords = loadClockRecords();
   presenceMonthKey = getMonthKey(new Date());
   memberDirectory = loadStoredDirectory(appConfig);
   renderConfig(appConfig);

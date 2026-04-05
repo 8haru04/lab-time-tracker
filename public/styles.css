@@ -663,6 +663,76 @@ p {
   font-weight: 700;
 }
 
+.clock-shell {
+  min-height: 100%;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 24px;
+  text-align: center;
+}
+
+.clock-status-card {
+  width: min(520px, 100%);
+  padding: 24px;
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.05);
+  display: grid;
+  gap: 10px;
+}
+
+.clock-status-label {
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.clock-status-card h4 {
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  line-height: 1;
+}
+
+.clock-actions {
+  width: min(760px, 100%);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.clock-actions.is-single {
+  grid-template-columns: minmax(0, 1fr);
+  width: min(420px, 100%);
+}
+
+.clock-button {
+  min-height: 148px;
+  padding: 24px;
+  border-radius: 32px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: clamp(1.5rem, 3vw, 2.3rem);
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease, background 140ms ease;
+}
+
+.clock-button:hover {
+  transform: translateY(-2px);
+}
+
+.clock-button-primary {
+  color: #11182f;
+  background: linear-gradient(135deg, var(--accent-strong) 0%, var(--accent) 100%);
+  box-shadow: 0 18px 40px rgba(232, 192, 125, 0.2);
+}
+
+.clock-button-secondary {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.08);
+}
+
 .view-card-empty {
   place-content: center;
   text-align: center;
@@ -774,6 +844,11 @@ p {
     grid-template-columns: 1fr;
     display: grid;
   }
+
+  .clock-actions,
+  .clock-actions.is-single {
+    width: 100%;
+  }
 }
 
 @media (max-width: 720px) {
@@ -793,7 +868,12 @@ p {
   .info-grid,
   .permission-grid,
   .presence-input-grid,
-  .presence-actions {
+  .presence-actions,
+  .clock-actions {
     grid-template-columns: 1fr;
+  }
+
+  .clock-button {
+    min-height: 110px;
   }
 }
