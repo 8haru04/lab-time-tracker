@@ -4,6 +4,7 @@ const DISPLAY_NAME_OVERRIDES_KEY = "ergonomics-lab-display-names-v1";
 const PRESENCE_PLANS_KEY = "ergonomics-lab-presence-plans-v1";
 const CLOCK_RECORDS_KEY = "ergonomics-lab-clock-records-v1";
 const CLOCK_LOGS_KEY = "ergonomics-lab-clock-logs-v1";
+const TASKS_STORAGE_KEY = "ergonomics-lab-my-tasks-v1";
 const CATEGORIES = [
   {
     key: "presence",
@@ -182,6 +183,13 @@ const presenceDeleteButton = document.getElementById("presenceDeleteButton");
 const presenceInputMessage = document.getElementById("presenceInputMessage");
 const scheduleTableHead = document.getElementById("scheduleTableHead");
 const scheduleTableBody = document.getElementById("scheduleTableBody");
+const taskOwnerText = document.getElementById("taskOwnerText");
+const taskForm = document.getElementById("taskForm");
+const taskTitleInput = document.getElementById("taskTitleInput");
+const taskDueDateInput = document.getElementById("taskDueDateInput");
+const taskNoteInput = document.getElementById("taskNoteInput");
+const taskFormMessage = document.getElementById("taskFormMessage");
+const taskList = document.getElementById("taskList");
 const clockCurrentTime = document.getElementById("clockCurrentTime");
 const clockCurrentDate = document.getElementById("clockCurrentDate");
 const clockMonthTotalValue = document.getElementById("clockMonthTotalValue");
@@ -217,6 +225,7 @@ let presencePlans = {};
 let presenceMonthKey = "";
 let clockRecords = {};
 let clockLogs = {};
+let myTasks = {};
 
 function loadDisplayNameOverrides() {
   try {
@@ -259,6 +268,21 @@ function saveClockLogs() {
   window.localStorage.setItem(CLOCK_LOGS_KEY, JSON.stringify(clockLogs));
 }
 
+function loadMyTasks() {
+  try {
+    const raw = window.localStorage.getItem(TASKS_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch (error) {
+    console.warn("Could not load my tasks. Using defaults.", error);
+    return {};
+  }
+}
+
+function saveMyTasks() {
+  window.localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(myTasks));
+}
+
 function saveDisplayNameOverrides() {
   window.localStorage.setItem(DISPLAY_NAME_OVERRIDES_KEY, JSON.stringify(displayNameOverrides));
 }
@@ -286,6 +310,20 @@ function formatDate(date) {
     year: "numeric",
     month: "numeric",
     day: "numeric"
+  }).format(date);
+}
+
+function formatDateKey(dateKey) {
+  if (!dateKey) {
+    return "\u671f\u65e5\u672a\u8a2d\u5b9a";
+  }
+
+  const [year, month, day] = dateKey.split("-").map(Number);
+  const date = new Date(year, month - 1, day);
+  return new Intl.DateTimeFormat("ja-JP", {
+    month: "numeric",
+    day: "numeric",
+    weekday: "short"
   }).format(date);
 }
 
@@ -683,6 +721,97 @@ function normalizeAvailability(value) {
 
 function toDateKey(date) {
   return `${date.getFullYear()}-${padNumber(date.getMonth() + 1)}-${padNumber(date.getDate())}`;
+}
+
+function getTaskOwnerTasks(userId) {
+  const rawTasks = Array.isArray(myTasks[userId]) ? myTasks[userId] : [];
+
+  return rawTasks
+    .filter((task) => task && typeof task === "object" && typeof task.id === "string")
+    .map((task) => ({
+      id: task.id,
+      title: typeof task.title === "string" ? task.title.trim() : "",
+      dueDate: typeof task.dueDate === "string" ? task.dueDate : "",
+      note: typeof task.note === "string" ? task.note.trim() : "",
+      createdAt: typeof task.createdAt === "string" ? task.createdAt : ""
+    }))
+    .filter((task) => task.title);
+}
+
+function sortTasksByDueDate(tasks) {
+  return [...tasks].sort((left, right) => {
+    if (left.dueDate && right.dueDate && left.dueDate !== right.dueDate) {
+      return left.dueDate.localeCompare(right.dueDate);
+    }
+
+    if (left.dueDate && !right.dueDate) {
+      return -1;
+    }
+
+    if (!left.dueDate && right.dueDate) {
+      return 1;
+    }
+
+    if (left.createdAt && right.createdAt && left.createdAt !== right.createdAt) {
+      return left.createdAt.localeCompare(right.createdAt);
+    }
+
+    return left.title.localeCompare(right.title, "ja");
+  });
+}
+
+function addTaskForUser(userId, title, dueDate, note) {
+  if (!Array.isArray(myTasks[userId])) {
+    myTasks[userId] = [];
+  }
+
+  myTasks[userId].push({
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    title,
+    dueDate,
+    note,
+    createdAt: new Date().toISOString()
+  });
+
+  saveMyTasks();
+}
+
+function deleteTaskForUser(userId, taskId) {
+  if (!Array.isArray(myTasks[userId])) {
+    return;
+  }
+
+  myTasks[userId] = myTasks[userId].filter((task) => task.id !== taskId);
+  saveMyTasks();
+}
+
+function getTaskDueState(dueDate) {
+  if (!dueDate) {
+    return {
+      className: "",
+      label: "\u671f\u65e5\u672a\u8a2d\u5b9a"
+    };
+  }
+
+  const today = getTodayDateKey();
+  if (dueDate < today) {
+    return {
+      className: "is-overdue",
+      label: "\u671f\u65e5\u8d85\u904e"
+    };
+  }
+
+  if (dueDate === today) {
+    return {
+      className: "is-today",
+      label: "\u4eca\u65e5\u304c\u671f\u65e5"
+    };
+  }
+
+  return {
+    className: "is-upcoming",
+    label: "\u671f\u65e5\u9806"
+  };
 }
 
 function getTodayDateKey() {
@@ -1368,6 +1497,51 @@ function renderScheduleBoard() {
   });
 }
 
+function createTaskCard(task) {
+  const card = document.createElement("article");
+  const dueState = getTaskDueState(task.dueDate);
+
+  card.className = "task-card";
+  card.innerHTML = `
+    <div class="task-card-head">
+      <div>
+        <strong class="task-card-title">${task.title}</strong>
+        <p class="task-card-date">${formatDateKey(task.dueDate)}</p>
+      </div>
+      <span class="task-chip ${dueState.className}">${dueState.label}</span>
+    </div>
+    ${task.note ? `<p class="task-card-note">${task.note}</p>` : ""}
+    <div class="task-card-actions">
+      <button class="secondary-button task-delete-button" type="button" data-task-id="${task.id}">&#x524a;&#x9664;</button>
+    </div>
+  `;
+
+  return card;
+}
+
+function renderTasksView() {
+  if (!currentUser) {
+    return;
+  }
+
+  const tasks = sortTasksByDueDate(getTaskOwnerTasks(currentUser.id));
+
+  taskOwnerText.textContent = `${currentUser.displayName} / ${currentUser.id} \u306e\u30bf\u30b9\u30af\u3092\u8868\u793a\u3057\u3066\u3044\u307e\u3059\u3002`;
+  taskList.replaceChildren();
+
+  if (tasks.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "task-empty";
+    empty.textContent = "\u307e\u3060\u30bf\u30b9\u30af\u304c\u3042\u308a\u307e\u305b\u3093\u3002\u53f3\u306e\u5165\u529b\u304b\u3089\u8ffd\u52a0\u3067\u304d\u307e\u3059\u3002";
+    taskList.appendChild(empty);
+    return;
+  }
+
+  tasks.forEach((task) => {
+    taskList.appendChild(createTaskCard(task));
+  });
+}
+
 function renderClockView() {
   if (!currentUser) {
     return;
@@ -1461,6 +1635,10 @@ function renderViews() {
 
   if (activeCategory === "schedule") {
     renderScheduleBoard();
+  }
+
+  if (activeCategory === "tasks") {
+    renderTasksView();
   }
 
   if (activeCategory === "clock") {
@@ -1746,6 +1924,39 @@ clockExportButton.addEventListener("click", () => {
   downloadClockCsv();
 });
 
+taskForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+
+  if (!currentUser) {
+    return;
+  }
+
+  const title = taskTitleInput.value.trim();
+  const dueDate = taskDueDateInput.value;
+  const note = taskNoteInput.value.trim();
+
+  if (!title) {
+    taskFormMessage.textContent = "\u30bf\u30b9\u30af\u540d\u3092\u5165\u529b\u3057\u3066\u304f\u3060\u3055\u3044\u3002";
+    return;
+  }
+
+  addTaskForUser(currentUser.id, title, dueDate, note);
+  taskForm.reset();
+  taskFormMessage.textContent = "\u30bf\u30b9\u30af\u3092\u8ffd\u52a0\u3057\u307e\u3057\u305f\u3002";
+  renderTasksView();
+});
+
+taskList.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-task-id]");
+  if (!button || !currentUser) {
+    return;
+  }
+
+  deleteTaskForUser(currentUser.id, button.dataset.taskId);
+  taskFormMessage.textContent = "\u30bf\u30b9\u30af\u3092\u524a\u9664\u3057\u307e\u3057\u305f\u3002";
+  renderTasksView();
+});
+
 window.addEventListener("hashchange", () => {
   if (!currentUser) {
     return;
@@ -1765,6 +1976,7 @@ async function init() {
   presencePlans = loadPresencePlans();
   clockRecords = loadClockRecords();
   clockLogs = loadClockLogs();
+  myTasks = loadMyTasks();
   presenceMonthKey = getMonthKey(new Date());
   memberDirectory = loadStoredDirectory(appConfig);
   renderConfig(appConfig);

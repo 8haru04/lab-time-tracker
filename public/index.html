@@ -194,9 +194,58 @@
 
           <article id="view-tasks" class="workspace-view" hidden>
             <section class="view-card">
-              <p class="view-label">&#x30de;&#x30a4;&#x30bf;&#x30b9;&#x30af;</p>
-              <h3>&#x30de;&#x30a4;&#x30bf;&#x30b9;&#x30af;&#x753b;&#x9762;</h3>
-              <p class="view-copy">&#x3053;&#x306e;&#x30ab;&#x30c6;&#x30b4;&#x30ea;&#x306e;&#x5185;&#x5bb9;&#x306f;&#x3001;&#x6b21;&#x306e;&#x6307;&#x793a;&#x306b;&#x5408;&#x308f;&#x305b;&#x3066;&#x500b;&#x5225;&#x306b;&#x5b9f;&#x88c5;&#x3057;&#x307e;&#x3059;&#x3002;</p>
+              <div class="tasks-shell">
+                <div class="tasks-header">
+                  <div>
+                    <p class="view-label">&#x30de;&#x30a4;&#x30bf;&#x30b9;&#x30af;</p>
+                    <h3>&#x671f;&#x65e5;&#x9806;&#x306e;&#x500b;&#x4eba;&#x30bf;&#x30b9;&#x30af;</h3>
+                    <p class="view-copy">&#x5165;&#x529b;&#x3057;&#x305f;&#x30bf;&#x30b9;&#x30af;&#x306f;&#x3001;&#x671f;&#x65e5;&#x304c;&#x8fd1;&#x3044;&#x3082;&#x306e;&#x304b;&#x3089;&#x4e0a;&#x306b;&#x8868;&#x793a;&#x3055;&#x308c;&#x307e;&#x3059;&#x3002;</p>
+                  </div>
+                  <div class="info-box tasks-summary-card">
+                    <strong>&#x8868;&#x793a;&#x5bfe;&#x8c61;</strong>
+                    <small id="taskOwnerText">&#x30ed;&#x30b0;&#x30a4;&#x30f3;&#x4e2d;&#x306e;&#x30e6;&#x30fc;&#x30b6;&#x30fc;&#x306e;&#x30bf;&#x30b9;&#x30af;&#x3060;&#x3051;&#x3092;&#x8868;&#x793a;&#x3057;&#x307e;&#x3059;&#x3002;</small>
+                  </div>
+                </div>
+
+                <div class="tasks-layout">
+                  <section class="panel tasks-panel">
+                    <div class="panel-head">
+                      <p class="view-label">&#x30bf;&#x30b9;&#x30af;&#x5165;&#x529b;</p>
+                      <h3>&#x65b0;&#x3057;&#x3044;&#x30bf;&#x30b9;&#x30af;&#x3092;&#x8ffd;&#x52a0;</h3>
+                    </div>
+
+                    <form id="taskForm" class="form-stack">
+                      <label class="field">
+                        <span>&#x30bf;&#x30b9;&#x30af;&#x540d;</span>
+                        <input id="taskTitleInput" type="text" name="taskTitle" maxlength="60" placeholder="">
+                      </label>
+
+                      <label class="field">
+                        <span>&#x671f;&#x65e5;</span>
+                        <input id="taskDueDateInput" type="date" name="taskDueDate">
+                      </label>
+
+                      <label class="field">
+                        <span>&#x30e1;&#x30e2;</span>
+                        <input id="taskNoteInput" type="text" name="taskNote" maxlength="80" placeholder="">
+                      </label>
+
+                      <button class="primary-button" type="submit">&#x30bf;&#x30b9;&#x30af;&#x3092;&#x8ffd;&#x52a0;</button>
+                    </form>
+
+                    <p id="taskFormMessage" class="helper-text">&#x671f;&#x65e5;&#x3092;&#x5165;&#x308c;&#x308b;&#x3068;&#x3001;&#x8fd1;&#x3044;&#x3082;&#x306e;&#x304c;&#x4e0a;&#x306b;&#x4e26;&#x3073;&#x307e;&#x3059;&#x3002;</p>
+                  </section>
+
+                  <section class="panel tasks-panel">
+                    <div class="panel-head">
+                      <p class="view-label">&#x4e00;&#x89a7;</p>
+                      <h3>&#x73fe;&#x5728;&#x306e;&#x30bf;&#x30b9;&#x30af;</h3>
+                    </div>
+
+                    <div id="taskList" class="task-list" aria-live="polite"></div>
+                  </section>
+                </div>
+              </div>
             </section>
           </article>
 
