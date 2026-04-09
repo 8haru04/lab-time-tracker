@@ -5,6 +5,7 @@ const PRESENCE_PLANS_KEY = "ergonomics-lab-presence-plans-v1";
 const CLOCK_RECORDS_KEY = "ergonomics-lab-clock-records-v1";
 const CLOCK_LOGS_KEY = "ergonomics-lab-clock-logs-v1";
 const TASKS_STORAGE_KEY = "ergonomics-lab-my-tasks-v1";
+const DEFAULT_SHARED_SYNC_INTERVAL_MS = 20000;
 const CATEGORIES = [
   {
     key: "presence",
@@ -145,6 +146,13 @@ const FALLBACK_CONFIG = {
     { id: "02", displayName: "02", role: "\u672a\u8a2d\u5b9a" },
     { id: "202670231", displayName: "202670231", role: "\u672a\u8a2d\u5b9a" }
   ],
+  sharedStore: {
+    provider: "supabase",
+    enabled: false,
+    url: "",
+    anonKey: "",
+    syncIntervalSeconds: 20
+  },
   version: "\u57fa\u76e4-2026-04"
 };
 
@@ -226,6 +234,18 @@ let presenceMonthKey = "";
 let clockRecords = {};
 let clockLogs = {};
 let myTasks = {};
+let sharedStore = {
+  provider: "supabase",
+  configured: false,
+  active: false,
+  url: "",
+  anonKey: "",
+  syncIntervalMs: DEFAULT_SHARED_SYNC_INTERVAL_MS,
+  statusText: "",
+  lastError: ""
+};
+let sharedSyncTimer = 0;
+let sharedSyncInFlight = null;
 
 function loadDisplayNameOverrides() {
   try {
@@ -285,6 +305,165 @@ function saveMyTasks() {
 
 function saveDisplayNameOverrides() {
   window.localStorage.setItem(DISPLAY_NAME_OVERRIDES_KEY, JSON.stringify(displayNameOverrides));
+}
+
+function createSharedStoreConfig(config) {
+  const rawConfig = config && typeof config === "object" ? config.sharedStore || {} : {};
+  const url = typeof rawConfig.url === "string" ? rawConfig.url.trim().replace(/\/+$/, "") : "";
+  const anonKey = typeof rawConfig.anonKey === "string" ? rawConfig.anonKey.trim() : "";
+  const syncIntervalSeconds = Number(rawConfig.syncIntervalSeconds);
+  const syncIntervalMs =
+    Number.isFinite(syncIntervalSeconds) && syncIntervalSeconds > 0
+      ? syncIntervalSeconds * 1000
+      : DEFAULT_SHARED_SYNC_INTERVAL_MS;
+  const configured = Boolean(
+    rawConfig.provider === "supabase" &&
+      rawConfig.enabled &&
+      url &&
+      anonKey
+  );
+
+  return {
+    provider: "supabase",
+    configured,
+    active: false,
+    url,
+    anonKey,
+    syncIntervalMs,
+    statusText: configured
+      ? "\u5171\u6709\u4fdd\u5b58\u5148\u306b\u63a5\u7d9a\u3057\u3066\u3044\u307e\u3059\u3002"
+      : "\u5171\u6709\u4fdd\u5b58\u5148\u306f\u672a\u8a2d\u5b9a\u3067\u3001\u73fe\u5728\u306f\u3053\u306e\u7aef\u672b\u3060\u3051\u306b\u4fdd\u5b58\u3055\u308c\u307e\u3059\u3002",
+    lastError: ""
+  };
+}
+
+function isSharedStoreActive() {
+  return Boolean(sharedStore && sharedStore.active);
+}
+
+function buildAuthHeaders(extraHeaders = {}) {
+  const headers = {
+    apikey: sharedStore.anonKey,
+    ...extraHeaders
+  };
+
+  if (!sharedStore.anonKey.startsWith("sb_")) {
+    headers.Authorization = `Bearer ${sharedStore.anonKey}`;
+  }
+
+  return headers;
+}
+
+async function requestSharedStore(path, options = {}) {
+  if (!sharedStore.configured) {
+    throw new Error("\u5171\u6709\u4fdd\u5b58\u5148\u304c\u672a\u8a2d\u5b9a\u3067\u3059\u3002");
+  }
+
+  const response = await fetch(`${sharedStore.url}/rest/v1/${path}`, {
+    ...options,
+    headers: buildAuthHeaders(options.headers || {})
+  });
+
+  if (!response.ok) {
+    const message = await response.text().catch(() => "");
+    throw new Error(message || `shared store request failed: ${response.status}`);
+  }
+
+  if (response.status === 204) {
+    return null;
+  }
+
+  const contentType = response.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) {
+    return null;
+  }
+
+  return response.json();
+}
+
+async function selectSharedRows(table, query = {}) {
+  const params = new URLSearchParams({ select: "*", ...query });
+  return requestSharedStore(`${table}?${params.toString()}`, {
+    method: "GET",
+    headers: {
+      Accept: "application/json"
+    }
+  });
+}
+
+async function insertSharedRows(table, rows) {
+  if (!Array.isArray(rows) || rows.length === 0) {
+    return [];
+  }
+
+  return requestSharedStore(table, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Prefer: "return=representation"
+    },
+    body: JSON.stringify(rows)
+  });
+}
+
+async function upsertSharedRows(table, rows, onConflict) {
+  if (!Array.isArray(rows) || rows.length === 0) {
+    return [];
+  }
+
+  const params = new URLSearchParams();
+  if (onConflict) {
+    params.set("on_conflict", onConflict);
+  }
+
+  const suffix = params.toString() ? `?${params.toString()}` : "";
+  return requestSharedStore(`${table}${suffix}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Prefer: "resolution=merge-duplicates,return=representation"
+    },
+    body: JSON.stringify(rows)
+  });
+}
+
+async function deleteSharedRows(table, filters) {
+  const params = new URLSearchParams();
+
+  filters.forEach((filter) => {
+    if (!filter || !filter.column) {
+      return;
+    }
+
+    params.set(filter.column, `${filter.operator || "eq"}.${filter.value}`);
+  });
+
+  return requestSharedStore(`${table}?${params.toString()}`, {
+    method: "DELETE",
+    headers: {
+      Prefer: "return=minimal"
+    }
+  });
+}
+
+function createClientId(prefix) {
+  if (window.crypto && typeof window.crypto.randomUUID === "function") {
+    return `${prefix}-${window.crypto.randomUUID()}`;
+  }
+
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function getSharedStoreStatusText() {
+  if (sharedStore.lastError) {
+    return `\u5171\u6709\u4fdd\u5b58\u5148\u306b\u63a5\u7d9a\u3067\u304d\u306a\u304b\u3063\u305f\u305f\u3081\u3001\u3044\u307e\u306f\u3053\u306e\u7aef\u672b\u306e\u4fdd\u5b58\u3092\u4f7f\u3063\u3066\u3044\u307e\u3059\u3002 ${sharedStore.lastError}`;
+  }
+
+  if (isSharedStoreActive()) {
+    return "\u5171\u6709\u4fdd\u5b58\u5148\u304c\u6709\u52b9\u3067\u3001\u4ed6\u306e\u30e6\u30fc\u30b6\u30fc\u306e\u5909\u66f4\u3082\u9806\u6b21\u53cd\u6620\u3055\u308c\u307e\u3059\u3002";
+  }
+
+  return sharedStore.statusText;
 }
 
 function padNumber(value) {
@@ -353,6 +532,159 @@ function formatMonthRangeLabel(date) {
   }).format(date);
 }
 
+function normalizeRemoteUserRow(row) {
+  if (!row || typeof row !== "object") {
+    return null;
+  }
+
+  return normalizeMember({
+    id: String(row.user_id || "").trim(),
+    displayName: String(row.display_name || row.user_id || "").trim(),
+    role: String(row.role || "\u672a\u8a2d\u5b9a").trim() || "\u672a\u8a2d\u5b9a",
+    permissions: createEmptyPermissions()
+  });
+}
+
+function buildDirectoryFromRemoteRows(config, rows) {
+  const owner = buildOwnerRecord(config);
+  const memberMap = new Map();
+
+  buildSeedMembers(config).forEach((member) => {
+    memberMap.set(member.id, member);
+  });
+
+  (Array.isArray(rows) ? rows : []).forEach((row) => {
+    const member = normalizeRemoteUserRow(row);
+    if (member) {
+      memberMap.set(member.id, member);
+    }
+  });
+
+  const remoteOwner = memberMap.get(config.ownerUser.id);
+  const nextOwner = remoteOwner
+    ? {
+        ...owner,
+        displayName: remoteOwner.displayName || owner.displayName,
+        role: remoteOwner.role || owner.role
+      }
+    : owner;
+
+  const others = Array.from(memberMap.values()).filter((member) => member.id !== nextOwner.id);
+  return [nextOwner, ...others];
+}
+
+function buildPresencePlansFromRemoteRows(rows) {
+  const nextPlans = {};
+
+  (Array.isArray(rows) ? rows : []).forEach((row) => {
+    const userId = String(row.user_id || "").trim();
+    const dateKey = typeof row.date_key === "string" ? row.date_key : "";
+    const entry = normalizePresenceEntry({
+      availability: row.availability,
+      startTime: row.start_time,
+      endTime: row.end_time,
+      note: row.note
+    });
+
+    if (!userId || !/^\d{4}-\d{2}-\d{2}$/.test(dateKey) || !entry) {
+      return;
+    }
+
+    if (!nextPlans[dateKey]) {
+      nextPlans[dateKey] = {};
+    }
+
+    nextPlans[dateKey][userId] = entry;
+  });
+
+  return nextPlans;
+}
+
+function buildTasksFromRemoteRows(rows) {
+  const nextTasks = {};
+
+  (Array.isArray(rows) ? rows : []).forEach((row) => {
+    const userId = String(row.user_id || "").trim();
+    const title = typeof row.title === "string" ? row.title.trim() : "";
+    const taskId = typeof row.id === "string" ? row.id.trim() : "";
+
+    if (!userId || !taskId || !title) {
+      return;
+    }
+
+    if (!Array.isArray(nextTasks[userId])) {
+      nextTasks[userId] = [];
+    }
+
+    nextTasks[userId].push({
+      id: taskId,
+      title,
+      dueDate: typeof row.due_date === "string" ? row.due_date : "",
+      note: typeof row.note === "string" ? row.note.trim() : "",
+      createdAt: typeof row.created_at === "string" ? row.created_at : "",
+      updatedAt: typeof row.updated_at === "string" ? row.updated_at : ""
+    });
+  });
+
+  return nextTasks;
+}
+
+function buildClockRecordsFromRemoteRows(rows) {
+  const nextRecords = {};
+
+  (Array.isArray(rows) ? rows : []).forEach((row) => {
+    const userId = String(row.user_id || "").trim();
+    if (!userId) {
+      return;
+    }
+
+    nextRecords[userId] = normalizeClockRecord({
+      status: row.status,
+      lastActionType: row.last_action_type,
+      lastActionAt: row.last_action_at
+    });
+  });
+
+  return nextRecords;
+}
+
+function buildClockLogsFromRemoteRows(rows) {
+  const nextLogs = {};
+
+  (Array.isArray(rows) ? rows : []).forEach((row) => {
+    const userId = String(row.user_id || "").trim();
+    const timestamp = typeof row.timestamp === "string" ? row.timestamp : "";
+
+    if (!userId || !timestamp) {
+      return;
+    }
+
+    if (!Array.isArray(nextLogs[userId])) {
+      nextLogs[userId] = [];
+    }
+
+    nextLogs[userId].push({
+      id:
+        typeof row.id === "string" && row.id.trim()
+          ? row.id.trim()
+          : `${userId}-${timestamp}-${row.action_type || ""}`,
+      actionType: typeof row.action_type === "string" ? row.action_type : "",
+      status: typeof row.status === "string" ? row.status : "out",
+      timestamp
+    });
+  });
+
+  return nextLogs;
+}
+
+function cacheSharedSnapshotLocally() {
+  saveDirectory();
+  savePresencePlans();
+  saveClockRecords();
+  saveClockLogs();
+  saveMyTasks();
+}
+
 function renderClockNow() {
   const now = new Date();
 
@@ -402,6 +734,10 @@ function getClockLogsForUser(userId) {
   return rawLogs
     .filter((entry) => entry && typeof entry === "object" && typeof entry.timestamp === "string")
     .map((entry) => ({
+      id:
+        typeof entry.id === "string" && entry.id.trim()
+          ? entry.id.trim()
+          : `${userId}-${entry.timestamp}-${entry.actionType || ""}`,
       actionType: typeof entry.actionType === "string" ? entry.actionType : "",
       status: typeof entry.status === "string" ? entry.status : "out",
       timestamp: entry.timestamp
@@ -414,22 +750,31 @@ function appendClockLog(userId, actionType, status) {
     clockLogs[userId] = [];
   }
 
-  clockLogs[userId].push({
+  const entry = {
+    id: createClientId("clock"),
     actionType,
     status,
     timestamp: new Date().toISOString()
-  });
+  };
+
+  clockLogs[userId].push(entry);
   saveClockLogs();
+  return entry;
 }
 
 function setClockRecord(userId, status, actionType) {
-  clockRecords[userId] = {
+  const nextRecord = {
     status,
     lastActionType: actionType,
     lastActionAt: new Date().toISOString()
   };
+  clockRecords[userId] = nextRecord;
   saveClockRecords();
-  appendClockLog(userId, actionType, status);
+  const logEntry = appendClockLog(userId, actionType, status);
+  return {
+    record: nextRecord,
+    logEntry
+  };
 }
 
 function getClockStatusMeta(status) {
@@ -765,24 +1110,30 @@ function addTaskForUser(userId, title, dueDate, note) {
     myTasks[userId] = [];
   }
 
-  myTasks[userId].push({
-    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+  const task = {
+    id: createClientId("task"),
     title,
     dueDate,
     note,
-    createdAt: new Date().toISOString()
-  });
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+
+  myTasks[userId].push(task);
 
   saveMyTasks();
+  return task;
 }
 
 function deleteTaskForUser(userId, taskId) {
   if (!Array.isArray(myTasks[userId])) {
-    return;
+    return false;
   }
 
+  const previousLength = myTasks[userId].length;
   myTasks[userId] = myTasks[userId].filter((task) => task.id !== taskId);
   saveMyTasks();
+  return myTasks[userId].length !== previousLength;
 }
 
 function getTaskDueState(dueDate) {
@@ -984,6 +1335,10 @@ function setPresenceEntry(userId, dateKey, availability, startTime, endTime) {
 }
 
 function getDisplayName(id, fallback) {
+  if (isSharedStoreActive()) {
+    return fallback;
+  }
+
   const override = displayNameOverrides[id];
   return typeof override === "string" && override.trim() ? override.trim() : fallback;
 }
@@ -1103,6 +1458,229 @@ function saveActiveUser(member) {
 
 function clearActiveUser() {
   window.localStorage.removeItem(ACTIVE_USER_KEY);
+}
+
+function toSharedUserRow(member) {
+  return {
+    user_id: member.id,
+    display_name: member.displayName,
+    role: member.role,
+    is_owner: Boolean(member.isOwner),
+    updated_at: new Date().toISOString()
+  };
+}
+
+function toSharedPresenceRow(userId, dateKey, entry) {
+  return {
+    user_id: userId,
+    date_key: dateKey,
+    availability: entry.availability,
+    start_time: entry.startTime || "",
+    end_time: entry.endTime || "",
+    note: entry.note || "",
+    updated_at: new Date().toISOString()
+  };
+}
+
+function toSharedTaskRow(userId, task) {
+  return {
+    id: task.id,
+    user_id: userId,
+    title: task.title,
+    due_date: task.dueDate || null,
+    note: task.note || "",
+    created_at: task.createdAt || new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+}
+
+function toSharedClockRecordRow(userId, record) {
+  return {
+    user_id: userId,
+    status: record.status,
+    last_action_type: record.lastActionType || "",
+    last_action_at: record.lastActionAt || new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+}
+
+function toSharedClockLogRow(userId, logEntry) {
+  return {
+    id: logEntry.id,
+    user_id: userId,
+    action_type: logEntry.actionType,
+    status: logEntry.status,
+    timestamp: logEntry.timestamp
+  };
+}
+
+async function ensureSharedSeedMembers() {
+  const remoteUsers = await selectSharedRows("lab_users", {
+    order: "user_id.asc"
+  });
+  const remoteIds = new Set((remoteUsers || []).map((row) => String(row.user_id || "").trim()).filter(Boolean));
+  const missingUsers = [
+    buildOwnerRecord(appConfig),
+    ...buildSeedMembers(appConfig)
+  ].filter((member) => !remoteIds.has(member.id));
+
+  if (missingUsers.length > 0) {
+    await upsertSharedRows(
+      "lab_users",
+      missingUsers.map((member) => toSharedUserRow(member)),
+      "user_id"
+    );
+  }
+}
+
+async function refreshSharedState(options = {}) {
+  if (!sharedStore.configured) {
+    return false;
+  }
+
+  if (sharedSyncInFlight) {
+    return sharedSyncInFlight;
+  }
+
+  sharedSyncInFlight = (async () => {
+    try {
+      const [remoteUsers, remotePresence, remoteTasks, remoteClockRecords, remoteClockLogs] =
+        await Promise.all([
+          selectSharedRows("lab_users", { order: "user_id.asc" }),
+          selectSharedRows("lab_presence_plans", { order: "date_key.asc" }),
+          selectSharedRows("lab_tasks", { order: "created_at.asc" }),
+          selectSharedRows("lab_clock_records", { order: "user_id.asc" }),
+          selectSharedRows("lab_clock_logs", { order: "timestamp.asc" })
+        ]);
+
+      memberDirectory = buildDirectoryFromRemoteRows(appConfig, remoteUsers);
+      presencePlans = buildPresencePlansFromRemoteRows(remotePresence);
+      myTasks = buildTasksFromRemoteRows(remoteTasks);
+      clockRecords = buildClockRecordsFromRemoteRows(remoteClockRecords);
+      clockLogs = buildClockLogsFromRemoteRows(remoteClockLogs);
+      cacheSharedSnapshotLocally();
+      sharedStore.active = true;
+      sharedStore.lastError = "";
+      sharedStore.statusText =
+        "\u5171\u6709\u4fdd\u5b58\u5148\u304c\u6709\u52b9\u3067\u3001\u4ed6\u306e\u30e6\u30fc\u30b6\u30fc\u306e\u5909\u66f4\u3082\u9806\u6b21\u53cd\u6620\u3055\u308c\u307e\u3059\u3002";
+
+      if (currentUser) {
+        const refreshedUser = findMemberById(currentUser.id);
+        if (refreshedUser) {
+          currentUser = refreshedUser;
+          renderWorkspace();
+        } else {
+          resetToLogin();
+        }
+      } else if (!options.skipRender) {
+        resetLoginFormMessage();
+      }
+
+      return true;
+    } catch (error) {
+      sharedStore.active = false;
+      sharedStore.lastError =
+        error instanceof Error ? error.message : "\u5171\u6709\u4fdd\u5b58\u5148\u3068\u306e\u540c\u671f\u306b\u5931\u6557\u3057\u307e\u3057\u305f\u3002";
+      if (!options.quiet) {
+        console.warn("Shared store sync failed. Falling back to local cache.", error);
+      }
+      return false;
+    } finally {
+      sharedSyncInFlight = null;
+    }
+  })();
+
+  return sharedSyncInFlight;
+}
+
+function startSharedSyncLoop() {
+  if (!sharedStore.configured || sharedSyncTimer) {
+    return;
+  }
+
+  sharedSyncTimer = window.setInterval(() => {
+    if (document.hidden) {
+      return;
+    }
+
+    refreshSharedState({ quiet: true, skipRender: false });
+  }, sharedStore.syncIntervalMs);
+}
+
+function stopSharedSyncLoop() {
+  if (!sharedSyncTimer) {
+    return;
+  }
+
+  window.clearInterval(sharedSyncTimer);
+  sharedSyncTimer = 0;
+}
+
+async function syncMemberToShared(member) {
+  if (!sharedStore.configured) {
+    return false;
+  }
+
+  await upsertSharedRows("lab_users", [toSharedUserRow(member)], "user_id");
+  await refreshSharedState({ quiet: true });
+  return true;
+}
+
+async function syncPresenceEntryToShared(userId, dateKey) {
+  if (!sharedStore.configured) {
+    return false;
+  }
+
+  const entry = getPresenceEntry(userId, dateKey);
+
+  if (!entry) {
+    await deleteSharedRows("lab_presence_plans", [
+      { column: "user_id", value: userId },
+      { column: "date_key", value: dateKey }
+    ]);
+  } else {
+    await upsertSharedRows(
+      "lab_presence_plans",
+      [toSharedPresenceRow(userId, dateKey, entry)],
+      "user_id,date_key"
+    );
+  }
+
+  await refreshSharedState({ quiet: true });
+  return true;
+}
+
+async function syncTaskToShared(userId, task) {
+  if (!sharedStore.configured) {
+    return false;
+  }
+
+  await upsertSharedRows("lab_tasks", [toSharedTaskRow(userId, task)], "id");
+  await refreshSharedState({ quiet: true });
+  return true;
+}
+
+async function deleteTaskFromShared(taskId) {
+  if (!sharedStore.configured) {
+    return false;
+  }
+
+  await deleteSharedRows("lab_tasks", [{ column: "id", value: taskId }]);
+  await refreshSharedState({ quiet: true });
+  return true;
+}
+
+async function syncClockToShared(userId, record, logEntry) {
+  if (!sharedStore.configured) {
+    return false;
+  }
+
+  await upsertSharedRows("lab_clock_records", [toSharedClockRecordRow(userId, record)], "user_id");
+  if (logEntry) {
+    await upsertSharedRows("lab_clock_logs", [toSharedClockLogRow(userId, logEntry)], "id");
+  }
+  await refreshSharedState({ quiet: true });
+  return true;
 }
 
 function isOwner(member) {
@@ -1282,7 +1860,9 @@ function renderCurrentUserSummary() {
   permissionSummary.replaceChildren();
 
   displayNameInput.value = currentUser.displayName;
-  displayNameMessage.textContent = displayNameStatusMessage;
+  displayNameMessage.textContent = isSharedStoreActive()
+    ? "\u8868\u793a\u540d\u306f\u5171\u6709\u4fdd\u5b58\u5148\u306b\u4fdd\u5b58\u3055\u308c\u3001\u4ed6\u306e\u30e6\u30fc\u30b6\u30fc\u306b\u3082\u53cd\u6620\u3055\u308c\u307e\u3059\u3002"
+    : displayNameStatusMessage;
 
   currentUserCard.append(
     createInfoBox("\u8868\u793a\u540d", currentUser.displayName),
@@ -1581,8 +2161,9 @@ function renderClockView() {
       <span class="clock-button-label">${action.label}</span>
       <span class="clock-button-note">${action.note}</span>
     `;
-    button.addEventListener("click", () => {
-      setClockRecord(currentUser.id, action.nextStatus, action.actionType);
+    button.addEventListener("click", async () => {
+      const result = setClockRecord(currentUser.id, action.nextStatus, action.actionType);
+      await syncClockToShared(currentUser.id, result.record, result.logEntry);
       renderClockView();
     });
     clockActionButtons.appendChild(button);
@@ -1606,9 +2187,10 @@ function renderClockView() {
 function renderSettings() {
   renderCurrentUserSummary();
 
-  settingsNotice.textContent = canManagePermissions(currentUser)
+  const baseNotice = canManagePermissions(currentUser)
     ? "\u73fe\u5728\u306f\u3001\u3059\u3079\u3066\u306e\u30e6\u30fc\u30b6\u30fc\u304c\u57fa\u672c\u6a5f\u80fd\u3092\u5229\u7528\u3067\u304d\u307e\u3059\u3002\u30e6\u30fc\u30b6\u30fc\u767b\u9332\u3060\u3051\u304c\u7ba1\u7406\u8005\u306e\u64cd\u4f5c\u5bfe\u8c61\u3067\u3059\u3002"
     : "\u73fe\u5728\u306f\u3001\u3059\u3079\u3066\u306e\u57fa\u672c\u6a5f\u80fd\u3092\u5229\u7528\u3067\u304d\u307e\u3059\u3002\u30e6\u30fc\u30b6\u30fc\u767b\u9332\u3060\u3051\u304c\u7ba1\u7406\u8005\u9650\u5b9a\u3067\u3059\u3002";
+  settingsNotice.textContent = `${baseNotice} ${getSharedStoreStatusText()}`;
 
   adminSection.hidden = !canManagePermissions(currentUser);
   memberSection.hidden = !canManagePermissions(currentUser);
@@ -1750,15 +2332,22 @@ async function registerServiceWorker() {
   }
 }
 
-loginForm.addEventListener("submit", (event) => {
+loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
 
   const userId = userIdInput.value.trim();
-  const member = findMemberById(userId);
+  let member = findMemberById(userId);
 
   if (!userId) {
     loginMessage.textContent = "\u5b66\u7c4d\u756a\u53f7\u3092\u5165\u529b\u3057\u3066\u304f\u3060\u3055\u3044\u3002";
     return;
+  }
+
+  if (!member && sharedStore.configured) {
+    loginMessage.textContent =
+      "\u5171\u6709\u4fdd\u5b58\u5148\u3092\u518d\u78ba\u8a8d\u3057\u3066\u3044\u307e\u3059\u3002";
+    await refreshSharedState({ quiet: true, skipRender: true });
+    member = findMemberById(userId);
   }
 
   if (!member) {
@@ -1773,7 +2362,7 @@ loginForm.addEventListener("submit", (event) => {
   renderWorkspace();
 });
 
-displayNameForm.addEventListener("submit", (event) => {
+displayNameForm.addEventListener("submit", async (event) => {
   event.preventDefault();
 
   if (!currentUser) {
@@ -1787,9 +2376,12 @@ displayNameForm.addEventListener("submit", (event) => {
   }
 
   currentUser.displayName = nextDisplayName;
-  displayNameOverrides[currentUser.id] = nextDisplayName;
-  saveDisplayNameOverrides();
+  if (!isSharedStoreActive()) {
+    displayNameOverrides[currentUser.id] = nextDisplayName;
+    saveDisplayNameOverrides();
+  }
   saveDirectory();
+  await syncMemberToShared(currentUser);
   displayNameStatusMessage = "\u8868\u793a\u540d\u3092\u66f4\u65b0\u3057\u307e\u3057\u305f\u3002";
   renderWorkspace();
 });
@@ -1813,7 +2405,7 @@ presenceDateInput.addEventListener("change", () => {
   syncPresenceInputFields();
 });
 
-presenceInputForm.addEventListener("submit", (event) => {
+presenceInputForm.addEventListener("submit", async (event) => {
   event.preventDefault();
 
   const dateKey = presenceDateInput.value;
@@ -1848,13 +2440,14 @@ presenceInputForm.addEventListener("submit", (event) => {
 
   setPresenceEntry(userId, dateKey, availability, startTime, endTime);
   presenceMonthKey = dateKey.slice(0, 7);
+  await syncPresenceEntryToShared(userId, dateKey);
   presenceInputMessage.textContent =
     "\u4e88\u5b9a\u3092\u4fdd\u5b58\u3057\u307e\u3057\u305f\u3002\u5728\u5ba4\u7ba1\u7406\u306e\u6708\u6b21\u8868\u306b\u53cd\u6620\u3055\u308c\u307e\u3059\u3002";
   renderPresenceBoard();
   syncPresenceInputFields();
 });
 
-presenceDeleteButton.addEventListener("click", () => {
+presenceDeleteButton.addEventListener("click", async () => {
   const dateKey = presenceDateInput.value;
   const userId = currentUser?.id;
 
@@ -1870,13 +2463,14 @@ presenceDeleteButton.addEventListener("click", () => {
   presenceAvailabilitySelect.value = DEFAULT_AVAILABILITY;
   presenceSummaryPreview.value = "";
   presenceMonthKey = dateKey.slice(0, 7);
+  await syncPresenceEntryToShared(userId, dateKey);
   presenceInputMessage.textContent =
     "\u3053\u306e\u65e5\u306e\u4e88\u5b9a\u3092\u524a\u9664\u3057\u307e\u3057\u305f\u3002";
   renderPresenceBoard();
   syncPresenceInputFields();
 });
 
-memberForm.addEventListener("submit", (event) => {
+memberForm.addEventListener("submit", async (event) => {
   event.preventDefault();
 
   if (!canManagePermissions(currentUser)) {
@@ -1910,6 +2504,7 @@ memberForm.addEventListener("submit", (event) => {
   });
 
   saveDirectory();
+  await syncMemberToShared(findMemberById(memberId));
   memberForm.reset();
   memberRoleSelect.value = appConfig.userRoles[0];
   memberFormMessage.textContent = `${displayName} \u3092\u8ffd\u52a0\u3057\u307e\u3057\u305f\u3002\u57fa\u672c\u6a5f\u80fd\u306f\u3059\u3050\u306b\u5229\u7528\u3067\u304d\u307e\u3059\u3002`;
@@ -1924,7 +2519,7 @@ clockExportButton.addEventListener("click", () => {
   downloadClockCsv();
 });
 
-taskForm.addEventListener("submit", (event) => {
+taskForm.addEventListener("submit", async (event) => {
   event.preventDefault();
 
   if (!currentUser) {
@@ -1940,19 +2535,21 @@ taskForm.addEventListener("submit", (event) => {
     return;
   }
 
-  addTaskForUser(currentUser.id, title, dueDate, note);
+  const task = addTaskForUser(currentUser.id, title, dueDate, note);
+  await syncTaskToShared(currentUser.id, task);
   taskForm.reset();
   taskFormMessage.textContent = "\u30bf\u30b9\u30af\u3092\u8ffd\u52a0\u3057\u307e\u3057\u305f\u3002";
   renderTasksView();
 });
 
-taskList.addEventListener("click", (event) => {
+taskList.addEventListener("click", async (event) => {
   const button = event.target.closest("[data-task-id]");
   if (!button || !currentUser) {
     return;
   }
 
   deleteTaskForUser(currentUser.id, button.dataset.taskId);
+  await deleteTaskFromShared(button.dataset.taskId);
   taskFormMessage.textContent = "\u30bf\u30b9\u30af\u3092\u524a\u9664\u3057\u307e\u3057\u305f\u3002";
   renderTasksView();
 });
@@ -1972,6 +2569,7 @@ window.addEventListener("hashchange", () => {
 
 async function init() {
   appConfig = await loadConfig();
+  sharedStore = createSharedStoreConfig(appConfig);
   displayNameOverrides = loadDisplayNameOverrides();
   presencePlans = loadPresencePlans();
   clockRecords = loadClockRecords();
@@ -1979,6 +2577,20 @@ async function init() {
   myTasks = loadMyTasks();
   presenceMonthKey = getMonthKey(new Date());
   memberDirectory = loadStoredDirectory(appConfig);
+
+  if (sharedStore.configured) {
+    try {
+      await ensureSharedSeedMembers();
+      await refreshSharedState({ quiet: true, skipRender: true });
+      startSharedSyncLoop();
+    } catch (error) {
+      sharedStore.active = false;
+      sharedStore.lastError =
+        error instanceof Error ? error.message : "\u5171\u6709\u4fdd\u5b58\u5148\u3068\u306e\u63a5\u7d9a\u306b\u5931\u6557\u3057\u307e\u3057\u305f\u3002";
+      console.warn("Shared store setup failed. Using local cache only.", error);
+    }
+  }
+
   renderConfig(appConfig);
   loginForm.reset();
   memberRoleSelect.value = appConfig.userRoles[0];

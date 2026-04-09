@@ -67,3 +67,15 @@ Files added for production:
 - `docs/deploy-github-pages.md`
 
 Once this project is pushed to a GitHub repository and Pages is enabled with GitHub Actions, the site will publish automatically on pushes to `main`.
+
+## Shared Store
+
+This app can now use a Supabase shared store so changes from one user can be reflected for others.
+
+Setup files:
+
+- `data/supabase-shared-store.sql`
+- `docs/shared-store-supabase.md`
+- `public/app-config.json`
+
+Until `sharedStore.enabled` is turned on with a real project URL and key, the app will continue using browser-local storage.

@@ -68,5 +68,12 @@
       "role": "\u672a\u8a2d\u5b9a"
     }
   ],
+  "sharedStore": {
+    "provider": "supabase",
+    "enabled": true,
+    "url": "https://vfuolsbqrkpllgebjcpx.supabase.co",
+    "anonKey": "sb_publishable_AEZG0uBPIBoS7DjNUDuMkQ_TOqDQtOs",
+    "syncIntervalSeconds": 20
+  },
   "version": "\u57fa\u76e4-2026-04"
 }
