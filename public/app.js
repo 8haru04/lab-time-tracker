@@ -2249,12 +2249,17 @@ function renderClockView() {
   const todaySummary = getClockSummary(todayLogs, record.status);
   const monthSummary = getClockSummary(monthLogs, record.status);
   const totalSummary = getClockSummary(logs, record.status);
+  const latestAction = todayLogs.length > 0 ? todayLogs[todayLogs.length - 1] : null;
 
   clockStatusText.textContent = statusMeta.title;
   clockStatusSubtext.textContent = getStatusStartedText(record, logs);
-  clockSummaryText.textContent = todayLogs.length > 0
-    ? `\u672c\u65e5: \u5728\u5ba4 ${formatDurationFromMinutes(todaySummary.stayMinutes)} / \u4f11\u61a9 ${formatDurationFromMinutes(todaySummary.breakMinutes)} / \u5b9f\u50cd ${formatDurationFromMinutes(todaySummary.activeMinutes)}`
-    : "\u307e\u3060\u672c\u65e5\u306e\u6253\u523b\u8a18\u9332\u306f\u3042\u308a\u307e\u305b\u3093\u3002";
+  if (latestAction?.actionType === "checkout") {
+    clockSummaryText.textContent = `\u672c\u65e5\u306e\u6d3b\u52d5\u6642\u9593: ${formatDurationFromMinutes(todaySummary.activeMinutes)}`;
+  } else {
+    clockSummaryText.textContent = todayLogs.length > 0
+      ? `\u672c\u65e5: \u5728\u5ba4 ${formatDurationFromMinutes(todaySummary.stayMinutes)} / \u4f11\u61a9 ${formatDurationFromMinutes(todaySummary.breakMinutes)} / \u5b9f\u50cd ${formatDurationFromMinutes(todaySummary.activeMinutes)}`
+      : "\u307e\u3060\u672c\u65e5\u306e\u6253\u523b\u8a18\u9332\u306f\u3042\u308a\u307e\u305b\u3093\u3002";
+  }
   clockMonthTotalValue.textContent = formatDurationFromMinutes(monthSummary.activeMinutes);
   clockMonthTotalNote.textContent = `${formatMonthRangeLabel(new Date())}\u306e1\u65e5\u304b\u3089\u4eca\u65e5\u307e\u3067\u306e\u5b9f\u50cd\u7d2f\u8a08`;
   clockTotalValue.textContent = formatDurationFromMinutes(totalSummary.activeMinutes);
