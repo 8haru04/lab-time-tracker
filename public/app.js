@@ -466,6 +466,19 @@ function getSharedStoreStatusText() {
   return sharedStore.statusText;
 }
 
+function getSharedSyncErrorText(error) {
+  if (!sharedStore.configured) {
+    return "";
+  }
+
+  const detail =
+    error instanceof Error && error.message
+      ? error.message
+      : "\u5171\u6709\u4fdd\u5b58\u5148\u3068\u306e\u540c\u671f\u306b\u5931\u6557\u3057\u307e\u3057\u305f\u3002";
+
+  return `\u3053\u306e\u7aef\u672b\u306b\u306f\u4fdd\u5b58\u3057\u307e\u3057\u305f\u304c\u3001\u5171\u6709\u4fdd\u5b58\u5148\u3078\u306e\u53cd\u6620\u306f\u307e\u3060\u5b8c\u4e86\u3057\u3066\u3044\u307e\u305b\u3093\u3002 ${detail}`;
+}
+
 function padNumber(value) {
   return String(value).padStart(2, "0");
 }
@@ -2163,8 +2176,12 @@ function renderClockView() {
     `;
     button.addEventListener("click", async () => {
       const result = setClockRecord(currentUser.id, action.nextStatus, action.actionType);
-      await syncClockToShared(currentUser.id, result.record, result.logEntry);
       renderClockView();
+      try {
+        await syncClockToShared(currentUser.id, result.record, result.logEntry);
+      } catch (error) {
+        clockSummaryText.textContent = getSharedSyncErrorText(error);
+      }
     });
     clockActionButtons.appendChild(button);
   });
@@ -2381,8 +2398,12 @@ displayNameForm.addEventListener("submit", async (event) => {
     saveDisplayNameOverrides();
   }
   saveDirectory();
-  await syncMemberToShared(currentUser);
   displayNameStatusMessage = "\u8868\u793a\u540d\u3092\u66f4\u65b0\u3057\u307e\u3057\u305f\u3002";
+  try {
+    await syncMemberToShared(currentUser);
+  } catch (error) {
+    displayNameStatusMessage = getSharedSyncErrorText(error);
+  }
   renderWorkspace();
 });
 
@@ -2440,11 +2461,15 @@ presenceInputForm.addEventListener("submit", async (event) => {
 
   setPresenceEntry(userId, dateKey, availability, startTime, endTime);
   presenceMonthKey = dateKey.slice(0, 7);
-  await syncPresenceEntryToShared(userId, dateKey);
   presenceInputMessage.textContent =
     "\u4e88\u5b9a\u3092\u4fdd\u5b58\u3057\u307e\u3057\u305f\u3002\u5728\u5ba4\u7ba1\u7406\u306e\u6708\u6b21\u8868\u306b\u53cd\u6620\u3055\u308c\u307e\u3059\u3002";
   renderPresenceBoard();
   syncPresenceInputFields();
+  try {
+    await syncPresenceEntryToShared(userId, dateKey);
+  } catch (error) {
+    presenceInputMessage.textContent = getSharedSyncErrorText(error);
+  }
 });
 
 presenceDeleteButton.addEventListener("click", async () => {
@@ -2463,11 +2488,15 @@ presenceDeleteButton.addEventListener("click", async () => {
   presenceAvailabilitySelect.value = DEFAULT_AVAILABILITY;
   presenceSummaryPreview.value = "";
   presenceMonthKey = dateKey.slice(0, 7);
-  await syncPresenceEntryToShared(userId, dateKey);
   presenceInputMessage.textContent =
     "\u3053\u306e\u65e5\u306e\u4e88\u5b9a\u3092\u524a\u9664\u3057\u307e\u3057\u305f\u3002";
   renderPresenceBoard();
   syncPresenceInputFields();
+  try {
+    await syncPresenceEntryToShared(userId, dateKey);
+  } catch (error) {
+    presenceInputMessage.textContent = getSharedSyncErrorText(error);
+  }
 });
 
 memberForm.addEventListener("submit", async (event) => {
@@ -2504,10 +2533,14 @@ memberForm.addEventListener("submit", async (event) => {
   });
 
   saveDirectory();
-  await syncMemberToShared(findMemberById(memberId));
   memberForm.reset();
   memberRoleSelect.value = appConfig.userRoles[0];
   memberFormMessage.textContent = `${displayName} \u3092\u8ffd\u52a0\u3057\u307e\u3057\u305f\u3002\u57fa\u672c\u6a5f\u80fd\u306f\u3059\u3050\u306b\u5229\u7528\u3067\u304d\u307e\u3059\u3002`;
+  try {
+    await syncMemberToShared(findMemberById(memberId));
+  } catch (error) {
+    memberFormMessage.textContent = getSharedSyncErrorText(error);
+  }
   renderSettings();
 });
 
@@ -2536,10 +2569,14 @@ taskForm.addEventListener("submit", async (event) => {
   }
 
   const task = addTaskForUser(currentUser.id, title, dueDate, note);
-  await syncTaskToShared(currentUser.id, task);
   taskForm.reset();
   taskFormMessage.textContent = "\u30bf\u30b9\u30af\u3092\u8ffd\u52a0\u3057\u307e\u3057\u305f\u3002";
   renderTasksView();
+  try {
+    await syncTaskToShared(currentUser.id, task);
+  } catch (error) {
+    taskFormMessage.textContent = getSharedSyncErrorText(error);
+  }
 });
 
 taskList.addEventListener("click", async (event) => {
@@ -2549,9 +2586,13 @@ taskList.addEventListener("click", async (event) => {
   }
 
   deleteTaskForUser(currentUser.id, button.dataset.taskId);
-  await deleteTaskFromShared(button.dataset.taskId);
   taskFormMessage.textContent = "\u30bf\u30b9\u30af\u3092\u524a\u9664\u3057\u307e\u3057\u305f\u3002";
   renderTasksView();
+  try {
+    await deleteTaskFromShared(button.dataset.taskId);
+  } catch (error) {
+    taskFormMessage.textContent = getSharedSyncErrorText(error);
+  }
 });
 
 window.addEventListener("hashchange", () => {
