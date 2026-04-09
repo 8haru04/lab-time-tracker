@@ -231,6 +231,7 @@ let displayNameStatusMessage =
   "\u8868\u793a\u540d\u306f\u3053\u306e\u7aef\u672b\u306e\u30ed\u30b0\u30a4\u30f3\u60c5\u5831\u3068\u4e00\u7dd2\u306b\u4fdd\u5b58\u3055\u308c\u307e\u3059\u3002";
 let presencePlans = {};
 let presenceMonthKey = "";
+let presenceDraftState = null;
 let clockRecords = {};
 let clockLogs = {};
 let myTasks = {};
@@ -1273,6 +1274,55 @@ function buildPresencePreview(entry) {
   return parts.join(" / ");
 }
 
+function getPresenceDraftKey(userId, dateKey) {
+  return `${userId || ""}:${dateKey || ""}`;
+}
+
+function clearPresenceDraftState() {
+  presenceDraftState = null;
+}
+
+function updatePresenceDraftState() {
+  if (!currentUser) {
+    clearPresenceDraftState();
+    return;
+  }
+
+  const dateKey = presenceDateInput.value || getTodayDateKey();
+  const savedEntry = getPresenceEntry(currentUser.id, dateKey);
+  const nextEntry = {
+    availability: normalizeAvailability(presenceAvailabilitySelect.value) || DEFAULT_AVAILABILITY,
+    startTime: normalizeTimeValue(presenceStartTimeInput.value),
+    endTime: normalizeTimeValue(presenceEndTimeInput.value),
+    note: ""
+  };
+
+  const differsFromSaved =
+    (savedEntry?.availability || DEFAULT_AVAILABILITY) !== nextEntry.availability ||
+    (savedEntry?.startTime || "") !== nextEntry.startTime ||
+    (savedEntry?.endTime || "") !== nextEntry.endTime;
+  const hasTypedValue = Boolean(nextEntry.startTime || nextEntry.endTime);
+
+  if (differsFromSaved || hasTypedValue) {
+    presenceDraftState = {
+      key: getPresenceDraftKey(currentUser.id, dateKey),
+      userId: currentUser.id,
+      dateKey,
+      entry: nextEntry
+    };
+    presenceSummaryPreview.value = buildPresencePreview(nextEntry);
+    presenceInputMessage.textContent =
+      "\u307e\u3060\u672a\u4fdd\u5b58\u306e\u5165\u529b\u304c\u3042\u308a\u307e\u3059\u3002\u4fdd\u5b58\u3059\u308b\u3068\u5728\u5ba4\u7ba1\u7406\u306b\u53cd\u6620\u3055\u308c\u307e\u3059\u3002";
+    return;
+  }
+
+  clearPresenceDraftState();
+  presenceSummaryPreview.value = buildPresencePreview(savedEntry);
+  presenceInputMessage.textContent = savedEntry
+    ? "\u3053\u306e\u65e5\u306e\u4e88\u5b9a\u304c\u3059\u3067\u306b\u4fdd\u5b58\u3055\u308c\u3066\u3044\u307e\u3059\u3002\u4fdd\u5b58\u3059\u308b\u3068\u4e0a\u66f8\u304d\u3055\u308c\u307e\u3059\u3002"
+    : "\u5165\u529b\u3057\u305f\u5185\u5bb9\u306f\u5728\u5ba4\u7ba1\u7406\u306e\u6708\u6b21\u8868\u306b\u53cd\u6620\u3055\u308c\u307e\u3059\u3002";
+}
+
 function loadPresencePlans() {
   try {
     const raw = window.localStorage.getItem(PRESENCE_PLANS_KEY);
@@ -1935,22 +1985,33 @@ function renderMemberTable() {
   });
 }
 
-function syncPresenceInputFields() {
+function syncPresenceInputFields(options = {}) {
   if (!currentUser) {
     return;
   }
 
   const dateKey = presenceDateInput.value || getTodayDateKey();
   const entry = getPresenceEntry(currentUser.id, dateKey);
+  const draftKey = getPresenceDraftKey(currentUser.id, dateKey);
+  const activeDraft =
+    !options.force &&
+    presenceDraftState &&
+    presenceDraftState.key === draftKey &&
+    presenceDraftState.entry
+      ? presenceDraftState.entry
+      : null;
 
   presenceOwnerText.textContent = `${currentUser.displayName} / ${currentUser.id}`;
-  presenceStartTimeInput.value = entry?.startTime || "";
-  presenceEndTimeInput.value = entry?.endTime || "";
-  presenceAvailabilitySelect.value = entry?.availability || DEFAULT_AVAILABILITY;
-  presenceSummaryPreview.value = buildPresencePreview(entry);
-  presenceInputMessage.textContent = entry
-    ? "\u3053\u306e\u65e5\u306e\u4e88\u5b9a\u304c\u3059\u3067\u306b\u4fdd\u5b58\u3055\u308c\u3066\u3044\u307e\u3059\u3002\u4fdd\u5b58\u3059\u308b\u3068\u4e0a\u66f8\u304d\u3055\u308c\u307e\u3059\u3002"
-    : "\u5165\u529b\u3057\u305f\u5185\u5bb9\u306f\u5728\u5ba4\u7ba1\u7406\u306e\u6708\u6b21\u8868\u306b\u53cd\u6620\u3055\u308c\u307e\u3059\u3002";
+  presenceStartTimeInput.value = activeDraft?.startTime || entry?.startTime || "";
+  presenceEndTimeInput.value = activeDraft?.endTime || entry?.endTime || "";
+  presenceAvailabilitySelect.value =
+    activeDraft?.availability || entry?.availability || DEFAULT_AVAILABILITY;
+  presenceSummaryPreview.value = buildPresencePreview(activeDraft || entry);
+  presenceInputMessage.textContent = activeDraft
+    ? "\u307e\u3060\u672a\u4fdd\u5b58\u306e\u5165\u529b\u304c\u3042\u308a\u307e\u3059\u3002\u4fdd\u5b58\u3059\u308b\u3068\u5728\u5ba4\u7ba1\u7406\u306b\u53cd\u6620\u3055\u308c\u307e\u3059\u3002"
+    : entry
+      ? "\u3053\u306e\u65e5\u306e\u4e88\u5b9a\u304c\u3059\u3067\u306b\u4fdd\u5b58\u3055\u308c\u3066\u3044\u307e\u3059\u3002\u4fdd\u5b58\u3059\u308b\u3068\u4e0a\u66f8\u304d\u3055\u308c\u307e\u3059\u3002"
+      : "\u5165\u529b\u3057\u305f\u5185\u5bb9\u306f\u5728\u5ba4\u7ba1\u7406\u306e\u6708\u6b21\u8868\u306b\u53cd\u6620\u3055\u308c\u307e\u3059\u3002";
 }
 
 function renderPresenceBoard() {
@@ -2301,6 +2362,7 @@ function resetLoginFormMessage() {
 function resetToLogin() {
   currentUser = null;
   activeCategory = null;
+  clearPresenceDraftState();
   workspaceView.hidden = true;
   authView.hidden = false;
   loginForm.reset();
@@ -2375,6 +2437,7 @@ loginForm.addEventListener("submit", async (event) => {
 
   currentUser = member;
   activeCategory = resolvePreferredCategory();
+  clearPresenceDraftState();
   saveActiveUser(member);
   renderWorkspace();
 });
@@ -2423,7 +2486,20 @@ presenceNextButton.addEventListener("click", () => {
 });
 
 presenceDateInput.addEventListener("change", () => {
-  syncPresenceInputFields();
+  clearPresenceDraftState();
+  syncPresenceInputFields({ force: true });
+});
+
+presenceStartTimeInput.addEventListener("input", () => {
+  updatePresenceDraftState();
+});
+
+presenceEndTimeInput.addEventListener("input", () => {
+  updatePresenceDraftState();
+});
+
+presenceAvailabilitySelect.addEventListener("change", () => {
+  updatePresenceDraftState();
 });
 
 presenceInputForm.addEventListener("submit", async (event) => {
@@ -2461,10 +2537,11 @@ presenceInputForm.addEventListener("submit", async (event) => {
 
   setPresenceEntry(userId, dateKey, availability, startTime, endTime);
   presenceMonthKey = dateKey.slice(0, 7);
+  clearPresenceDraftState();
   presenceInputMessage.textContent =
     "\u4e88\u5b9a\u3092\u4fdd\u5b58\u3057\u307e\u3057\u305f\u3002\u5728\u5ba4\u7ba1\u7406\u306e\u6708\u6b21\u8868\u306b\u53cd\u6620\u3055\u308c\u307e\u3059\u3002";
   renderPresenceBoard();
-  syncPresenceInputFields();
+  syncPresenceInputFields({ force: true });
   try {
     await syncPresenceEntryToShared(userId, dateKey);
   } catch (error) {
@@ -2488,10 +2565,11 @@ presenceDeleteButton.addEventListener("click", async () => {
   presenceAvailabilitySelect.value = DEFAULT_AVAILABILITY;
   presenceSummaryPreview.value = "";
   presenceMonthKey = dateKey.slice(0, 7);
+  clearPresenceDraftState();
   presenceInputMessage.textContent =
     "\u3053\u306e\u65e5\u306e\u4e88\u5b9a\u3092\u524a\u9664\u3057\u307e\u3057\u305f\u3002";
   renderPresenceBoard();
-  syncPresenceInputFields();
+  syncPresenceInputFields({ force: true });
   try {
     await syncPresenceEntryToShared(userId, dateKey);
   } catch (error) {
