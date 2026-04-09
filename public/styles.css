@@ -976,6 +976,98 @@ p {
   text-align: right;
 }
 
+.clock-monthly-shell {
+  display: grid;
+  gap: 18px;
+}
+
+.clock-monthly-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.clock-monthly-summary-card {
+  width: min(240px, 100%);
+  text-align: center;
+}
+
+.clock-monthly-summary-card strong {
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  line-height: 1.1;
+}
+
+.clock-monthly-nav {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  width: min(420px, 100%);
+}
+
+.clock-monthly-table-wrap {
+  overflow: auto;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.clock-monthly-table {
+  width: 100%;
+  min-width: 920px;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.clock-monthly-table th,
+.clock-monthly-table td {
+  padding: 12px 10px;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  text-align: center;
+  vertical-align: middle;
+}
+
+.clock-monthly-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: rgba(18, 28, 63, 0.94);
+  font-weight: 700;
+}
+
+.clock-monthly-table th:first-child,
+.clock-monthly-table td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  min-width: 180px;
+  text-align: left;
+  background: rgba(16, 23, 53, 0.96);
+}
+
+.clock-monthly-table thead th:first-child {
+  z-index: 3;
+}
+
+.clock-monthly-primary {
+  font-size: 1rem;
+}
+
+.clock-monthly-last-action,
+.clock-monthly-last-time,
+.clock-monthly-empty {
+  display: block;
+}
+
+.clock-monthly-last-time,
+.clock-monthly-empty {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
 .view-card-empty {
   place-content: center;
   text-align: center;
@@ -1089,7 +1181,8 @@ p {
   }
 
   .tasks-header,
-  .tasks-layout {
+  .tasks-layout,
+  .clock-monthly-header {
     grid-template-columns: 1fr;
     display: grid;
   }
@@ -1127,7 +1220,8 @@ p {
   .permission-grid,
   .presence-input-grid,
   .presence-actions,
-  .clock-actions {
+  .clock-actions,
+  .clock-monthly-nav {
     grid-template-columns: 1fr;
   }
 
