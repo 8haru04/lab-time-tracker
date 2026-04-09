@@ -218,8 +218,6 @@ const clockSummaryText = document.getElementById("clockSummaryText");
 const clockExportButton = document.getElementById("clockExportButton");
 const clockHistoryList = document.getElementById("clockHistoryList");
 const clockMonthSummaryLabel = document.getElementById("clockMonthSummaryLabel");
-const clockMonthSummaryTotal = document.getElementById("clockMonthSummaryTotal");
-const clockMonthSummaryMembers = document.getElementById("clockMonthSummaryMembers");
 const clockMonthSummaryPrevButton = document.getElementById("clockMonthSummaryPrevButton");
 const clockMonthSummaryTodayButton = document.getElementById("clockMonthSummaryTodayButton");
 const clockMonthSummaryNextButton = document.getElementById("clockMonthSummaryNextButton");
@@ -2305,7 +2303,6 @@ function renderClockView() {
 
 function renderClockMonthlyView() {
   const orderedMembers = getOrderedMembers();
-  let totalActiveMinutes = 0;
 
   clockMonthSummaryLabel.textContent = `${formatMonthLabel(clockMonthSummaryKey)}\u306e\u7814\u7a76\u6642\u9593`;
   clockMonthSummaryTableBody.replaceChildren();
@@ -2315,7 +2312,6 @@ function renderClockMonthlyView() {
     const record = getClockRecord(member.id);
     const { logs: monthLogs, summary } = getClockSummaryForMonth(logs, record, clockMonthSummaryKey);
     const latestLog = monthLogs.length > 0 ? monthLogs[monthLogs.length - 1] : null;
-    totalActiveMinutes += summary.activeMinutes;
 
     const row = document.createElement("tr");
     const userCell = document.createElement("th");
@@ -2343,9 +2339,6 @@ function renderClockMonthlyView() {
     row.append(userCell, roleCell, activeCell, stayCell, breakCell, latestCell);
     clockMonthSummaryTableBody.appendChild(row);
   });
-
-  clockMonthSummaryTotal.textContent = formatDurationFromMinutes(totalActiveMinutes);
-  clockMonthSummaryMembers.textContent = `\u5bfe\u8c61 ${orderedMembers.length}\u4eba`;
 }
 
 function renderSettings() {

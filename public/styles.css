@@ -988,16 +988,6 @@ p {
   align-items: flex-start;
 }
 
-.clock-monthly-summary-card {
-  width: min(240px, 100%);
-  text-align: center;
-}
-
-.clock-monthly-summary-card strong {
-  font-size: clamp(1.8rem, 4vw, 2.8rem);
-  line-height: 1.1;
-}
-
 .clock-monthly-nav {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
