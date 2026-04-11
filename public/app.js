@@ -73,9 +73,9 @@ const FALLBACK_CONFIG = {
   appName: "\u4eba\u9593\u5de5\u5b66\u7814\u7a76\u5ba4 \u5171\u6709\u30c4\u30fc\u30eb",
   labName: "\u4eba\u9593\u5de5\u5b66\u7814\u7a76\u5ba4",
   tagline:
-    "\u7814\u7a76\u5ba4\u306e\u5728\u5ba4\u7ba1\u7406\u3001\u30de\u30a4\u30bf\u30b9\u30af\u3001\u6d3b\u52d5\u8a18\u9332\u3092\u4e00\u3064\u306e\u5165\u53e3\u304b\u3089\u5229\u7528\u3059\u308b\u305f\u3081\u306e\u5171\u6709\u30c4\u30fc\u30eb\u3067\u3059\u3002",
+    "\u7814\u7a76\u5ba4\u306e\u5171\u6709\u30c4\u30fc\u30eb\u3067\u3059\u3002",
   loginDescription:
-    "\u30da\u30fc\u30b8\u3092\u958b\u3044\u305f\u3068\u304d\u306f\u3001\u5b66\u7c4d\u756a\u53f7\u3092\u5165\u529b\u3057\u3066\u30ed\u30b0\u30a4\u30f3\u3057\u3066\u304f\u3060\u3055\u3044\u3002",
+    "\u5b66\u7c4d\u756a\u53f7\u3092\u5165\u529b\u3057\u3066\u304f\u3060\u3055\u3044\u3002",
   userRoles: [
     "\u6559\u6388",
     "\u52a9\u6559",
@@ -187,7 +187,7 @@ let currentUser = null;
 let activeCategory = null;
 let displayNameOverrides = {};
 let displayNameStatusMessage =
-  "\u8868\u793a\u540d\u306f\u3053\u306e\u7aef\u672b\u306e\u30ed\u30b0\u30a4\u30f3\u60c5\u5831\u3068\u4e00\u7dd2\u306b\u4fdd\u5b58\u3055\u308c\u307e\u3059\u3002";
+  "\u3053\u306e\u7aef\u672b\u306b\u4fdd\u5b58";
 let presencePlans = {};
 let presenceMonthKey = "";
 let presenceDraftState = null;
@@ -417,11 +417,11 @@ function createClientId(prefix) {
 
 function getSharedStoreStatusText() {
   if (sharedStore.lastError) {
-    return `\u5171\u6709\u4fdd\u5b58\u5148\u306b\u63a5\u7d9a\u3067\u304d\u306a\u304b\u3063\u305f\u305f\u3081\u3001\u3044\u307e\u306f\u3053\u306e\u7aef\u672b\u306e\u4fdd\u5b58\u3092\u4f7f\u3063\u3066\u3044\u307e\u3059\u3002 ${sharedStore.lastError}`;
+    return `\u7aef\u672b\u4fdd\u5b58\u4e2d / ${sharedStore.lastError}`;
   }
 
   if (isSharedStoreActive()) {
-    return "\u5171\u6709\u4fdd\u5b58\u5148\u304c\u6709\u52b9\u3067\u3001\u4ed6\u306e\u30e6\u30fc\u30b6\u30fc\u306e\u5909\u66f4\u3082\u9806\u6b21\u53cd\u6620\u3055\u308c\u307e\u3059\u3002";
+    return "\u5171\u6709\u4fdd\u5b58\u4e2d";
   }
 
   return sharedStore.statusText;
@@ -1296,17 +1296,16 @@ function updatePresenceDraftState() {
       dateKey,
       entry: nextEntry
     };
-    presenceSummaryPreview.value = buildPresencePreview(nextEntry);
-    presenceInputMessage.textContent =
-      "\u307e\u3060\u672a\u4fdd\u5b58\u306e\u5165\u529b\u304c\u3042\u308a\u307e\u3059\u3002\u4fdd\u5b58\u3059\u308b\u3068\u5728\u5ba4\u7ba1\u7406\u306b\u53cd\u6620\u3055\u308c\u307e\u3059\u3002";
+  presenceSummaryPreview.value = buildPresencePreview(nextEntry);
+    presenceInputMessage.textContent = "\u672a\u4fdd\u5b58\u3067\u3059\u3002";
     return;
   }
 
   clearPresenceDraftState();
   presenceSummaryPreview.value = buildPresencePreview(savedEntry);
   presenceInputMessage.textContent = savedEntry
-    ? "\u3053\u306e\u65e5\u306e\u4e88\u5b9a\u304c\u3059\u3067\u306b\u4fdd\u5b58\u3055\u308c\u3066\u3044\u307e\u3059\u3002\u4fdd\u5b58\u3059\u308b\u3068\u4e0a\u66f8\u304d\u3055\u308c\u307e\u3059\u3002"
-    : "\u5165\u529b\u3057\u305f\u5185\u5bb9\u306f\u5728\u5ba4\u7ba1\u7406\u306e\u6708\u6b21\u8868\u306b\u53cd\u6620\u3055\u308c\u307e\u3059\u3002";
+    ? "\u4fdd\u5b58\u6e08\u307f\u3067\u3059\u3002"
+    : "\u4fdd\u5b58\u524d\u3067\u3059\u3002";
 }
 
 function loadPresencePlans() {
@@ -1910,7 +1909,7 @@ function renderCurrentUserSummary() {
 
   displayNameInput.value = currentUser.displayName;
   displayNameMessage.textContent = isSharedStoreActive()
-    ? "\u8868\u793a\u540d\u306f\u5171\u6709\u4fdd\u5b58\u5148\u306b\u4fdd\u5b58\u3055\u308c\u3001\u4ed6\u306e\u30e6\u30fc\u30b6\u30fc\u306b\u3082\u53cd\u6620\u3055\u308c\u307e\u3059\u3002"
+    ? "\u5171\u6709\u4fdd\u5b58\u4e2d"
     : displayNameStatusMessage;
 
   currentUserCard.append(
@@ -1994,10 +1993,10 @@ function syncPresenceInputFields(options = {}) {
     activeDraft?.availability || entry?.availability || DEFAULT_AVAILABILITY;
   presenceSummaryPreview.value = buildPresencePreview(activeDraft || entry);
   presenceInputMessage.textContent = activeDraft
-    ? "\u307e\u3060\u672a\u4fdd\u5b58\u306e\u5165\u529b\u304c\u3042\u308a\u307e\u3059\u3002\u4fdd\u5b58\u3059\u308b\u3068\u5728\u5ba4\u7ba1\u7406\u306b\u53cd\u6620\u3055\u308c\u307e\u3059\u3002"
+    ? "\u672a\u4fdd\u5b58\u3067\u3059\u3002"
     : entry
-      ? "\u3053\u306e\u65e5\u306e\u4e88\u5b9a\u304c\u3059\u3067\u306b\u4fdd\u5b58\u3055\u308c\u3066\u3044\u307e\u3059\u3002\u4fdd\u5b58\u3059\u308b\u3068\u4e0a\u66f8\u304d\u3055\u308c\u307e\u3059\u3002"
-      : "\u5165\u529b\u3057\u305f\u5185\u5bb9\u306f\u5728\u5ba4\u7ba1\u7406\u306e\u6708\u6b21\u8868\u306b\u53cd\u6620\u3055\u308c\u307e\u3059\u3002";
+      ? "\u4fdd\u5b58\u6e08\u307f\u3067\u3059\u3002"
+      : "\u4fdd\u5b58\u524d\u3067\u3059\u3002";
 }
 
 function renderPresenceBoard() {
@@ -2106,7 +2105,7 @@ function renderTasksView() {
 
   const tasks = sortTasksByDueDate(getTaskOwnerTasks(currentUser.id));
 
-  taskOwnerText.textContent = `${currentUser.displayName} / ${currentUser.id} \u306e\u30bf\u30b9\u30af\u3092\u8868\u793a\u3057\u3066\u3044\u307e\u3059\u3002`;
+  taskOwnerText.textContent = `${currentUser.displayName} / ${currentUser.id}`;
   taskList.replaceChildren();
 
   if (tasks.length === 0) {
@@ -2148,11 +2147,11 @@ function renderClockView() {
       : "\u307e\u3060\u672c\u65e5\u306e\u6d3b\u52d5\u8a18\u9332\u306f\u3042\u308a\u307e\u305b\u3093\u3002";
   }
   clockMonthTotalValue.textContent = formatDurationFromMinutes(monthSummary.activeMinutes);
-  clockMonthTotalNote.textContent = `${formatMonthRangeLabel(new Date())}\u306e1\u65e5\u304b\u3089\u4eca\u65e5\u307e\u3067\u306e\u5b9f\u50cd\u7d2f\u8a08`;
+  clockMonthTotalNote.textContent = formatMonthRangeLabel(new Date());
   clockTotalValue.textContent = formatDurationFromMinutes(totalSummary.activeMinutes);
   clockTotalNote.textContent = logs.length > 0
-    ? `\u8a18\u9332\u958b\u59cb\u304b\u3089\u4eca\u65e5\u307e\u3067\u306e\u5b9f\u50cd\u7d2f\u8a08`
-    : "\u307e\u3060\u7d2f\u8a08\u3067\u304d\u308b\u6d3b\u52d5\u8a18\u9332\u304c\u3042\u308a\u307e\u305b\u3093";
+    ? "\u7d2f\u8a08"
+    : "";
 
   clockActionButtons.replaceChildren();
   clockActionButtons.className = `clock-actions${actions.length === 1 ? " is-single" : ""}`;
@@ -2237,8 +2236,8 @@ function renderSettings() {
   renderCurrentUserSummary();
 
   const baseNotice = canManagePermissions(currentUser)
-    ? "\u73fe\u5728\u306f\u3001\u3059\u3079\u3066\u306e\u30e6\u30fc\u30b6\u30fc\u304c\u57fa\u672c\u6a5f\u80fd\u3092\u5229\u7528\u3067\u304d\u307e\u3059\u3002\u30e6\u30fc\u30b6\u30fc\u767b\u9332\u3060\u3051\u304c\u7ba1\u7406\u8005\u306e\u64cd\u4f5c\u5bfe\u8c61\u3067\u3059\u3002"
-    : "\u73fe\u5728\u306f\u3001\u3059\u3079\u3066\u306e\u57fa\u672c\u6a5f\u80fd\u3092\u5229\u7528\u3067\u304d\u307e\u3059\u3002\u30e6\u30fc\u30b6\u30fc\u767b\u9332\u3060\u3051\u304c\u7ba1\u7406\u8005\u9650\u5b9a\u3067\u3059\u3002";
+    ? "\u57fa\u672c\u6a5f\u80fd\u5229\u7528\u53ef / \u30e6\u30fc\u30b6\u30fc\u8ffd\u52a0\u53ef"
+    : "\u57fa\u672c\u6a5f\u80fd\u5229\u7528\u53ef / \u30e6\u30fc\u30b6\u30fc\u8ffd\u52a0\u4e0d\u53ef";
   settingsNotice.textContent = `${baseNotice} ${getSharedStoreStatusText()}`;
 
   adminSection.hidden = !canManagePermissions(currentUser);
@@ -2338,7 +2337,7 @@ function resetToLogin() {
   history.replaceState(null, "", window.location.pathname);
   resetLoginFormMessage();
   displayNameStatusMessage =
-    "\u8868\u793a\u540d\u306f\u3053\u306e\u7aef\u672b\u306e\u30ed\u30b0\u30a4\u30f3\u60c5\u5831\u3068\u4e00\u7dd2\u306b\u4fdd\u5b58\u3055\u308c\u307e\u3059\u3002";
+    "\u3053\u306e\u7aef\u672b\u306b\u4fdd\u5b58";
   focusUserIdInput();
 }
 
