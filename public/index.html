@@ -99,57 +99,6 @@
                     <tbody id="presenceTableBody"></tbody>
                   </table>
                 </div>
-                <section class="panel presence-form-panel">
-                  <div class="panel-head">
-                    <p class="view-label">&#x4e88;&#x5b9a;&#x5165;&#x529b;</p>
-                    <h3>&#x4e88;&#x5b9a;&#x5165;&#x529b;</h3>
-                  </div>
-
-                  <form id="presenceInputForm" class="form-stack">
-                    <div class="presence-input-grid">
-                      <label class="field">
-                        <span>&#x65e5;&#x4ed8;</span>
-                        <input id="presenceDateInput" type="date" name="presenceDate">
-                      </label>
-
-                      <div class="info-box presence-owner-box">
-                        <strong>&#x5bfe;&#x8c61;</strong>
-                        <small id="presenceOwnerText"></small>
-                      </div>
-                    </div>
-
-                    <div class="presence-input-grid">
-                      <label class="field">
-                        <span>&#x958b;&#x59cb;&#x6642;&#x9593;</span>
-                        <input id="presenceStartTimeInput" type="time" name="presenceStartTime">
-                      </label>
-
-                      <label class="field">
-                        <span>&#x7d42;&#x4e86;&#x6642;&#x9593;</span>
-                        <input id="presenceEndTimeInput" type="time" name="presenceEndTime">
-                      </label>
-                    </div>
-
-                    <label class="field">
-                      <span>&#x5bfe;&#x5fdc;&#x53ef;&#x5426;</span>
-                      <select id="presenceAvailabilitySelect" name="presenceAvailability"></select>
-                    </label>
-
-                    <div class="presence-input-grid">
-                      <label class="field">
-                        <span>&#x78ba;&#x8a8d;</span>
-                        <input id="presenceSummaryPreview" type="text" value="" readonly>
-                      </label>
-                    </div>
-
-                    <div class="presence-actions">
-                      <button class="primary-button" type="submit">&#x4fdd;&#x5b58;</button>
-                      <button id="presenceDeleteButton" class="secondary-button" type="button">&#x524a;&#x9664;</button>
-                    </div>
-                  </form>
-
-                  <p id="presenceInputMessage" class="helper-text">&#x4fdd;&#x5b58;&#x3059;&#x308b;&#x3068;&#x53cd;&#x6620;&#x3055;&#x308c;&#x307e;&#x3059;&#x3002;</p>
-                </section>
 
                 <div id="presenceEditorModal" class="presence-editor-backdrop" hidden>
                   <section class="presence-editor-dialog" role="dialog" aria-modal="true" aria-labelledby="presenceEditorTitle">

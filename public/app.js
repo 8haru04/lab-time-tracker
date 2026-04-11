@@ -136,15 +136,6 @@ const presenceTodayButton = document.getElementById("presenceTodayButton");
 const presenceNextButton = document.getElementById("presenceNextButton");
 const presenceTableHead = document.getElementById("presenceTableHead");
 const presenceTableBody = document.getElementById("presenceTableBody");
-const presenceInputForm = document.getElementById("presenceInputForm");
-const presenceDateInput = document.getElementById("presenceDateInput");
-const presenceOwnerText = document.getElementById("presenceOwnerText");
-const presenceStartTimeInput = document.getElementById("presenceStartTimeInput");
-const presenceEndTimeInput = document.getElementById("presenceEndTimeInput");
-const presenceAvailabilitySelect = document.getElementById("presenceAvailabilitySelect");
-const presenceSummaryPreview = document.getElementById("presenceSummaryPreview");
-const presenceDeleteButton = document.getElementById("presenceDeleteButton");
-const presenceInputMessage = document.getElementById("presenceInputMessage");
 const presenceEditorModal = document.getElementById("presenceEditorModal");
 const presenceEditorForm = document.getElementById("presenceEditorForm");
 const presenceEditorTitle = document.getElementById("presenceEditorTitle");
@@ -200,7 +191,6 @@ let displayNameStatusMessage =
   "\u3053\u306e\u7aef\u672b\u306b\u4fdd\u5b58";
 let presencePlans = {};
 let presenceMonthKey = "";
-let presenceDraftState = null;
 let presenceEditorDateKey = "";
 let clockMonthSummaryKey = "";
 let clockRecords = {};
@@ -1304,10 +1294,6 @@ function openPresenceEditor(dateKey) {
 
   const entry = getPresenceEntry(currentUser.id, dateKey);
   presenceEditorDateKey = dateKey;
-  presenceDateInput.value = dateKey;
-  clearPresenceDraftState();
-  syncPresenceInputFields({ force: true });
-
   presenceEditorTitle.textContent = formatDateKey(dateKey);
   presenceEditorStartTimeInput.value = entry?.startTime || "";
   presenceEditorEndTimeInput.value = entry?.endTime || "";
@@ -1345,9 +1331,7 @@ async function savePresenceEntryForUser(userId, dateKey, startTime, endTime, ava
 
   setPresenceEntry(userId, dateKey, availability, startTime, endTime);
   presenceMonthKey = dateKey.slice(0, 7);
-  clearPresenceDraftState();
   renderPresenceBoard();
-  syncPresenceInputFields({ force: true });
 
   try {
     await syncPresenceEntryToShared(userId, dateKey);
@@ -1368,9 +1352,7 @@ async function deletePresenceEntryForUser(userId, dateKey, messageTarget) {
 
   setPresenceEntry(userId, dateKey, "", "", "");
   presenceMonthKey = dateKey.slice(0, 7);
-  clearPresenceDraftState();
   renderPresenceBoard();
-  syncPresenceInputFields({ force: true });
 
   try {
     await syncPresenceEntryToShared(userId, dateKey);
@@ -1381,54 +1363,6 @@ async function deletePresenceEntryForUser(userId, dateKey, messageTarget) {
 
   messageTarget.textContent = "\u524a\u9664\u3057\u307e\u3057\u305f\u3002";
   return true;
-}
-
-function getPresenceDraftKey(userId, dateKey) {
-  return `${userId || ""}:${dateKey || ""}`;
-}
-
-function clearPresenceDraftState() {
-  presenceDraftState = null;
-}
-
-function updatePresenceDraftState() {
-  if (!currentUser) {
-    clearPresenceDraftState();
-    return;
-  }
-
-  const dateKey = presenceDateInput.value || getTodayDateKey();
-  const savedEntry = getPresenceEntry(currentUser.id, dateKey);
-  const nextEntry = {
-    availability: normalizeAvailability(presenceAvailabilitySelect.value) || DEFAULT_AVAILABILITY,
-    startTime: normalizeTimeValue(presenceStartTimeInput.value),
-    endTime: normalizeTimeValue(presenceEndTimeInput.value),
-    note: ""
-  };
-
-  const differsFromSaved =
-    (savedEntry?.availability || DEFAULT_AVAILABILITY) !== nextEntry.availability ||
-    (savedEntry?.startTime || "") !== nextEntry.startTime ||
-    (savedEntry?.endTime || "") !== nextEntry.endTime;
-  const hasTypedValue = Boolean(nextEntry.startTime || nextEntry.endTime);
-
-  if (differsFromSaved || hasTypedValue) {
-    presenceDraftState = {
-      key: getPresenceDraftKey(currentUser.id, dateKey),
-      userId: currentUser.id,
-      dateKey,
-      entry: nextEntry
-    };
-  presenceSummaryPreview.value = buildPresencePreview(nextEntry);
-    presenceInputMessage.textContent = "\u672a\u4fdd\u5b58\u3067\u3059\u3002";
-    return;
-  }
-
-  clearPresenceDraftState();
-  presenceSummaryPreview.value = buildPresencePreview(savedEntry);
-  presenceInputMessage.textContent = savedEntry
-    ? "\u4fdd\u5b58\u6e08\u307f\u3067\u3059\u3002"
-    : "\u4fdd\u5b58\u524d\u3067\u3059\u3002";
 }
 
 function loadPresencePlans() {
@@ -1926,7 +1860,6 @@ function renderConfig(config) {
   tagline.textContent = config.tagline;
   loginDescription.textContent = config.loginDescription;
   renderRoleOptions(memberRoleSelect, config.userRoles);
-  renderAvailabilityOptions(presenceAvailabilitySelect);
   renderAvailabilityOptions(presenceEditorAvailabilitySelect);
 }
 
@@ -2094,35 +2027,6 @@ function renderMemberTable() {
   });
 }
 
-function syncPresenceInputFields(options = {}) {
-  if (!currentUser) {
-    return;
-  }
-
-  const dateKey = presenceDateInput.value || getTodayDateKey();
-  const entry = getPresenceEntry(currentUser.id, dateKey);
-  const draftKey = getPresenceDraftKey(currentUser.id, dateKey);
-  const activeDraft =
-    !options.force &&
-    presenceDraftState &&
-    presenceDraftState.key === draftKey &&
-    presenceDraftState.entry
-      ? presenceDraftState.entry
-      : null;
-
-  presenceOwnerText.textContent = `${currentUser.displayName} / ${currentUser.id}`;
-  presenceStartTimeInput.value = activeDraft?.startTime || entry?.startTime || "";
-  presenceEndTimeInput.value = activeDraft?.endTime || entry?.endTime || "";
-  presenceAvailabilitySelect.value =
-    activeDraft?.availability || entry?.availability || DEFAULT_AVAILABILITY;
-  presenceSummaryPreview.value = buildPresencePreview(activeDraft || entry);
-  presenceInputMessage.textContent = activeDraft
-    ? "\u672a\u4fdd\u5b58\u3067\u3059\u3002"
-    : entry
-      ? "\u4fdd\u5b58\u6e08\u307f\u3067\u3059\u3002"
-      : "\u4fdd\u5b58\u524d\u3067\u3059\u3002";
-}
-
 function renderPresenceBoard() {
   const orderedMembers = getOrderedMembers();
   const days = getDaysForMonth(presenceMonthKey);
@@ -2207,15 +2111,6 @@ function renderPresenceBoard() {
 
     presenceTableBody.appendChild(row);
   });
-}
-
-function renderPresenceInput() {
-  if (!presenceDateInput.value) {
-    presenceDateInput.value = getTodayDateKey();
-  }
-
-  presenceAvailabilitySelect.value = presenceAvailabilitySelect.value || DEFAULT_AVAILABILITY;
-  syncPresenceInputFields();
 }
 
 function createTaskCard(task) {
@@ -2399,7 +2294,6 @@ function renderViews() {
 
   if (activeCategory === "presence") {
     renderPresenceBoard();
-    renderPresenceInput();
   }
 
   if (activeCategory === "tasks") {
@@ -2471,7 +2365,6 @@ function resetLoginFormMessage() {
 function resetToLogin() {
   currentUser = null;
   activeCategory = null;
-  clearPresenceDraftState();
   closePresenceEditor();
   workspaceView.hidden = true;
   authView.hidden = false;
@@ -2547,7 +2440,6 @@ loginForm.addEventListener("submit", async (event) => {
 
   currentUser = member;
   activeCategory = resolvePreferredCategory();
-  clearPresenceDraftState();
   saveActiveUser(member);
   renderWorkspace();
 });
@@ -2608,40 +2500,6 @@ clockMonthSummaryTodayButton.addEventListener("click", () => {
 clockMonthSummaryNextButton.addEventListener("click", () => {
   clockMonthSummaryKey = shiftMonthKey(clockMonthSummaryKey, 1);
   renderClockMonthlyView();
-});
-
-presenceDateInput.addEventListener("change", () => {
-  clearPresenceDraftState();
-  syncPresenceInputFields({ force: true });
-});
-
-presenceStartTimeInput.addEventListener("input", () => {
-  updatePresenceDraftState();
-});
-
-presenceEndTimeInput.addEventListener("input", () => {
-  updatePresenceDraftState();
-});
-
-presenceAvailabilitySelect.addEventListener("change", () => {
-  updatePresenceDraftState();
-});
-
-presenceInputForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-
-  await savePresenceEntryForUser(
-    currentUser?.id,
-    presenceDateInput.value,
-    presenceStartTimeInput.value,
-    presenceEndTimeInput.value,
-    presenceAvailabilitySelect.value,
-    presenceInputMessage
-  );
-});
-
-presenceDeleteButton.addEventListener("click", async () => {
-  await deletePresenceEntryForUser(currentUser?.id, presenceDateInput.value, presenceInputMessage);
 });
 
 presenceEditorStartTimeInput.addEventListener("input", () => {

@@ -412,11 +412,6 @@ p {
   gap: 18px;
 }
 
-.presence-form-panel {
-  display: grid;
-  gap: 16px;
-}
-
 .presence-toolbar {
   display: flex;
   justify-content: space-between;
@@ -583,15 +578,20 @@ p {
   position: fixed;
   inset: 0;
   z-index: 50;
-  display: grid;
-  place-items: center;
-  padding: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  overflow-y: auto;
+  padding: clamp(18px, 5vh, 48px) 20px 24px;
   background: rgba(4, 7, 20, 0.72);
   backdrop-filter: blur(10px);
+  -webkit-overflow-scrolling: touch;
 }
 
 .presence-editor-dialog {
   width: min(520px, 100%);
+  max-height: calc(100dvh - 48px);
+  overflow-y: auto;
   display: grid;
   gap: 18px;
   padding: 24px;
@@ -599,6 +599,7 @@ p {
   border-radius: var(--radius-xl);
   background: linear-gradient(180deg, rgba(17, 25, 55, 0.96) 0%, rgba(10, 16, 40, 0.94) 100%);
   box-shadow: var(--shadow);
+  -webkit-overflow-scrolling: touch;
 }
 
 .presence-editor-head {
@@ -1312,5 +1313,15 @@ p {
 
   .clock-history-time {
     text-align: left;
+  }
+
+  .presence-editor-backdrop {
+    padding: 12px;
+  }
+
+  .presence-editor-dialog {
+    max-height: calc(100dvh - 24px);
+    padding: 18px;
+    border-radius: 22px;
   }
 }
