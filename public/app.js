@@ -145,6 +145,16 @@ const presenceAvailabilitySelect = document.getElementById("presenceAvailability
 const presenceSummaryPreview = document.getElementById("presenceSummaryPreview");
 const presenceDeleteButton = document.getElementById("presenceDeleteButton");
 const presenceInputMessage = document.getElementById("presenceInputMessage");
+const presenceEditorModal = document.getElementById("presenceEditorModal");
+const presenceEditorForm = document.getElementById("presenceEditorForm");
+const presenceEditorTitle = document.getElementById("presenceEditorTitle");
+const presenceEditorStartTimeInput = document.getElementById("presenceEditorStartTimeInput");
+const presenceEditorEndTimeInput = document.getElementById("presenceEditorEndTimeInput");
+const presenceEditorAvailabilitySelect = document.getElementById("presenceEditorAvailabilitySelect");
+const presenceEditorSummaryPreview = document.getElementById("presenceEditorSummaryPreview");
+const presenceEditorDeleteButton = document.getElementById("presenceEditorDeleteButton");
+const presenceEditorMessage = document.getElementById("presenceEditorMessage");
+const presenceEditorCloseButton = document.getElementById("presenceEditorCloseButton");
 const taskOwnerText = document.getElementById("taskOwnerText");
 const taskForm = document.getElementById("taskForm");
 const taskTitleInput = document.getElementById("taskTitleInput");
@@ -191,6 +201,7 @@ let displayNameStatusMessage =
 let presencePlans = {};
 let presenceMonthKey = "";
 let presenceDraftState = null;
+let presenceEditorDateKey = "";
 let clockMonthSummaryKey = "";
 let clockRecords = {};
 let clockLogs = {};
@@ -1260,6 +1271,118 @@ function buildPresencePreview(entry) {
   return parts.join(" / ");
 }
 
+function getPresenceEntryFromValues(availability, startTime, endTime) {
+  return {
+    availability: normalizeAvailability(availability) || DEFAULT_AVAILABILITY,
+    startTime: normalizeTimeValue(startTime),
+    endTime: normalizeTimeValue(endTime),
+    note: ""
+  };
+}
+
+function updatePresenceEditorPreview() {
+  const previewEntry = getPresenceEntryFromValues(
+    presenceEditorAvailabilitySelect.value,
+    presenceEditorStartTimeInput.value,
+    presenceEditorEndTimeInput.value
+  );
+
+  presenceEditorSummaryPreview.value = buildPresencePreview(previewEntry);
+}
+
+function closePresenceEditor() {
+  presenceEditorDateKey = "";
+  presenceEditorModal.hidden = true;
+  document.body.classList.remove("is-modal-open");
+  presenceEditorMessage.textContent = "";
+}
+
+function openPresenceEditor(dateKey) {
+  if (!currentUser || !dateKey) {
+    return;
+  }
+
+  const entry = getPresenceEntry(currentUser.id, dateKey);
+  presenceEditorDateKey = dateKey;
+  presenceDateInput.value = dateKey;
+  clearPresenceDraftState();
+  syncPresenceInputFields({ force: true });
+
+  presenceEditorTitle.textContent = formatDateKey(dateKey);
+  presenceEditorStartTimeInput.value = entry?.startTime || "";
+  presenceEditorEndTimeInput.value = entry?.endTime || "";
+  presenceEditorAvailabilitySelect.value = entry?.availability || DEFAULT_AVAILABILITY;
+  updatePresenceEditorPreview();
+  presenceEditorMessage.textContent = entry ? "\u4fdd\u5b58\u6e08\u307f\u3067\u3059\u3002" : "\u4fdd\u5b58\u524d\u3067\u3059\u3002";
+  presenceEditorModal.hidden = false;
+  document.body.classList.add("is-modal-open");
+
+  window.requestAnimationFrame(() => {
+    presenceEditorStartTimeInput.focus();
+  });
+}
+
+async function savePresenceEntryForUser(userId, dateKey, startTime, endTime, availability, messageTarget) {
+  if (!dateKey || !userId) {
+    messageTarget.textContent = "\u65e5\u4ed8\u3092\u9078\u3093\u3067\u304f\u3060\u3055\u3044\u3002";
+    return false;
+  }
+
+  if (!startTime || !endTime) {
+    messageTarget.textContent = "\u6642\u9593\u3092\u5165\u529b\u3057\u3066\u304f\u3060\u3055\u3044\u3002";
+    return false;
+  }
+
+  if (startTime >= endTime) {
+    messageTarget.textContent = "\u6642\u9593\u3092\u898b\u76f4\u3057\u3066\u304f\u3060\u3055\u3044\u3002";
+    return false;
+  }
+
+  if (!availability) {
+    messageTarget.textContent = "\u5bfe\u5fdc\u53ef\u5426\u3092\u9078\u3093\u3067\u304f\u3060\u3055\u3044\u3002";
+    return false;
+  }
+
+  setPresenceEntry(userId, dateKey, availability, startTime, endTime);
+  presenceMonthKey = dateKey.slice(0, 7);
+  clearPresenceDraftState();
+  renderPresenceBoard();
+  syncPresenceInputFields({ force: true });
+
+  try {
+    await syncPresenceEntryToShared(userId, dateKey);
+  } catch (error) {
+    messageTarget.textContent = getSharedSyncErrorText(error);
+    return false;
+  }
+
+  messageTarget.textContent = "\u4fdd\u5b58\u3057\u307e\u3057\u305f\u3002";
+  return true;
+}
+
+async function deletePresenceEntryForUser(userId, dateKey, messageTarget) {
+  if (!dateKey || !userId) {
+    messageTarget.textContent = "\u65e5\u4ed8\u3092\u9078\u3093\u3067\u304f\u3060\u3055\u3044\u3002";
+    return false;
+  }
+
+  setPresenceEntry(userId, dateKey, "", "", "");
+  presenceMonthKey = dateKey.slice(0, 7);
+  clearPresenceDraftState();
+  renderPresenceBoard();
+  syncPresenceInputFields({ force: true });
+
+  try {
+    await syncPresenceEntryToShared(userId, dateKey);
+  } catch (error) {
+    messageTarget.textContent = getSharedSyncErrorText(error);
+    return false;
+  }
+
+  messageTarget.textContent = "\u524a\u9664\u3057\u307e\u3057\u305f\u3002";
+  return true;
+}
+
 function getPresenceDraftKey(userId, dateKey) {
   return `${userId || ""}:${dateKey || ""}`;
 }
@@ -1804,6 +1927,7 @@ function renderConfig(config) {
   loginDescription.textContent = config.loginDescription;
   renderRoleOptions(memberRoleSelect, config.userRoles);
   renderAvailabilityOptions(presenceAvailabilitySelect);
+  renderAvailabilityOptions(presenceEditorAvailabilitySelect);
 }
 
 function updateHash(categoryKey) {
@@ -2035,6 +2159,8 @@ function renderPresenceBoard() {
     days.forEach((day) => {
       const cell = document.createElement("td");
       const entry = getPresenceEntry(member.id, day.key);
+      const isEditableCell = currentUser && member.id === currentUser.id;
+      let content;
 
       if (entry) {
         const availability = getAvailabilityMeta(entry.availability) || getAvailabilityMeta("consult");
@@ -2052,12 +2178,28 @@ function renderPresenceBoard() {
           : entry.note || "\u4e88\u5b9a\u3042\u308a";
 
         wrapper.append(badge, time);
-        cell.appendChild(wrapper);
+        content = wrapper;
       } else {
         const empty = document.createElement("span");
         empty.className = "presence-cell-empty";
         empty.textContent = "-";
-        cell.appendChild(empty);
+        content = empty;
+      }
+
+      if (isEditableCell) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "presence-cell-button";
+        button.title = `${formatDateKey(day.key)}\u3092\u7de8\u96c6`;
+        button.setAttribute("aria-label", `${formatDateKey(day.key)}\u306e\u4e88\u5b9a\u3092\u7de8\u96c6`);
+        button.appendChild(content);
+        button.addEventListener("click", () => {
+          openPresenceEditor(day.key);
+        });
+        cell.classList.add("is-own-cell");
+        cell.appendChild(button);
+      } else {
+        cell.appendChild(content);
       }
 
       row.appendChild(cell);
@@ -2330,6 +2472,7 @@ function resetToLogin() {
   currentUser = null;
   activeCategory = null;
   clearPresenceDraftState();
+  closePresenceEditor();
   workspaceView.hidden = true;
   authView.hidden = false;
   loginForm.reset();
@@ -2487,75 +2630,70 @@ presenceAvailabilitySelect.addEventListener("change", () => {
 presenceInputForm.addEventListener("submit", async (event) => {
   event.preventDefault();
 
-  const dateKey = presenceDateInput.value;
-  const userId = currentUser?.id;
-  const startTime = presenceStartTimeInput.value;
-  const endTime = presenceEndTimeInput.value;
-  const availability = presenceAvailabilitySelect.value;
-
-  if (!dateKey || !userId) {
-    presenceInputMessage.textContent =
-      "\u65e5\u4ed8\u3092\u9078\u3093\u3067\u304f\u3060\u3055\u3044\u3002";
-    return;
-  }
-
-  if (!startTime || !endTime) {
-    presenceInputMessage.textContent =
-      "\u958b\u59cb\u6642\u9593\u3068\u7d42\u4e86\u6642\u9593\u3092\u5165\u529b\u3057\u3066\u304f\u3060\u3055\u3044\u3002";
-    return;
-  }
-
-  if (startTime >= endTime) {
-    presenceInputMessage.textContent =
-      "\u7d42\u4e86\u6642\u9593\u306f\u958b\u59cb\u6642\u9593\u3088\u308a\u5f8c\u306b\u8a2d\u5b9a\u3057\u3066\u304f\u3060\u3055\u3044\u3002";
-    return;
-  }
-
-  if (!availability) {
-    presenceInputMessage.textContent =
-      "\u5bfe\u5fdc\u53ef\u5426\u3092\u9078\u3093\u3067\u304f\u3060\u3055\u3044\u3002";
-    return;
-  }
-
-  setPresenceEntry(userId, dateKey, availability, startTime, endTime);
-  presenceMonthKey = dateKey.slice(0, 7);
-  clearPresenceDraftState();
-  presenceInputMessage.textContent =
-    "\u4e88\u5b9a\u3092\u4fdd\u5b58\u3057\u307e\u3057\u305f\u3002\u5728\u5ba4\u7ba1\u7406\u306e\u6708\u6b21\u8868\u306b\u53cd\u6620\u3055\u308c\u307e\u3059\u3002";
-  renderPresenceBoard();
-  syncPresenceInputFields({ force: true });
-  try {
-    await syncPresenceEntryToShared(userId, dateKey);
-  } catch (error) {
-    presenceInputMessage.textContent = getSharedSyncErrorText(error);
-  }
+  await savePresenceEntryForUser(
+    currentUser?.id,
+    presenceDateInput.value,
+    presenceStartTimeInput.value,
+    presenceEndTimeInput.value,
+    presenceAvailabilitySelect.value,
+    presenceInputMessage
+  );
 });
 
 presenceDeleteButton.addEventListener("click", async () => {
-  const dateKey = presenceDateInput.value;
-  const userId = currentUser?.id;
+  await deletePresenceEntryForUser(currentUser?.id, presenceDateInput.value, presenceInputMessage);
+});
 
-  if (!dateKey || !userId) {
-    presenceInputMessage.textContent =
-      "\u524a\u9664\u3059\u308b\u65e5\u4ed8\u3092\u9078\u3093\u3067\u304f\u3060\u3055\u3044\u3002";
-    return;
+presenceEditorStartTimeInput.addEventListener("input", () => {
+  updatePresenceEditorPreview();
+});
+
+presenceEditorEndTimeInput.addEventListener("input", () => {
+  updatePresenceEditorPreview();
+});
+
+presenceEditorAvailabilitySelect.addEventListener("change", () => {
+  updatePresenceEditorPreview();
+});
+
+presenceEditorForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const saved = await savePresenceEntryForUser(
+    currentUser?.id,
+    presenceEditorDateKey,
+    presenceEditorStartTimeInput.value,
+    presenceEditorEndTimeInput.value,
+    presenceEditorAvailabilitySelect.value,
+    presenceEditorMessage
+  );
+
+  if (saved) {
+    closePresenceEditor();
   }
+});
 
-  setPresenceEntry(userId, dateKey, "", "", "");
-  presenceStartTimeInput.value = "";
-  presenceEndTimeInput.value = "";
-  presenceAvailabilitySelect.value = DEFAULT_AVAILABILITY;
-  presenceSummaryPreview.value = "";
-  presenceMonthKey = dateKey.slice(0, 7);
-  clearPresenceDraftState();
-  presenceInputMessage.textContent =
-    "\u3053\u306e\u65e5\u306e\u4e88\u5b9a\u3092\u524a\u9664\u3057\u307e\u3057\u305f\u3002";
-  renderPresenceBoard();
-  syncPresenceInputFields({ force: true });
-  try {
-    await syncPresenceEntryToShared(userId, dateKey);
-  } catch (error) {
-    presenceInputMessage.textContent = getSharedSyncErrorText(error);
+presenceEditorDeleteButton.addEventListener("click", async () => {
+  const deleted = await deletePresenceEntryForUser(currentUser?.id, presenceEditorDateKey, presenceEditorMessage);
+
+  if (deleted) {
+    closePresenceEditor();
+  }
+});
+
+presenceEditorCloseButton.addEventListener("click", () => {
+  closePresenceEditor();
+});
+
+presenceEditorModal.addEventListener("click", (event) => {
+  if (event.target === presenceEditorModal) {
+    closePresenceEditor();
+  }
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !presenceEditorModal.hidden) {
+    closePresenceEditor();
   }
 });
 

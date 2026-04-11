@@ -38,6 +38,10 @@ body {
     linear-gradient(180deg, var(--bg) 0%, var(--bg-deep) 100%);
 }
 
+body.is-modal-open {
+  overflow: hidden;
+}
+
 body::before {
   content: "";
   position: fixed;
@@ -549,6 +553,71 @@ p {
 
 .presence-cell-empty {
   color: rgba(255, 255, 255, 0.26);
+}
+
+.presence-table td.is-own-cell {
+  padding: 0;
+}
+
+.presence-cell-button {
+  width: 100%;
+  min-height: 66px;
+  padding: 10px 8px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  transition: background 140ms ease, box-shadow 140ms ease;
+}
+
+.presence-cell-button:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.presence-cell-button:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px rgba(232, 192, 125, 0.6);
+}
+
+.presence-editor-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(4, 7, 20, 0.72);
+  backdrop-filter: blur(10px);
+}
+
+.presence-editor-dialog {
+  width: min(520px, 100%);
+  display: grid;
+  gap: 18px;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  background: linear-gradient(180deg, rgba(17, 25, 55, 0.96) 0%, rgba(10, 16, 40, 0.94) 100%);
+  box-shadow: var(--shadow);
+}
+
+.presence-editor-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.presence-editor-close {
+  width: 44px;
+  height: 44px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 1.4rem;
+  line-height: 1;
 }
 
 .presence-input-grid {

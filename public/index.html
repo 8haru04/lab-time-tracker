@@ -150,6 +150,49 @@
 
                   <p id="presenceInputMessage" class="helper-text">&#x4fdd;&#x5b58;&#x3059;&#x308b;&#x3068;&#x53cd;&#x6620;&#x3055;&#x308c;&#x307e;&#x3059;&#x3002;</p>
                 </section>
+
+                <div id="presenceEditorModal" class="presence-editor-backdrop" hidden>
+                  <section class="presence-editor-dialog" role="dialog" aria-modal="true" aria-labelledby="presenceEditorTitle">
+                    <div class="presence-editor-head">
+                      <div>
+                        <p class="view-label">&#x4e88;&#x5b9a;&#x7de8;&#x96c6;</p>
+                        <h3 id="presenceEditorTitle">&#x65e5;&#x4ed8;</h3>
+                      </div>
+                      <button id="presenceEditorCloseButton" class="presence-editor-close" type="button" aria-label="&#x9589;&#x3058;&#x308b;">&#xd7;</button>
+                    </div>
+
+                    <form id="presenceEditorForm" class="form-stack">
+                      <div class="presence-input-grid">
+                        <label class="field">
+                          <span>&#x958b;&#x59cb;&#x6642;&#x9593;</span>
+                          <input id="presenceEditorStartTimeInput" type="time" name="presenceEditorStartTime">
+                        </label>
+
+                        <label class="field">
+                          <span>&#x7d42;&#x4e86;&#x6642;&#x9593;</span>
+                          <input id="presenceEditorEndTimeInput" type="time" name="presenceEditorEndTime">
+                        </label>
+                      </div>
+
+                      <label class="field">
+                        <span>&#x5bfe;&#x5fdc;&#x53ef;&#x5426;</span>
+                        <select id="presenceEditorAvailabilitySelect" name="presenceEditorAvailability"></select>
+                      </label>
+
+                      <label class="field">
+                        <span>&#x78ba;&#x8a8d;</span>
+                        <input id="presenceEditorSummaryPreview" type="text" value="" readonly>
+                      </label>
+
+                      <div class="presence-actions">
+                        <button class="primary-button" type="submit">&#x4fdd;&#x5b58;</button>
+                        <button id="presenceEditorDeleteButton" class="secondary-button" type="button">&#x524a;&#x9664;</button>
+                      </div>
+                    </form>
+
+                    <p id="presenceEditorMessage" class="helper-text"></p>
+                  </section>
+                </div>
               </div>
             </section>
           </article>
