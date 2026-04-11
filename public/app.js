@@ -104,9 +104,9 @@ const FALLBACK_CONFIG = {
   ],
   sharedStore: {
     provider: "supabase",
-    enabled: false,
-    url: "",
-    anonKey: "",
+    enabled: true,
+    url: "https://vfuolsbqrkpllgebjcpx.supabase.co",
+    anonKey: "sb_publishable_AEZG0uBPIBoS7DjNUDuMkQ_TOqDQtOs",
     syncIntervalSeconds: 20
   },
   version: "\u57fa\u76e4-2026-04"
