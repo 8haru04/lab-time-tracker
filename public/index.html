@@ -22,7 +22,7 @@
         <p class="auth-label">Human Ergonomics Lab</p>
         <h1 id="labName">&#x4eba;&#x9593;&#x5de5;&#x5b66;&#x7814;&#x7a76;&#x5ba4;</h1>
         <p id="tagline" class="auth-copy">
-          &#x7814;&#x7a76;&#x5ba4;&#x306e;&#x5728;&#x5ba4;&#x7ba1;&#x7406;&#x3001;&#x30b9;&#x30b1;&#x30b8;&#x30e5;&#x30fc;&#x30eb;&#x7ba1;&#x7406;&#x3001;&#x30de;&#x30a4;&#x30bf;&#x30b9;&#x30af;&#x3001;&#x6253;&#x523b;&#x3092;&#x4e00;&#x3064;&#x306e;&#x5165;&#x53e3;&#x304b;&#x3089;&#x5229;&#x7528;&#x3059;&#x308b;&#x305f;&#x3081;&#x306e;&#x5171;&#x6709;&#x30c4;&#x30fc;&#x30eb;&#x3067;&#x3059;&#x3002;
+          &#x7814;&#x7a76;&#x5ba4;&#x306e;&#x5728;&#x5ba4;&#x7ba1;&#x7406;&#x3001;&#x30de;&#x30a4;&#x30bf;&#x30b9;&#x30af;&#x3001;&#x6d3b;&#x52d5;&#x8a18;&#x9332;&#x3092;&#x4e00;&#x3064;&#x306e;&#x5165;&#x53e3;&#x304b;&#x3089;&#x5229;&#x7528;&#x3059;&#x308b;&#x305f;&#x3081;&#x306e;&#x5171;&#x6709;&#x30c4;&#x30fc;&#x30eb;&#x3067;&#x3059;&#x3002;
         </p>
 
         <div class="auth-form-block">
@@ -100,94 +100,64 @@
                     <tbody id="presenceTableBody"></tbody>
                   </table>
                 </div>
-              </div>
-            </section>
-          </article>
+                <section class="panel presence-form-panel">
+                  <div class="panel-head">
+                    <p class="view-label">&#x4e88;&#x5b9a;&#x5165;&#x529b;</p>
+                    <h3>&#x6708;&#x9593;&#x8868;&#x306b;&#x53cd;&#x6620;&#x3059;&#x308b;&#x4e88;&#x5b9a;&#x3092;&#x5165;&#x529b;</h3>
+                    <p class="view-copy">&#x65e5;&#x4ed8;&#x3001;&#x6642;&#x9593;&#x5e2f;&#x3001;&#x5bfe;&#x5fdc;&#x53ef;&#x5426;&#x3092;&#x3053;&#x3053;&#x304b;&#x3089;&#x767b;&#x9332;&#x3057;&#x307e;&#x3059;&#x3002;</p>
+                  </div>
 
-          <article id="view-presenceInput" class="workspace-view" hidden>
-            <section class="view-card">
-              <div class="presence-shell">
-                <div>
-                  <p class="view-label">&#x4e88;&#x5b9a;&#x5165;&#x529b;</p>
-                  <h3>&#x6708;&#x306e;&#x72b6;&#x6cc1;&#x3092;&#x5165;&#x529b;</h3>
-                  <p class="view-copy">&#x65e5;&#x4ed8;&#x3001;&#x6642;&#x9593;&#x5e2f;&#x3001;&#x5bfe;&#x5fdc;&#x53ef;&#x5426;&#x3092;&#x767b;&#x9332;&#x3057;&#x3001;&#x5728;&#x5ba4;&#x7ba1;&#x7406;&#x306e;&#x6708;&#x6b21;&#x8868;&#x306b;&#x53cd;&#x6620;&#x3055;&#x305b;&#x307e;&#x3059;&#x3002;</p>
-                </div>
+                  <form id="presenceInputForm" class="form-stack">
+                    <div class="presence-input-grid">
+                      <label class="field">
+                        <span>&#x65e5;&#x4ed8;</span>
+                        <input id="presenceDateInput" type="date" name="presenceDate">
+                      </label>
 
-                <form id="presenceInputForm" class="form-stack">
-                  <div class="presence-input-grid">
-                    <label class="field">
-                      <span>&#x65e5;&#x4ed8;</span>
-                      <input id="presenceDateInput" type="date" name="presenceDate">
-                    </label>
-
-                    <div class="info-box presence-owner-box">
-                      <strong>&#x5165;&#x529b;&#x5bfe;&#x8c61;</strong>
-                      <small id="presenceOwnerText">&#x30ed;&#x30b0;&#x30a4;&#x30f3;&#x4e2d;&#x306e;&#x5b66;&#x7c4d;&#x756a;&#x53f7;&#x304c;&#x8868;&#x793a;&#x3055;&#x308c;&#x307e;&#x3059;&#x3002;</small>
+                      <div class="info-box presence-owner-box">
+                        <strong>&#x5165;&#x529b;&#x5bfe;&#x8c61;</strong>
+                        <small id="presenceOwnerText">&#x30ed;&#x30b0;&#x30a4;&#x30f3;&#x4e2d;&#x306e;&#x5b66;&#x7c4d;&#x756a;&#x53f7;&#x304c;&#x8868;&#x793a;&#x3055;&#x308c;&#x307e;&#x3059;&#x3002;</small>
+                      </div>
                     </div>
-                  </div>
 
-                  <div class="presence-input-grid">
+                    <div class="presence-input-grid">
+                      <label class="field">
+                        <span>&#x958b;&#x59cb;&#x6642;&#x9593;</span>
+                        <input id="presenceStartTimeInput" type="time" name="presenceStartTime">
+                      </label>
+
+                      <label class="field">
+                        <span>&#x7d42;&#x4e86;&#x6642;&#x9593;</span>
+                        <input id="presenceEndTimeInput" type="time" name="presenceEndTime">
+                      </label>
+                    </div>
+
                     <label class="field">
-                      <span>&#x958b;&#x59cb;&#x6642;&#x9593;</span>
-                      <input id="presenceStartTimeInput" type="time" name="presenceStartTime">
+                      <span>&#x5bfe;&#x5fdc;&#x53ef;&#x5426;</span>
+                      <select id="presenceAvailabilitySelect" name="presenceAvailability"></select>
                     </label>
 
-                    <label class="field">
-                      <span>&#x7d42;&#x4e86;&#x6642;&#x9593;</span>
-                      <input id="presenceEndTimeInput" type="time" name="presenceEndTime">
-                    </label>
-                  </div>
+                    <div class="presence-note">
+                      <p class="helper-text">
+                        &#x5165;&#x529b;&#x306f;&#x73fe;&#x5728;&#x30ed;&#x30b0;&#x30a4;&#x30f3;&#x3057;&#x3066;&#x3044;&#x308b;&#x5b66;&#x7c4d;&#x756a;&#x53f7;&#x306b;&#x7d10;&#x4ed8;&#x3044;&#x3066;&#x4fdd;&#x5b58;&#x3055;&#x308c;&#x307e;&#x3059;&#x3002;
+                      </p>
+                    </div>
 
-                  <label class="field">
-                    <span>&#x5bfe;&#x5fdc;&#x53ef;&#x5426;</span>
-                    <select id="presenceAvailabilitySelect" name="presenceAvailability"></select>
-                  </label>
+                    <div class="presence-input-grid">
+                      <label class="field">
+                        <span>&#x78ba;&#x8a8d;&#x7528;</span>
+                        <input id="presenceSummaryPreview" type="text" value="" readonly>
+                      </label>
+                    </div>
 
-                  <div class="presence-note">
-                    <p class="helper-text">
-                      &#x5165;&#x529b;&#x306f;&#x73fe;&#x5728;&#x30ed;&#x30b0;&#x30a4;&#x30f3;&#x3057;&#x3066;&#x3044;&#x308b;&#x5b66;&#x7c4d;&#x756a;&#x53f7;&#x306b;&#x7d10;&#x4ed8;&#x3044;&#x3066;&#x4fdd;&#x5b58;&#x3055;&#x308c;&#x307e;&#x3059;&#x3002;
-                    </p>
-                  </div>
-                  
-                  <div class="presence-input-grid">
-                    <label class="field">
-                      <span>&#x78ba;&#x8a8d;&#x7528;</span>
-                      <input id="presenceSummaryPreview" type="text" value="" readonly>
-                    </label>
-                  </div>
-                  
-                  <div class="presence-actions">
-                    <button class="primary-button" type="submit">&#x5165;&#x529b;&#x3092;&#x4fdd;&#x5b58;</button>
-                    <button id="presenceDeleteButton" class="secondary-button" type="button">&#x3053;&#x306e;&#x5165;&#x529b;&#x3092;&#x524a;&#x9664;</button>
-                  </div>
-                </form>
+                    <div class="presence-actions">
+                      <button class="primary-button" type="submit">&#x5165;&#x529b;&#x3092;&#x4fdd;&#x5b58;</button>
+                      <button id="presenceDeleteButton" class="secondary-button" type="button">&#x3053;&#x306e;&#x5165;&#x529b;&#x3092;&#x524a;&#x9664;</button>
+                    </div>
+                  </form>
 
-                <p id="presenceInputMessage" class="helper-text">&#x5165;&#x529b;&#x3057;&#x305f;&#x5185;&#x5bb9;&#x306f;&#x5728;&#x5ba4;&#x7ba1;&#x7406;&#x306e;&#x6708;&#x6b21;&#x8868;&#x306b;&#x53cd;&#x6620;&#x3055;&#x308c;&#x307e;&#x3059;&#x3002;</p>
-              </div>
-            </section>
-          </article>
-
-          <article id="view-schedule" class="workspace-view" hidden>
-            <section class="view-card">
-              <div class="schedule-shell">
-                <div class="schedule-header">
-                  <div>
-                    <p class="view-label">&#x30b9;&#x30b1;&#x30b8;&#x30e5;&#x30fc;&#x30eb;&#x7ba1;&#x7406;</p>
-                    <h3>&#x9031;&#x9593;&#x6642;&#x9593;&#x5272;</h3>
-                    <p class="view-copy">&#x6708;&#x66dc;&#x304b;&#x3089;&#x91d1;&#x66dc;&#x307e;&#x3067;&#x306e; 1&#x9650;&#x304b;&#x3089; 5&#x9650;&#x307e;&#x3067;&#x3092;&#x3001;&#x9031;&#x9593;&#x306e;&#x30b3;&#x30de;&#x3068;&#x3057;&#x3066;&#x78ba;&#x8a8d;&#x3067;&#x304d;&#x308b;&#x753b;&#x9762;&#x3067;&#x3059;&#x3002;</p>
-                  </div>
-                  <div class="info-box schedule-note-box">
-                    <strong>&#x8868;&#x793a;&#x5358;&#x4f4d;</strong>
-                    <small>&#x4eca;&#x306f;&#x6642;&#x9593;&#x5272;&#x306e;&#x67a0;&#x3092;&#x8868;&#x793a;&#x3057;&#x3066;&#x3044;&#x307e;&#x3059;&#x3002;&#x5404;&#x30b3;&#x30de;&#x306e;&#x5185;&#x5bb9;&#x306f;&#x6b21;&#x3067;&#x8ffd;&#x52a0;&#x3067;&#x304d;&#x307e;&#x3059;&#x3002;</small>
-                  </div>
-                </div>
-
-                <div class="schedule-table-wrap">
-                  <table class="schedule-table">
-                    <thead id="scheduleTableHead"></thead>
-                    <tbody id="scheduleTableBody"></tbody>
-                  </table>
-                </div>
+                  <p id="presenceInputMessage" class="helper-text">&#x5165;&#x529b;&#x3057;&#x305f;&#x5185;&#x5bb9;&#x306f;&#x5728;&#x5ba4;&#x7ba1;&#x7406;&#x306e;&#x6708;&#x6b21;&#x8868;&#x306b;&#x53cd;&#x6620;&#x3055;&#x308c;&#x307e;&#x3059;&#x3002;</p>
+                </section>
               </div>
             </section>
           </article>
@@ -297,9 +267,9 @@
               <div class="clock-monthly-shell">
                 <div class="clock-monthly-header">
                   <div>
-                    <p class="view-label">&#x6253;&#x523b;&#x96c6;&#x8a08;</p>
+                    <p class="view-label">&#x6d3b;&#x52d5;&#x96c6;&#x8a08;</p>
                     <h3 id="clockMonthSummaryLabel">&#x4eca;&#x6708;&#x306e;&#x7814;&#x7a76;&#x6642;&#x9593;</h3>
-                    <p class="view-copy">&#x6708;&#x9593;&#x306e;&#x6253;&#x523b;&#x304b;&#x3089;&#x3001;&#x5168;&#x54e1;&#x306e;&#x5b9f;&#x50cd;&#x30fb;&#x5728;&#x5ba4;&#x30fb;&#x4f11;&#x61a9;&#x6642;&#x9593;&#x3092;&#x78ba;&#x8a8d;&#x3067;&#x304d;&#x307e;&#x3059;&#x3002;</p>
+                    <p class="view-copy">&#x6708;&#x9593;&#x306e;&#x6d3b;&#x52d5;&#x8a18;&#x9332;&#x304b;&#x3089;&#x3001;&#x5168;&#x54e1;&#x306e;&#x5b9f;&#x50cd;&#x30fb;&#x5728;&#x5ba4;&#x30fb;&#x4f11;&#x61a9;&#x6642;&#x9593;&#x3092;&#x78ba;&#x8a8d;&#x3067;&#x304d;&#x307e;&#x3059;&#x3002;</p>
                   </div>
                 </div>
 

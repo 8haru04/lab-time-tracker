@@ -14,19 +14,6 @@ const CATEGORIES = [
     description: "\u7814\u7a76\u5ba4\u30e1\u30f3\u30d0\u30fc\u306e\u5728\u5ba4\u72b6\u6cc1\u3092\u6271\u3046\u753b\u9762\u3067\u3059\u3002"
   },
   {
-    key: "presenceInput",
-    label: "\u4e88\u5b9a\u5165\u529b",
-    short: "\u6642\u9593\u3068\u53ef\u5426\u3092\u5165\u529b",
-    description: "\u30ed\u30b0\u30a4\u30f3\u4e2d\u306e\u30e6\u30fc\u30b6\u30fc\u306e\u4e88\u5b9a\u3092\u65e5\u4ed8\u30fb\u6642\u9593\u5e2f\u30fb4\u6bb5\u968e\u306e\u5bfe\u5fdc\u53ef\u5426\u3067\u767b\u9332\u3059\u308b\u753b\u9762\u3067\u3059\u3002",
-    isChild: true
-  },
-  {
-    key: "schedule",
-    label: "\u30b9\u30b1\u30b8\u30e5\u30fc\u30eb\u7ba1\u7406",
-    short: "\u4e88\u5b9a\u3092\u5171\u6709",
-    description: "\u7814\u7a76\u5ba4\u306e\u4e88\u5b9a\u3084\u5171\u6709\u30b9\u30b1\u30b8\u30e5\u30fc\u30eb\u3092\u6271\u3046\u753b\u9762\u3067\u3059\u3002"
-  },
-  {
     key: "tasks",
     label: "\u30de\u30a4\u30bf\u30b9\u30af",
     short: "\u500b\u4eba\u30bf\u30b9\u30af\u3092\u6574\u7406",
@@ -34,15 +21,15 @@ const CATEGORIES = [
   },
   {
     key: "clock",
-    label: "\u6253\u523b",
-    short: "\u5165\u9000\u5ba4\u3092\u8a18\u9332",
-    description: "\u5165\u5ba4\u30fb\u9000\u5ba4\u306a\u3069\u306e\u6253\u523b\u3092\u6271\u3046\u753b\u9762\u3067\u3059\u3002"
+    label: "\u6d3b\u52d5\u8a18\u9332",
+    short: "\u7814\u7a76\u6642\u9593\u3092\u8a18\u9332",
+    description: "\u5165\u5ba4\u30fb\u9000\u5ba4\u30fb\u4f11\u61a9\u304b\u3089\u3001\u7814\u7a76\u6d3b\u52d5\u306e\u6642\u9593\u3092\u8a18\u9332\u3059\u308b\u753b\u9762\u3067\u3059\u3002"
   },
   {
     key: "clockMonthly",
-    label: "\u6708\u9593\u96c6\u8a08",
+    label: "\u6708\u9593\u7814\u7a76\u6642\u9593",
     short: "\u5168\u54e1\u306e\u7814\u7a76\u6642\u9593",
-    description: "\u6708\u5358\u4f4d\u3067\u3001\u7814\u7a76\u5ba4\u30e1\u30f3\u30d0\u30fc\u5168\u54e1\u306e\u6253\u523b\u96c6\u8a08\u3092\u78ba\u8a8d\u3059\u308b\u753b\u9762\u3067\u3059\u3002",
+    description: "\u6708\u5358\u4f4d\u3067\u3001\u7814\u7a76\u5ba4\u30e1\u30f3\u30d0\u30fc\u5168\u54e1\u306e\u7814\u7a76\u6642\u9593\u3092\u78ba\u8a8d\u3059\u308b\u753b\u9762\u3067\u3059\u3002",
     isChild: true
   },
   {
@@ -81,51 +68,12 @@ const AVAILABILITY_OPTIONS = [
 ];
 
 const DEFAULT_AVAILABILITY = AVAILABILITY_OPTIONS[0].value;
-const SCHEDULE_DAYS = ["\u6708", "\u706b", "\u6c34", "\u6728", "\u91d1"];
-const SCHEDULE_SLOTS = [
-  {
-    type: "period",
-    key: "p1",
-    label: "1\u9650",
-    time: "9:00-10:40"
-  },
-  {
-    type: "period",
-    key: "p2",
-    label: "2\u9650",
-    time: "10:50-12:30"
-  },
-  {
-    type: "break",
-    key: "lunch",
-    label: "\u663c\u4f11\u307f",
-    time: "12:30-13:30"
-  },
-  {
-    type: "period",
-    key: "p3",
-    label: "3\u9650",
-    time: "13:30-15:10"
-  },
-  {
-    type: "period",
-    key: "p4",
-    label: "4\u9650",
-    time: "15:20-17:00"
-  },
-  {
-    type: "period",
-    key: "p5",
-    label: "5\u9650",
-    time: "17:10-18:50"
-  }
-];
 
 const FALLBACK_CONFIG = {
   appName: "\u4eba\u9593\u5de5\u5b66\u7814\u7a76\u5ba4 \u5171\u6709\u30c4\u30fc\u30eb",
   labName: "\u4eba\u9593\u5de5\u5b66\u7814\u7a76\u5ba4",
   tagline:
-    "\u7814\u7a76\u5ba4\u306e\u5728\u5ba4\u7ba1\u7406\u3001\u30b9\u30b1\u30b8\u30e5\u30fc\u30eb\u7ba1\u7406\u3001\u30de\u30a4\u30bf\u30b9\u30af\u3001\u6253\u523b\u3092\u4e00\u3064\u306e\u5165\u53e3\u304b\u3089\u5229\u7528\u3059\u308b\u305f\u3081\u306e\u5171\u6709\u30c4\u30fc\u30eb\u3067\u3059\u3002",
+    "\u7814\u7a76\u5ba4\u306e\u5728\u5ba4\u7ba1\u7406\u3001\u30de\u30a4\u30bf\u30b9\u30af\u3001\u6d3b\u52d5\u8a18\u9332\u3092\u4e00\u3064\u306e\u5165\u53e3\u304b\u3089\u5229\u7528\u3059\u308b\u305f\u3081\u306e\u5171\u6709\u30c4\u30fc\u30eb\u3067\u3059\u3002",
   loginDescription:
     "\u30da\u30fc\u30b8\u3092\u958b\u3044\u305f\u3068\u304d\u306f\u3001\u5b66\u7c4d\u756a\u53f7\u3092\u5165\u529b\u3057\u3066\u30ed\u30b0\u30a4\u30f3\u3057\u3066\u304f\u3060\u3055\u3044\u3002",
   userRoles: [
@@ -197,8 +145,6 @@ const presenceAvailabilitySelect = document.getElementById("presenceAvailability
 const presenceSummaryPreview = document.getElementById("presenceSummaryPreview");
 const presenceDeleteButton = document.getElementById("presenceDeleteButton");
 const presenceInputMessage = document.getElementById("presenceInputMessage");
-const scheduleTableHead = document.getElementById("scheduleTableHead");
-const scheduleTableBody = document.getElementById("scheduleTableBody");
 const taskOwnerText = document.getElementById("taskOwnerText");
 const taskForm = document.getElementById("taskForm");
 const taskTitleInput = document.getElementById("taskTitleInput");
@@ -1093,7 +1039,7 @@ function downloadClockCsv() {
 
   const logs = getClockLogsForUser(currentUser.id);
   if (logs.length === 0) {
-    clockSummaryText.textContent = "\u307e\u3060 CSV \u306b\u51fa\u305b\u308b\u6253\u523b\u8a18\u9332\u304c\u3042\u308a\u307e\u305b\u3093\u3002";
+    clockSummaryText.textContent = "\u307e\u3060 CSV \u306b\u51fa\u305b\u308b\u6d3b\u52d5\u8a18\u9332\u304c\u3042\u308a\u307e\u305b\u3093\u3002";
     return;
   }
 
@@ -1103,7 +1049,7 @@ function downloadClockCsv() {
   const anchor = document.createElement("a");
 
   anchor.href = url;
-  anchor.download = `clock-log-${currentUser.id}-${toDateKey(new Date())}.csv`;
+  anchor.download = `activity-log-${currentUser.id}-${toDateKey(new Date())}.csv`;
   document.body.appendChild(anchor);
   anchor.click();
   anchor.remove();
@@ -2131,66 +2077,6 @@ function renderPresenceInput() {
   syncPresenceInputFields();
 }
 
-function renderScheduleBoard() {
-  scheduleTableHead.replaceChildren();
-  scheduleTableBody.replaceChildren();
-
-  const headRow = document.createElement("tr");
-  const corner = document.createElement("th");
-  corner.textContent = "\u30b3\u30de";
-  headRow.appendChild(corner);
-
-  SCHEDULE_DAYS.forEach((dayLabel) => {
-    const dayCell = document.createElement("th");
-    dayCell.textContent = `${dayLabel}\u66dc`;
-    headRow.appendChild(dayCell);
-  });
-
-  scheduleTableHead.appendChild(headRow);
-
-  SCHEDULE_SLOTS.forEach((slot) => {
-    const row = document.createElement("tr");
-
-    if (slot.type === "break") {
-      row.className = "schedule-break-row";
-
-      const breakLabel = document.createElement("th");
-      breakLabel.innerHTML = `
-        <span class="schedule-slot-name">${slot.label}</span>
-        <span class="schedule-slot-time">${slot.time}</span>
-      `;
-      row.appendChild(breakLabel);
-
-      const breakCell = document.createElement("td");
-      breakCell.colSpan = SCHEDULE_DAYS.length;
-      breakCell.className = "schedule-break-cell";
-      breakCell.textContent = "\u663c\u98df\u30fb\u79fb\u52d5\u30fb\u4f11\u61a9\u306e\u6642\u9593";
-      row.appendChild(breakCell);
-
-      scheduleTableBody.appendChild(row);
-      return;
-    }
-
-    const slotCell = document.createElement("th");
-    slotCell.innerHTML = `
-      <span class="schedule-slot-name">${slot.label}</span>
-      <span class="schedule-slot-time">${slot.time}</span>
-    `;
-    row.appendChild(slotCell);
-
-    SCHEDULE_DAYS.forEach(() => {
-      const cell = document.createElement("td");
-      const empty = document.createElement("span");
-      empty.className = "schedule-cell-empty";
-      empty.textContent = "\u672a\u5165\u529b";
-      cell.appendChild(empty);
-      row.appendChild(cell);
-    });
-
-    scheduleTableBody.appendChild(row);
-  });
-}
-
 function createTaskCard(task) {
   const card = document.createElement("article");
   const dueState = getTaskDueState(task.dueDate);
@@ -2259,14 +2145,14 @@ function renderClockView() {
   } else {
     clockSummaryText.textContent = todayLogs.length > 0
       ? `\u672c\u65e5: \u5728\u5ba4 ${formatDurationFromMinutes(todaySummary.stayMinutes)} / \u4f11\u61a9 ${formatDurationFromMinutes(todaySummary.breakMinutes)} / \u5b9f\u50cd ${formatDurationFromMinutes(todaySummary.activeMinutes)}`
-      : "\u307e\u3060\u672c\u65e5\u306e\u6253\u523b\u8a18\u9332\u306f\u3042\u308a\u307e\u305b\u3093\u3002";
+      : "\u307e\u3060\u672c\u65e5\u306e\u6d3b\u52d5\u8a18\u9332\u306f\u3042\u308a\u307e\u305b\u3093\u3002";
   }
   clockMonthTotalValue.textContent = formatDurationFromMinutes(monthSummary.activeMinutes);
   clockMonthTotalNote.textContent = `${formatMonthRangeLabel(new Date())}\u306e1\u65e5\u304b\u3089\u4eca\u65e5\u307e\u3067\u306e\u5b9f\u50cd\u7d2f\u8a08`;
   clockTotalValue.textContent = formatDurationFromMinutes(totalSummary.activeMinutes);
   clockTotalNote.textContent = logs.length > 0
     ? `\u8a18\u9332\u958b\u59cb\u304b\u3089\u4eca\u65e5\u307e\u3067\u306e\u5b9f\u50cd\u7d2f\u8a08`
-    : "\u307e\u3060\u7d2f\u8a08\u3067\u304d\u308b\u6253\u523b\u304c\u3042\u308a\u307e\u305b\u3093";
+    : "\u307e\u3060\u7d2f\u8a08\u3067\u304d\u308b\u6d3b\u52d5\u8a18\u9332\u304c\u3042\u308a\u307e\u305b\u3093";
 
   clockActionButtons.replaceChildren();
   clockActionButtons.className = `clock-actions${actions.length === 1 ? " is-single" : ""}`;
@@ -2298,7 +2184,7 @@ function renderClockView() {
   if (recentEntries.length === 0) {
     const empty = document.createElement("p");
     empty.className = "clock-history-empty";
-    empty.textContent = "\u672c\u65e5\u306e\u6253\u523b\u306f\u307e\u3060\u3042\u308a\u307e\u305b\u3093\u3002";
+    empty.textContent = "\u672c\u65e5\u306e\u8a18\u9332\u306f\u307e\u3060\u3042\u308a\u307e\u305b\u3093\u3002";
     clockHistoryList.appendChild(empty);
   } else {
     recentEntries.forEach((entry) => {
@@ -2372,14 +2258,7 @@ function renderViews() {
 
   if (activeCategory === "presence") {
     renderPresenceBoard();
-  }
-
-  if (activeCategory === "presenceInput") {
     renderPresenceInput();
-  }
-
-  if (activeCategory === "schedule") {
-    renderScheduleBoard();
   }
 
   if (activeCategory === "tasks") {

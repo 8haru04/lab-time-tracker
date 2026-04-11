@@ -408,6 +408,11 @@ p {
   gap: 18px;
 }
 
+.presence-form-panel {
+  display: grid;
+  gap: 16px;
+}
+
 .presence-toolbar {
   display: flex;
   justify-content: space-between;
