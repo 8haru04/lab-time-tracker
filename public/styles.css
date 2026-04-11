@@ -442,8 +442,8 @@ p {
 
 .presence-table th,
 .presence-table td {
-  min-width: 92px;
-  padding: 10px 8px;
+  min-width: 72px;
+  padding: 8px 6px;
   border-right: 1px solid rgba(255, 255, 255, 0.06);
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   text-align: center;
@@ -462,7 +462,7 @@ p {
   position: sticky;
   left: 0;
   z-index: 1;
-  min-width: 160px;
+  min-width: 132px;
   text-align: left;
   background: rgba(16, 23, 53, 0.96);
 }
@@ -474,26 +474,28 @@ p {
 .presence-user-name {
   display: block;
   font-weight: 700;
+  font-size: 0.94rem;
 }
 
 .presence-user-meta {
   display: block;
-  margin-top: 4px;
+  margin-top: 3px;
   color: var(--muted);
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   line-height: 1.4;
 }
 
 .presence-day-label {
   display: block;
   font-weight: 700;
+  font-size: 0.9rem;
 }
 
 .presence-weekday {
   display: block;
-  margin-top: 4px;
+  margin-top: 3px;
   color: var(--muted);
-  font-size: 0.78rem;
+  font-size: 0.7rem;
 }
 
 .presence-day-weekend {
@@ -504,18 +506,18 @@ p {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 42px;
-  min-height: 34px;
-  padding: 4px 8px;
-  border-radius: 999px;
+  min-width: 26px;
+  min-height: 24px;
+  padding: 2px 6px;
+  border-radius: 8px;
   font-weight: 700;
-  font-size: 0.86rem;
+  font-size: 0.76rem;
 }
 
 .presence-cell-entry {
   display: grid;
   justify-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 
 .presence-cell-value.is-available {
@@ -541,7 +543,7 @@ p {
 .presence-cell-time {
   display: block;
   color: var(--muted);
-  font-size: 0.74rem;
+  font-size: 0.66rem;
   line-height: 1.3;
   white-space: nowrap;
 }
@@ -556,8 +558,8 @@ p {
 
 .presence-cell-button {
   width: 100%;
-  min-height: 66px;
-  padding: 10px 8px;
+  min-height: 56px;
+  padding: 8px 6px;
   border: 0;
   background: transparent;
   color: inherit;
@@ -1313,6 +1315,22 @@ p {
 
   .clock-history-time {
     text-align: left;
+  }
+
+  .presence-table th,
+  .presence-table td {
+    min-width: 64px;
+    padding: 7px 5px;
+  }
+
+  .presence-table th:first-child,
+  .presence-table td:first-child {
+    min-width: 120px;
+  }
+
+  .presence-cell-button {
+    min-height: 50px;
+    padding: 6px 5px;
   }
 
   .presence-editor-backdrop {
