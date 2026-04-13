@@ -241,6 +241,61 @@
                   </div>
                   <div id="clockHistoryList" class="clock-history-list" aria-live="polite"></div>
                 </section>
+
+                <div class="clock-adjustment-layout">
+                  <section class="clock-adjustment-panel">
+                    <div class="clock-history-head">
+                      <div>
+                        <p class="clock-history-label">&#x4fee;&#x6b63;</p>
+                      </div>
+                    </div>
+                    <form id="clockCorrectionForm" class="form-stack">
+                      <label id="clockCorrectionTargetField" class="field" hidden>
+                        <span>&#x5bfe;&#x8c61;</span>
+                        <select id="clockCorrectionTargetSelect" name="targetUserId"></select>
+                      </label>
+
+                      <div class="clock-adjustment-grid">
+                        <label class="field">
+                          <span>&#x65e5;&#x4ed8;</span>
+                          <input id="clockCorrectionDateInput" type="date" name="dateKey">
+                        </label>
+
+                        <label class="field">
+                          <span>&#x5165;&#x5ba4;</span>
+                          <input id="clockCorrectionStartInput" type="time" name="startTime">
+                        </label>
+
+                        <label class="field">
+                          <span>&#x9000;&#x5ba4;</span>
+                          <input id="clockCorrectionEndInput" type="time" name="endTime">
+                        </label>
+
+                        <label class="field">
+                          <span>&#x4f11;&#x61a9;(&#x5206;)</span>
+                          <input id="clockCorrectionBreakInput" type="number" name="breakMinutes" min="0" step="5" inputmode="numeric" placeholder="0">
+                        </label>
+                      </div>
+
+                      <label class="field">
+                        <span>&#x30e1;&#x30e2;</span>
+                        <input id="clockCorrectionNoteInput" type="text" name="note" maxlength="120" placeholder="">
+                      </label>
+
+                      <button id="clockCorrectionSubmitButton" class="primary-button" type="submit">&#x4fee;&#x6b63;&#x7533;&#x8acb;</button>
+                    </form>
+                    <p id="clockCorrectionMessage" class="helper-text"></p>
+                  </section>
+
+                  <section class="clock-adjustment-panel">
+                    <div class="clock-history-head">
+                      <div>
+                        <p id="clockRequestListLabel" class="clock-history-label">&#x7533;&#x8acb;</p>
+                      </div>
+                    </div>
+                    <div id="clockCorrectionRequestList" class="clock-request-list" aria-live="polite"></div>
+                  </section>
+                </div>
               </div>
             </section>
           </article>

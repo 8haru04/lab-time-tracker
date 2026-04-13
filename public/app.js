@@ -4,6 +4,7 @@ const DISPLAY_NAME_OVERRIDES_KEY = "ergonomics-lab-display-names-v1";
 const PRESENCE_PLANS_KEY = "ergonomics-lab-presence-plans-v1";
 const CLOCK_RECORDS_KEY = "ergonomics-lab-clock-records-v1";
 const CLOCK_LOGS_KEY = "ergonomics-lab-clock-logs-v1";
+const CLOCK_CORRECTION_REQUESTS_KEY = "ergonomics-lab-clock-correction-requests-v1";
 const TASKS_STORAGE_KEY = "ergonomics-lab-my-tasks-v1";
 const DEFAULT_SHARED_SYNC_INTERVAL_MS = 20000;
 const CATEGORIES = [
@@ -165,6 +166,18 @@ const clockActionButtons = document.getElementById("clockActionButtons");
 const clockSummaryText = document.getElementById("clockSummaryText");
 const clockExportButton = document.getElementById("clockExportButton");
 const clockHistoryList = document.getElementById("clockHistoryList");
+const clockCorrectionForm = document.getElementById("clockCorrectionForm");
+const clockCorrectionTargetField = document.getElementById("clockCorrectionTargetField");
+const clockCorrectionTargetSelect = document.getElementById("clockCorrectionTargetSelect");
+const clockCorrectionDateInput = document.getElementById("clockCorrectionDateInput");
+const clockCorrectionStartInput = document.getElementById("clockCorrectionStartInput");
+const clockCorrectionEndInput = document.getElementById("clockCorrectionEndInput");
+const clockCorrectionBreakInput = document.getElementById("clockCorrectionBreakInput");
+const clockCorrectionNoteInput = document.getElementById("clockCorrectionNoteInput");
+const clockCorrectionSubmitButton = document.getElementById("clockCorrectionSubmitButton");
+const clockCorrectionMessage = document.getElementById("clockCorrectionMessage");
+const clockRequestListLabel = document.getElementById("clockRequestListLabel");
+const clockCorrectionRequestList = document.getElementById("clockCorrectionRequestList");
 const clockMonthSummaryLabel = document.getElementById("clockMonthSummaryLabel");
 const clockMonthSummaryPrevButton = document.getElementById("clockMonthSummaryPrevButton");
 const clockMonthSummaryTodayButton = document.getElementById("clockMonthSummaryTodayButton");
@@ -195,6 +208,7 @@ let presenceEditorDateKey = "";
 let clockMonthSummaryKey = "";
 let clockRecords = {};
 let clockLogs = {};
+let clockCorrectionRequests = [];
 let myTasks = {};
 let sharedStore = {
   provider: "supabase",
@@ -248,6 +262,24 @@ function loadClockLogs() {
 
 function saveClockLogs() {
   window.localStorage.setItem(CLOCK_LOGS_KEY, JSON.stringify(clockLogs));
+}
+
+function loadClockCorrectionRequests() {
+  try {
+    const raw = window.localStorage.getItem(CLOCK_CORRECTION_REQUESTS_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    console.warn("Could not load clock correction requests. Using defaults.", error);
+    return [];
+  }
+}
+
+function saveClockCorrectionRequests() {
+  window.localStorage.setItem(
+    CLOCK_CORRECTION_REQUESTS_KEY,
+    JSON.stringify(clockCorrectionRequests)
+  );
 }
 
 function loadMyTasks() {
@@ -351,6 +383,23 @@ async function selectSharedRows(table, query = {}) {
       Accept: "application/json"
     }
   });
+}
+
+function isSharedRelationMissingError(error) {
+  const message = error instanceof Error && error.message ? error.message : "";
+  return /does not exist|Could not find the table|PGRST205|relation .* does not exist/i.test(message);
+}
+
+async function selectOptionalSharedRows(table, query = {}) {
+  try {
+    return await selectSharedRows(table, query);
+  } catch (error) {
+    if (isSharedRelationMissingError(error)) {
+      return null;
+    }
+
+    throw error;
+  }
 }
 
 async function insertSharedRows(table, rows) {
@@ -652,11 +701,66 @@ function buildClockLogsFromRemoteRows(rows) {
   return nextLogs;
 }
 
+function normalizeClockCorrectionRequest(rawRequest) {
+  if (!rawRequest || typeof rawRequest !== "object") {
+    return null;
+  }
+
+  const status = ["pending", "approved", "rejected"].includes(rawRequest.status)
+    ? rawRequest.status
+    : "pending";
+  const breakMinutes = Number(rawRequest.breakMinutes);
+
+  return {
+    id: String(rawRequest.id || "").trim(),
+    requesterUserId: String(rawRequest.requesterUserId || "").trim(),
+    targetUserId: String(rawRequest.targetUserId || rawRequest.requesterUserId || "").trim(),
+    dateKey: String(rawRequest.dateKey || "").trim(),
+    startTime: normalizeTimeValue(rawRequest.startTime),
+    endTime: normalizeTimeValue(rawRequest.endTime),
+    breakMinutes: Number.isFinite(breakMinutes) && breakMinutes >= 0 ? Math.round(breakMinutes) : 0,
+    note: typeof rawRequest.note === "string" ? rawRequest.note.trim() : "",
+    status,
+    reviewedBy: String(rawRequest.reviewedBy || "").trim(),
+    reviewedAt: String(rawRequest.reviewedAt || "").trim(),
+    createdAt: String(rawRequest.createdAt || "").trim(),
+    updatedAt: String(rawRequest.updatedAt || "").trim()
+  };
+}
+
+function buildClockCorrectionRequestsFromRemoteRows(rows) {
+  return (Array.isArray(rows) ? rows : [])
+    .map((row) =>
+      normalizeClockCorrectionRequest({
+        id: row.id,
+        requesterUserId: row.requester_user_id,
+        targetUserId: row.target_user_id,
+        dateKey: row.date_key,
+        startTime: row.start_time,
+        endTime: row.end_time,
+        breakMinutes: row.break_minutes,
+        note: row.note,
+        status: row.status,
+        reviewedBy: row.reviewed_by,
+        reviewedAt: row.reviewed_at,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at
+      })
+    )
+    .filter(Boolean)
+    .sort((left, right) => {
+      const leftStamp = left.createdAt || left.updatedAt || "";
+      const rightStamp = right.createdAt || right.updatedAt || "";
+      return rightStamp.localeCompare(leftStamp);
+    });
+}
+
 function cacheSharedSnapshotLocally() {
   saveDirectory();
   savePresencePlans();
   saveClockRecords();
   saveClockLogs();
+  saveClockCorrectionRequests();
   saveMyTasks();
 }
 
@@ -1067,6 +1171,147 @@ function normalizeAvailability(value) {
 
 function toDateKey(date) {
   return `${date.getFullYear()}-${padNumber(date.getMonth() + 1)}-${padNumber(date.getDate())}`;
+}
+
+function parseDateKeyWithTime(dateKey, timeValue) {
+  const [year, month, day] = dateKey.split("-").map(Number);
+  const [hours, minutes] = timeValue.split(":").map(Number);
+  return new Date(year, month - 1, day, hours, minutes, 0, 0);
+}
+
+function getClockLogsForDateKey(logs, dateKey) {
+  return logs.filter((entry) => toDateKey(new Date(entry.timestamp)) === dateKey);
+}
+
+function getClockCorrectionPrefill(userId, dateKey) {
+  const logs = getClockLogsForDateKey(getClockLogsForUser(userId), dateKey);
+  const firstCheckin = logs.find((entry) => entry.actionType === "checkin");
+  const lastCheckout = [...logs].reverse().find((entry) => entry.actionType === "checkout");
+  const summary = getClockSummary(logs, "out");
+
+  return {
+    startTime: firstCheckin ? formatTime(new Date(firstCheckin.timestamp)) : "",
+    endTime: lastCheckout ? formatTime(new Date(lastCheckout.timestamp)) : "",
+    breakMinutes: Math.max(0, Math.round(summary.breakMinutes)),
+    hasData: logs.length > 0
+  };
+}
+
+function buildClockLogsForCorrection(userId, dateKey, startTime, endTime, breakMinutes) {
+  const startedAt = parseDateKeyWithTime(dateKey, startTime);
+  const endedAt = parseDateKeyWithTime(dateKey, endTime);
+  const totalMinutes = (endedAt - startedAt) / 60000;
+
+  if (!(startedAt instanceof Date) || Number.isNaN(startedAt.getTime())) {
+    throw new Error("\u5165\u5ba4\u6642\u523b\u3092\u78ba\u8a8d\u3057\u3066\u304f\u3060\u3055\u3044\u3002");
+  }
+
+  if (!(endedAt instanceof Date) || Number.isNaN(endedAt.getTime())) {
+    throw new Error("\u9000\u5ba4\u6642\u523b\u3092\u78ba\u8a8d\u3057\u3066\u304f\u3060\u3055\u3044\u3002");
+  }
+
+  if (endedAt <= startedAt) {
+    throw new Error("\u9000\u5ba4\u6642\u523b\u306f\u5165\u5ba4\u6642\u523b\u3088\u308a\u5f8c\u306b\u3057\u3066\u304f\u3060\u3055\u3044\u3002");
+  }
+
+  if (!Number.isFinite(breakMinutes) || breakMinutes < 0) {
+    throw new Error("\u4f11\u61a9\u5206\u3092\u78ba\u8a8d\u3057\u3066\u304f\u3060\u3055\u3044\u3002");
+  }
+
+  if (breakMinutes >= totalMinutes) {
+    throw new Error("\u4f11\u61a9\u5206\u306f\u5728\u5ba4\u6642\u9593\u3088\u308a\u77ed\u304f\u3057\u3066\u304f\u3060\u3055\u3044\u3002");
+  }
+
+  const entries = [
+    {
+      id: createClientId("clock"),
+      actionType: "checkin",
+      status: "in",
+      timestamp: startedAt.toISOString()
+    }
+  ];
+
+  if (breakMinutes > 0) {
+    const activeMinutes = totalMinutes - breakMinutes;
+    const beforeBreakMinutes = Math.floor(activeMinutes / 2);
+    const breakStartedAt = new Date(startedAt.getTime() + beforeBreakMinutes * 60000);
+    const breakEndedAt = new Date(breakStartedAt.getTime() + breakMinutes * 60000);
+
+    entries.push(
+      {
+        id: createClientId("clock"),
+        actionType: "breakStart",
+        status: "break",
+        timestamp: breakStartedAt.toISOString()
+      },
+      {
+        id: createClientId("clock"),
+        actionType: "breakEnd",
+        status: "in",
+        timestamp: breakEndedAt.toISOString()
+      }
+    );
+  }
+
+  entries.push({
+    id: createClientId("clock"),
+    actionType: "checkout",
+    status: "out",
+    timestamp: endedAt.toISOString()
+  });
+
+  return entries;
+}
+
+function rebuildClockRecordFromLogs(userId) {
+  const logs = getClockLogsForUser(userId);
+  const latestEntry = logs.length > 0 ? logs[logs.length - 1] : null;
+
+  if (!latestEntry) {
+    return normalizeClockRecord(null);
+  }
+
+  return normalizeClockRecord({
+    status: latestEntry.status,
+    lastActionType: latestEntry.actionType,
+    lastActionAt: latestEntry.timestamp
+  });
+}
+
+function replaceClockLogsForDate(userId, dateKey, nextEntries) {
+  const existing = getClockLogsForUser(userId);
+  const remaining = existing.filter((entry) => toDateKey(new Date(entry.timestamp)) !== dateKey);
+  const merged = [...remaining, ...nextEntries].sort((left, right) => left.timestamp.localeCompare(right.timestamp));
+  clockLogs[userId] = merged;
+  saveClockLogs();
+
+  const nextRecord = rebuildClockRecordFromLogs(userId);
+  clockRecords[userId] = nextRecord;
+  saveClockRecords();
+  return nextRecord;
+}
+
+function getClockCorrectionRequestsForCurrentView() {
+  if (!currentUser) {
+    return [];
+  }
+
+  if (isOwner(currentUser)) {
+    return clockCorrectionRequests.filter((request) => request.status === "pending");
+  }
+
+  return clockCorrectionRequests.filter((request) => request.requesterUserId === currentUser.id);
+}
+
+function getClockCorrectionRequestStatusLabel(status) {
+  switch (status) {
+    case "approved":
+      return "\u53cd\u6620\u6e08\u307f";
+    case "rejected":
+      return "\u5374\u4e0b";
+    default:
+      return "\u7533\u8acb\u4e2d";
+  }
 }
 
 function getTaskOwnerTasks(userId) {
@@ -1619,6 +1864,24 @@ function toSharedClockLogRow(userId, logEntry) {
   };
 }
 
+function toSharedClockCorrectionRequestRow(request) {
+  return {
+    id: request.id,
+    requester_user_id: request.requesterUserId,
+    target_user_id: request.targetUserId,
+    date_key: request.dateKey,
+    start_time: request.startTime,
+    end_time: request.endTime,
+    break_minutes: request.breakMinutes,
+    note: request.note || "",
+    status: request.status,
+    reviewed_by: request.reviewedBy || null,
+    reviewed_at: request.reviewedAt || null,
+    created_at: request.createdAt || new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+}
+
 async function ensureSharedSeedMembers() {
   const remoteUsers = await selectSharedRows("lab_users", {
     order: "user_id.asc"
@@ -1649,13 +1912,14 @@ async function refreshSharedState(options = {}) {
 
   sharedSyncInFlight = (async () => {
     try {
-      const [remoteUsers, remotePresence, remoteTasks, remoteClockRecords, remoteClockLogs] =
+      const [remoteUsers, remotePresence, remoteTasks, remoteClockRecords, remoteClockLogs, remoteClockRequests] =
         await Promise.all([
           selectSharedRows("lab_users", { order: "user_id.asc" }),
           selectSharedRows("lab_presence_plans", { order: "date_key.asc" }),
           selectSharedRows("lab_tasks", { order: "created_at.asc" }),
           selectSharedRows("lab_clock_records", { order: "user_id.asc" }),
-          selectSharedRows("lab_clock_logs", { order: "timestamp.asc" })
+          selectSharedRows("lab_clock_logs", { order: "timestamp.asc" }),
+          selectOptionalSharedRows("lab_clock_change_requests", { order: "created_at.desc" })
         ]);
 
       memberDirectory = buildDirectoryFromRemoteRows(appConfig, remoteUsers);
@@ -1663,6 +1927,9 @@ async function refreshSharedState(options = {}) {
       myTasks = buildTasksFromRemoteRows(remoteTasks);
       clockRecords = buildClockRecordsFromRemoteRows(remoteClockRecords);
       clockLogs = buildClockLogsFromRemoteRows(remoteClockLogs);
+      if (remoteClockRequests) {
+        clockCorrectionRequests = buildClockCorrectionRequestsFromRemoteRows(remoteClockRequests);
+      }
       cacheSharedSnapshotLocally();
       sharedStore.active = true;
       sharedStore.lastError = "";
@@ -1784,6 +2051,40 @@ async function syncClockToShared(userId, record, logEntry) {
   if (logEntry) {
     await upsertSharedRows("lab_clock_logs", [toSharedClockLogRow(userId, logEntry)], "id");
   }
+  await refreshSharedState({ quiet: true });
+  return true;
+}
+
+async function syncClockLogsForUserToShared(userId) {
+  if (!sharedStore.configured) {
+    return false;
+  }
+
+  await upsertSharedRows(
+    "lab_clock_records",
+    [toSharedClockRecordRow(userId, getClockRecord(userId))],
+    "user_id"
+  );
+  await deleteSharedRows("lab_clock_logs", [{ column: "user_id", value: userId }]);
+
+  const logs = getClockLogsForUser(userId);
+  if (logs.length > 0) {
+    await insertSharedRows(
+      "lab_clock_logs",
+      logs.map((entry) => toSharedClockLogRow(userId, entry))
+    );
+  }
+
+  await refreshSharedState({ quiet: true });
+  return true;
+}
+
+async function syncClockCorrectionRequestToShared(request) {
+  if (!sharedStore.configured) {
+    return false;
+  }
+
+  await upsertSharedRows("lab_clock_change_requests", [toSharedClockCorrectionRequestRow(request)], "id");
   await refreshSharedState({ quiet: true });
   return true;
 }
@@ -2158,6 +2459,311 @@ function renderTasksView() {
   });
 }
 
+function getClockCorrectionTargetUserId() {
+  if (!currentUser) {
+    return "";
+  }
+
+  if (!isOwner(currentUser)) {
+    return currentUser.id;
+  }
+
+  return clockCorrectionTargetSelect.value || currentUser.id;
+}
+
+function renderClockCorrectionTargetOptions() {
+  if (!currentUser) {
+    return;
+  }
+
+  const previousValue = clockCorrectionTargetSelect.value || currentUser.id;
+  clockCorrectionTargetSelect.replaceChildren();
+
+  getOrderedMembers().forEach((member) => {
+    const option = document.createElement("option");
+    option.value = member.id;
+    option.textContent = `${member.displayName} / ${member.id}`;
+    clockCorrectionTargetSelect.appendChild(option);
+  });
+
+  clockCorrectionTargetField.hidden = !isOwner(currentUser);
+  clockCorrectionTargetSelect.value =
+    Array.from(clockCorrectionTargetSelect.options).some((option) => option.value === previousValue)
+      ? previousValue
+      : currentUser.id;
+}
+
+function prefillClockCorrectionForm() {
+  const targetUserId = getClockCorrectionTargetUserId();
+  const dateKey = clockCorrectionDateInput.value || toDateKey(new Date());
+  const prefill = getClockCorrectionPrefill(targetUserId, dateKey);
+
+  clockCorrectionDateInput.value = dateKey;
+  clockCorrectionStartInput.value = prefill.startTime;
+  clockCorrectionEndInput.value = prefill.endTime;
+  clockCorrectionBreakInput.value = prefill.breakMinutes > 0 ? String(prefill.breakMinutes) : "";
+  clockCorrectionMessage.textContent = "";
+}
+
+function ensureClockCorrectionFormState() {
+  if (!currentUser) {
+    return;
+  }
+
+  renderClockCorrectionTargetOptions();
+  if (!clockCorrectionDateInput.value) {
+    clockCorrectionDateInput.value = toDateKey(new Date());
+  }
+
+  if (!clockCorrectionStartInput.value && !clockCorrectionEndInput.value && !clockCorrectionBreakInput.value) {
+    prefillClockCorrectionForm();
+  }
+
+  clockCorrectionSubmitButton.textContent = isOwner(currentUser)
+    ? "\u4fee\u6b63\u3092\u4fdd\u5b58"
+    : "\u4fee\u6b63\u7533\u8acb";
+  clockRequestListLabel.textContent = isOwner(currentUser)
+    ? "\u7533\u8acb\u4e00\u89a7"
+    : "\u7533\u8acb\u72b6\u6cc1";
+}
+
+async function saveClockCorrectionForUser(userId, dateKey, startTime, endTime, breakMinutes, messageTarget) {
+  if (!currentUser || !userId) {
+    return false;
+  }
+
+  if (!canManagePermissions(currentUser)) {
+    messageTarget.textContent = "\u4fee\u6b63\u306f\u7ba1\u7406\u8005\u306e\u307f\u3067\u3059\u3002";
+    return false;
+  }
+
+  if (!dateKey || !startTime || !endTime) {
+    messageTarget.textContent = "\u65e5\u4ed8\u3068\u6642\u523b\u3092\u5165\u529b\u3057\u3066\u304f\u3060\u3055\u3044\u3002";
+    return false;
+  }
+
+  const targetMember = findMemberById(userId);
+  const targetRecord = getClockRecord(userId);
+  const todayKey = toDateKey(new Date());
+
+  if (dateKey === todayKey && targetRecord.status !== "out") {
+    messageTarget.textContent = "\u6d3b\u52d5\u4e2d\u306e\u5f53\u65e5\u306f\u4fee\u6b63\u3067\u304d\u307e\u305b\u3093\u3002";
+    return false;
+  }
+
+  let nextEntries;
+
+  try {
+    nextEntries = buildClockLogsForCorrection(userId, dateKey, startTime, endTime, breakMinutes);
+  } catch (error) {
+    messageTarget.textContent =
+      error instanceof Error && error.message ? error.message : "\u4fee\u6b63\u3092\u4fdd\u5b58\u3067\u304d\u307e\u305b\u3093\u3067\u3057\u305f\u3002";
+    return false;
+  }
+
+  replaceClockLogsForDate(userId, dateKey, nextEntries);
+  messageTarget.textContent = `${targetMember?.displayName || userId} / ${formatDateKey(dateKey)} \u3092\u4fee\u6b63\u3057\u307e\u3057\u305f\u3002`;
+  renderClockView();
+  renderClockMonthlyView();
+
+  try {
+    await syncClockLogsForUserToShared(userId);
+    return true;
+  } catch (error) {
+    messageTarget.textContent = sharedStore.configured
+      ? getSharedSyncErrorText(error) || "\u4fee\u6b63\u3092\u4fdd\u5b58\u3067\u304d\u307e\u305b\u3093\u3067\u3057\u305f\u3002"
+      : "\u4fee\u6b63\u3092\u4fdd\u5b58\u3067\u304d\u307e\u305b\u3093\u3067\u3057\u305f\u3002";
+    return false;
+  }
+}
+
+async function submitClockCorrectionRequest(messageTarget) {
+  if (!currentUser) {
+    return false;
+  }
+
+  const dateKey = clockCorrectionDateInput.value;
+  const startTime = normalizeTimeValue(clockCorrectionStartInput.value);
+  const endTime = normalizeTimeValue(clockCorrectionEndInput.value);
+  const breakMinutes = Math.max(0, Math.round(Number(clockCorrectionBreakInput.value || 0)));
+  const note = clockCorrectionNoteInput.value.trim();
+
+  if (!dateKey || !startTime || !endTime) {
+    messageTarget.textContent = "\u65e5\u4ed8\u3068\u6642\u523b\u3092\u5165\u529b\u3057\u3066\u304f\u3060\u3055\u3044\u3002";
+    return false;
+  }
+
+  try {
+    buildClockLogsForCorrection(currentUser.id, dateKey, startTime, endTime, breakMinutes);
+  } catch (error) {
+    messageTarget.textContent =
+      error instanceof Error && error.message ? error.message : "\u7533\u8acb\u5185\u5bb9\u3092\u78ba\u8a8d\u3057\u3066\u304f\u3060\u3055\u3044\u3002";
+    return false;
+  }
+
+  const request = normalizeClockCorrectionRequest({
+    id: createClientId("clock-request"),
+    requesterUserId: currentUser.id,
+    targetUserId: currentUser.id,
+    dateKey,
+    startTime,
+    endTime,
+    breakMinutes,
+    note,
+    status: "pending",
+    reviewedBy: "",
+    reviewedAt: "",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  });
+
+  clockCorrectionRequests = [request, ...clockCorrectionRequests];
+  saveClockCorrectionRequests();
+  messageTarget.textContent = "\u4fee\u6b63\u7533\u8acb\u3092\u9001\u4fe1\u3057\u307e\u3057\u305f\u3002";
+  clockCorrectionNoteInput.value = "";
+  renderClockCorrectionRequestList();
+
+  try {
+    await syncClockCorrectionRequestToShared(request);
+  } catch (error) {
+    messageTarget.textContent = isSharedRelationMissingError(error)
+      ? "\u4fee\u6b63\u7533\u8acb\u306e\u5171\u6709\u306b\u306f\u8ffd\u52a0SQL\u304c\u5fc5\u8981\u3067\u3059\u3002"
+      : getSharedSyncErrorText(error) || "\u4fee\u6b63\u7533\u8acb\u3092\u5171\u6709\u4fdd\u5b58\u3067\u304d\u307e\u305b\u3093\u3067\u3057\u305f\u3002";
+  }
+
+  return true;
+}
+
+function getClockCorrectionRequestMeta(request) {
+  const requester = findMemberById(request.requesterUserId);
+  const target = findMemberById(request.targetUserId);
+  return {
+    requesterName: requester?.displayName || request.requesterUserId,
+    targetName: target?.displayName || request.targetUserId
+  };
+}
+
+function createClockCorrectionRequestCard(request) {
+  const meta = getClockCorrectionRequestMeta(request);
+  const card = document.createElement("article");
+  const head = document.createElement("div");
+  const titleWrap = document.createElement("div");
+  const titleText = document.createElement("strong");
+  const dateText = document.createElement("small");
+  const body = document.createElement("div");
+  const actions = document.createElement("div");
+  const status = document.createElement("span");
+  const title = isOwner(currentUser) ? meta.requesterName : meta.targetName;
+
+  card.className = "clock-request-card";
+  head.className = "clock-request-head";
+  body.className = "clock-request-body";
+  actions.className = "clock-request-actions";
+  status.className = `clock-request-status is-${request.status}`;
+  status.textContent = getClockCorrectionRequestStatusLabel(request.status);
+
+  titleText.textContent = title;
+  dateText.textContent = formatDateKey(request.dateKey);
+  titleWrap.append(titleText, dateText);
+  head.appendChild(titleWrap);
+  head.appendChild(status);
+
+  const range = document.createElement("span");
+  const rest = document.createElement("span");
+  range.textContent = `${request.startTime} - ${request.endTime}`;
+  rest.textContent = `\u4f11\u61a9 ${request.breakMinutes}\u5206`;
+  body.append(range, rest);
+
+  if (request.note) {
+    const note = document.createElement("span");
+    note.textContent = request.note;
+    body.appendChild(note);
+  }
+
+  if (isOwner(currentUser) && request.status === "pending") {
+    const applyButton = document.createElement("button");
+    const rejectButton = document.createElement("button");
+
+    applyButton.type = "button";
+    applyButton.className = "secondary-button";
+    applyButton.dataset.requestAction = "approve";
+    applyButton.dataset.requestId = request.id;
+    applyButton.textContent = "\u53cd\u6620";
+
+    rejectButton.type = "button";
+    rejectButton.className = "secondary-button";
+    rejectButton.dataset.requestAction = "reject";
+    rejectButton.dataset.requestId = request.id;
+    rejectButton.textContent = "\u5374\u4e0b";
+
+    actions.append(applyButton, rejectButton);
+  } else if (request.reviewedAt) {
+    const reviewed = document.createElement("span");
+    reviewed.className = "helper-text";
+    reviewed.textContent = `${formatDateTime(new Date(request.reviewedAt))}`;
+    actions.appendChild(reviewed);
+  }
+
+  card.append(head, body, actions);
+  return card;
+}
+
+function renderClockCorrectionRequestList() {
+  clockCorrectionRequestList.replaceChildren();
+
+  const requests = getClockCorrectionRequestsForCurrentView();
+  if (requests.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "clock-history-empty";
+    empty.textContent = isOwner(currentUser)
+      ? "\u672a\u51e6\u7406\u306e\u7533\u8acb\u306f\u3042\u308a\u307e\u305b\u3093\u3002"
+      : "\u307e\u3060\u7533\u8acb\u306f\u3042\u308a\u307e\u305b\u3093\u3002";
+    clockCorrectionRequestList.appendChild(empty);
+    return;
+  }
+
+  requests.forEach((request) => {
+    clockCorrectionRequestList.appendChild(createClockCorrectionRequestCard(request));
+  });
+}
+
+async function updateClockCorrectionRequestStatus(requestId, status) {
+  const request = clockCorrectionRequests.find((item) => item.id === requestId);
+  if (!request || !currentUser || !isOwner(currentUser)) {
+    return;
+  }
+
+  if (status === "approved") {
+    const saved = await saveClockCorrectionForUser(
+      request.targetUserId,
+      request.dateKey,
+      request.startTime,
+      request.endTime,
+      request.breakMinutes,
+      clockCorrectionMessage
+    );
+
+    if (!saved) {
+      return;
+    }
+  }
+
+  request.status = status;
+  request.reviewedBy = currentUser.id;
+  request.reviewedAt = new Date().toISOString();
+  request.updatedAt = request.reviewedAt;
+  saveClockCorrectionRequests();
+  renderClockCorrectionRequestList();
+
+  try {
+    await syncClockCorrectionRequestToShared(request);
+  } catch (error) {
+    clockCorrectionMessage.textContent = isSharedRelationMissingError(error)
+      ? "\u7533\u8acb\u4e00\u89a7\u306e\u5171\u6709\u306b\u306f\u8ffd\u52a0SQL\u304c\u5fc5\u8981\u3067\u3059\u3002"
+      : getSharedSyncErrorText(error) || "\u7533\u8acb\u306e\u66f4\u65b0\u3092\u5171\u6709\u4fdd\u5b58\u3067\u304d\u307e\u305b\u3093\u3067\u3057\u305f\u3002";
+  }
+}
+
 function renderClockView() {
   if (!currentUser) {
     return;
@@ -2189,6 +2795,7 @@ function renderClockView() {
   clockTotalNote.textContent = logs.length > 0
     ? "\u7d2f\u8a08"
     : "";
+  ensureClockCorrectionFormState();
 
   clockActionButtons.replaceChildren();
   clockActionButtons.className = `clock-actions${actions.length === 1 ? " is-single" : ""}`;
@@ -2227,6 +2834,8 @@ function renderClockView() {
       clockHistoryList.appendChild(createClockHistoryItem(entry));
     });
   }
+
+  renderClockCorrectionRequestList();
 }
 
 function renderClockMonthlyView() {
@@ -2366,6 +2975,8 @@ function resetToLogin() {
   currentUser = null;
   activeCategory = null;
   closePresenceEditor();
+  clockCorrectionForm.reset();
+  clockCorrectionMessage.textContent = "";
   workspaceView.hidden = true;
   authView.hidden = false;
   loginForm.reset();
@@ -2608,6 +3219,63 @@ clockExportButton.addEventListener("click", () => {
   downloadClockCsv();
 });
 
+clockCorrectionTargetSelect.addEventListener("change", () => {
+  prefillClockCorrectionForm();
+});
+
+clockCorrectionDateInput.addEventListener("change", () => {
+  prefillClockCorrectionForm();
+});
+
+clockCorrectionForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  if (!currentUser) {
+    return;
+  }
+
+  const targetUserId = getClockCorrectionTargetUserId();
+  const dateKey = clockCorrectionDateInput.value;
+  const startTime = normalizeTimeValue(clockCorrectionStartInput.value);
+  const endTime = normalizeTimeValue(clockCorrectionEndInput.value);
+  const breakMinutes = Math.max(0, Math.round(Number(clockCorrectionBreakInput.value || 0)));
+
+  if (isOwner(currentUser)) {
+    await saveClockCorrectionForUser(
+      targetUserId,
+      dateKey,
+      startTime,
+      endTime,
+      breakMinutes,
+      clockCorrectionMessage
+    );
+    return;
+  }
+
+  await submitClockCorrectionRequest(clockCorrectionMessage);
+});
+
+clockCorrectionRequestList.addEventListener("click", async (event) => {
+  const button = event.target.closest("[data-request-action]");
+  if (!button) {
+    return;
+  }
+
+  const { requestAction, requestId } = button.dataset;
+  if (!requestId || !requestAction) {
+    return;
+  }
+
+  if (requestAction === "approve") {
+    await updateClockCorrectionRequestStatus(requestId, "approved");
+    return;
+  }
+
+  if (requestAction === "reject") {
+    await updateClockCorrectionRequestStatus(requestId, "rejected");
+  }
+});
+
 taskForm.addEventListener("submit", async (event) => {
   event.preventDefault();
 
@@ -2671,6 +3339,7 @@ async function init() {
   presencePlans = loadPresencePlans();
   clockRecords = loadClockRecords();
   clockLogs = loadClockLogs();
+  clockCorrectionRequests = loadClockCorrectionRequests().map((request) => normalizeClockCorrectionRequest(request)).filter(Boolean);
   myTasks = loadMyTasks();
   presenceMonthKey = getMonthKey(new Date());
   clockMonthSummaryKey = getMonthKey(new Date());

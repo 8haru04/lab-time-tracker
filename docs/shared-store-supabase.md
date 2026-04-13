@@ -11,6 +11,7 @@ To make these features shared:
 - presence input
 - my tasks
 - clock in / out
+- clock correction requests
 
 the app can use a Supabase database as a shared store.
 
@@ -19,6 +20,7 @@ the app can use a Supabase database as a shared store.
 - frontend sync code in `public/app.js`
 - config fields in `public/app-config.json`
 - SQL setup file in `data/supabase-shared-store.sql`
+- incremental SQL for correction requests in `data/supabase-clock-change-requests.sql`
 
 ## What You Need To Do
 
@@ -33,6 +35,10 @@ the app can use a Supabase database as a shared store.
 7. Fill `sharedStore.url` and `sharedStore.anonKey`.
 8. Change `sharedStore.enabled` to `true`.
 9. Push the change to GitHub Pages.
+
+If you already ran the old SQL before the correction-request feature was added, run:
+
+- `data/supabase-clock-change-requests.sql`
 
 ## Config Example
 
