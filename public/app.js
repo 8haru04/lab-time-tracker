@@ -185,17 +185,11 @@ const clockMonthSummaryPrevButton = document.getElementById("clockMonthSummaryPr
 const clockMonthSummaryTodayButton = document.getElementById("clockMonthSummaryTodayButton");
 const clockMonthSummaryNextButton = document.getElementById("clockMonthSummaryNextButton");
 const clockMonthSummaryTableBody = document.getElementById("clockMonthSummaryTableBody");
-const currentUserCard = document.getElementById("currentUserCard");
-const permissionSummary = document.getElementById("permissionSummary");
-const settingsNotice = document.getElementById("settingsNotice");
-const adminSection = document.getElementById("adminSection");
-const memberSection = document.getElementById("memberSection");
-const memberTable = document.getElementById("memberTable");
-const memberForm = document.getElementById("memberForm");
-const memberNameInput = document.getElementById("memberNameInput");
-const memberIdInput = document.getElementById("memberIdInput");
-const memberRoleSelect = document.getElementById("memberRoleSelect");
-const memberFormMessage = document.getElementById("memberFormMessage");
+  const currentUserCard = document.getElementById("currentUserCard");
+  const permissionSummary = document.getElementById("permissionSummary");
+  const settingsNotice = document.getElementById("settingsNotice");
+  const memberSection = document.getElementById("memberSection");
+  const memberTable = document.getElementById("memberTable");
 
 let appConfig = FALLBACK_CONFIG;
 let memberDirectory = [];
@@ -2278,12 +2272,11 @@ function renderAvailabilityOptions(target) {
 function renderConfig(config) {
   document.title = config.appName;
   labName.textContent = config.labName;
-  sidebarLabName.textContent = config.labName;
-  tagline.textContent = config.tagline;
-  loginDescription.textContent = config.loginDescription;
-  renderRoleOptions(memberRoleSelect, config.userRoles);
-  renderAvailabilityOptions(presenceEditorAvailabilitySelect);
-}
+    sidebarLabName.textContent = config.labName;
+    tagline.textContent = config.tagline;
+    loginDescription.textContent = config.loginDescription;
+    renderAvailabilityOptions(presenceEditorAvailabilitySelect);
+  }
 
 function updateHash(categoryKey) {
   const nextHash = categoryKey && categoryKey !== "empty" ? `#${categoryKey}` : "";
@@ -2386,9 +2379,9 @@ function createPermissionChip(text, isOff = false) {
   return chip;
 }
 
-function renderCurrentUserSummary() {
-  currentUserCard.replaceChildren();
-  permissionSummary.replaceChildren();
+  function renderCurrentUserSummary() {
+    currentUserCard.replaceChildren();
+    permissionSummary.replaceChildren();
 
   displayNameInput.value = currentUser.displayName;
   displayNameMessage.textContent = isSharedStoreActive()
@@ -2402,16 +2395,15 @@ function renderCurrentUserSummary() {
     createInfoBox("\u6a29\u9650\u30ec\u30d9\u30eb", isOwner(currentUser) ? "\u6700\u4e0a\u4f4d\u7ba1\u7406\u8005" : "\u4e00\u822c\u30e6\u30fc\u30b6\u30fc")
   );
 
-  permissionSummary.append(
-    createPermissionChip("\u57fa\u672c\u6a5f\u80fd / \u5229\u7528\u53ef"),
-    createPermissionChip(
-      canManagePermissions(currentUser)
-        ? "\u30e6\u30fc\u30b6\u30fc\u767b\u9332 / \u64cd\u4f5c\u53ef"
-        : "\u30e6\u30fc\u30b6\u30fc\u767b\u9332 / \u4e0d\u53ef",
-      !canManagePermissions(currentUser)
-    )
-  );
-}
+    permissionSummary.append(
+      createPermissionChip("\u57fa\u672c\u6a5f\u80fd / \u5229\u7528\u53ef"),
+      createPermissionChip("\u8a2d\u5b9a / \u5229\u7528\u53ef"),
+      createPermissionChip(
+        isOwner(currentUser) ? "\u6700\u4e0a\u4f4d\u7ba1\u7406\u8005" : "\u5171\u6709\u30e1\u30f3\u30d0\u30fc",
+        !isOwner(currentUser)
+      )
+    );
+  }
 
 function renderMemberTable() {
   memberTable.replaceChildren();
@@ -2431,21 +2423,21 @@ function renderMemberTable() {
     const permissionGrid = document.createElement("div");
     permissionGrid.className = "permission-grid";
 
-    permissionGrid.append(
-      createPermissionChip("\u57fa\u672c\u6a5f\u80fd / \u5229\u7528\u53ef"),
-      createPermissionChip("\u8a2d\u5b9a\u753b\u9762 / \u5229\u7528\u53ef"),
-      createPermissionChip(
-        member.isOwner
-          ? "\u30e6\u30fc\u30b6\u30fc\u767b\u9332 / \u64cd\u4f5c\u53ef"
-          : "\u30e6\u30fc\u30b6\u30fc\u767b\u9332 / \u64cd\u4f5c\u4e0d\u53ef",
-        !member.isOwner
-      ),
-      createPermissionChip(
-        member.isOwner
-          ? "\u6700\u4e0a\u4f4d\u7ba1\u7406\u8005"
-          : "\u4eca\u5f8c\u306e\u8ffd\u52a0\u6a29\u9650\u306f\u672a\u8a2d\u5b9a",
-        !member.isOwner
-      )
+      permissionGrid.append(
+        createPermissionChip("\u57fa\u672c\u6a5f\u80fd / \u5229\u7528\u53ef"),
+        createPermissionChip("\u8a2d\u5b9a\u753b\u9762 / \u5229\u7528\u53ef"),
+        createPermissionChip(
+          member.isOwner
+            ? "\u6700\u4e0a\u4f4d\u7ba1\u7406\u8005"
+            : "\u5171\u6709\u30e1\u30f3\u30d0\u30fc",
+          !member.isOwner
+        ),
+        createPermissionChip(
+          member.isOwner
+            ? "\u4fee\u6b63\u78ba\u8a8d / \u5bfe\u5fdc\u53ef"
+            : "\u4eca\u5f8c\u306e\u8ffd\u52a0\u6a29\u9650\u306f\u672a\u8a2d\u5b9a",
+          !member.isOwner
+        )
     );
 
     row.append(memberCard, permissionGrid);
@@ -3059,20 +3051,16 @@ function renderClockMonthlyView() {
   });
 }
 
-function renderSettings() {
-  renderCurrentUserSummary();
+  function renderSettings() {
+    renderCurrentUserSummary();
 
-  const baseNotice = canManagePermissions(currentUser)
-    ? "\u57fa\u672c\u6a5f\u80fd\u5229\u7528\u53ef / \u30e6\u30fc\u30b6\u30fc\u8ffd\u52a0\u53ef"
-    : "\u57fa\u672c\u6a5f\u80fd\u5229\u7528\u53ef / \u30e6\u30fc\u30b6\u30fc\u8ffd\u52a0\u4e0d\u53ef";
-  settingsNotice.textContent = `${baseNotice} ${getSharedStoreStatusText()}`;
+    settingsNotice.textContent = getSharedStoreStatusText();
 
-  adminSection.hidden = !canManagePermissions(currentUser);
-  memberSection.hidden = !canManagePermissions(currentUser);
+    memberSection.hidden = !canManagePermissions(currentUser);
 
-  if (canManagePermissions(currentUser)) {
-    renderMemberTable();
-  }
+    if (canManagePermissions(currentUser)) {
+      renderMemberTable();
+    }
 }
 
 function renderViews() {
@@ -3347,54 +3335,9 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
-memberForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-
-  if (!canManagePermissions(currentUser)) {
-    memberFormMessage.textContent =
-      "\u30e6\u30fc\u30b6\u30fc\u8ffd\u52a0\u306f\u6700\u4e0a\u4f4d\u7ba1\u7406\u8005\u306e\u307f\u304c\u5b9f\u884c\u3067\u304d\u307e\u3059\u3002";
-    return;
-  }
-
-  const displayName = memberNameInput.value.trim();
-  const memberId = memberIdInput.value.trim();
-  const role = memberRoleSelect.value;
-
-  if (!displayName || !memberId) {
-    memberFormMessage.textContent =
-      "\u8868\u793a\u540d\u3068\u5b66\u7c4d\u756a\u53f7\u3092\u5165\u529b\u3057\u3066\u304f\u3060\u3055\u3044\u3002";
-    return;
-  }
-
-  if (findMemberById(memberId)) {
-    memberFormMessage.textContent =
-      "\u305d\u306e\u5b66\u7c4d\u756a\u53f7\u306f\u3059\u3067\u306b\u767b\u9332\u3055\u308c\u3066\u3044\u307e\u3059\u3002";
-    return;
-  }
-
-  memberDirectory.push({
-    id: memberId,
-    displayName,
-    role,
-    isOwner: false,
-    permissions: createEmptyPermissions()
+  logoutButton.addEventListener("click", () => {
+    resetToLogin();
   });
-
-  saveDirectory();
-  memberForm.reset();
-  memberRoleSelect.value = appConfig.userRoles[0];
-  memberFormMessage.textContent = `${displayName} \u3092\u8ffd\u52a0\u3057\u307e\u3057\u305f\u3002\u57fa\u672c\u6a5f\u80fd\u306f\u3059\u3050\u306b\u5229\u7528\u3067\u304d\u307e\u3059\u3002`;
-  try {
-    await syncMemberToShared(findMemberById(memberId));
-  } catch (error) {
-    memberFormMessage.textContent = getSharedSyncErrorText(error);
-  }
-  renderSettings();
-});
-
-logoutButton.addEventListener("click", () => {
-  resetToLogin();
-});
 
 clockExportButton.addEventListener("click", () => {
   downloadClockCsv();
@@ -3547,12 +3490,11 @@ async function init() {
     }
   }
 
-  renderConfig(appConfig);
-  loginForm.reset();
-  memberRoleSelect.value = appConfig.userRoles[0];
-  resetLoginFormMessage();
-  if (!restoreActiveUser()) {
-    focusUserIdInput();
+    renderConfig(appConfig);
+    loginForm.reset();
+    resetLoginFormMessage();
+    if (!restoreActiveUser()) {
+      focusUserIdInput();
   }
   renderClockNow();
   window.setInterval(renderClockNow, 1000);
