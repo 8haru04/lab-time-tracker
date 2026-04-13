@@ -871,6 +871,42 @@ p {
   justify-items: center;
 }
 
+.clock-inline-totals {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px 18px;
+  align-items: flex-start;
+}
+
+.clock-inline-total {
+  display: grid;
+  gap: 2px;
+  justify-items: center;
+  min-width: 116px;
+  opacity: 0.76;
+}
+
+.clock-inline-total-label {
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.clock-inline-total-value {
+  font-size: 0.95rem;
+  line-height: 1.1;
+  color: rgba(255, 255, 255, 0.88);
+  font-variant-numeric: tabular-nums;
+}
+
+.clock-inline-total-note {
+  margin: 0;
+  font-size: 0.68rem;
+  line-height: 1.2;
+  opacity: 0.78;
+}
+
 .clock-current-time {
   font-size: clamp(3rem, 10vw, 5.6rem);
   line-height: 0.94;
@@ -905,26 +941,8 @@ p {
 }
 
 .clock-center-row {
-  width: min(1080px, 100%);
+  width: min(520px, 100%);
   display: grid;
-  grid-template-columns: minmax(180px, 220px) minmax(320px, 1fr) minmax(180px, 220px);
-  gap: 24px;
-  align-items: center;
-}
-
-.clock-metric-card {
-  padding: 18px 16px;
-  border-radius: var(--radius-lg);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.05);
-  display: grid;
-  gap: 8px;
-  text-align: center;
-}
-
-.clock-metric-value {
-  font-size: clamp(1.5rem, 3vw, 2.4rem);
-  line-height: 1.1;
 }
 
 .clock-actions {
@@ -1260,7 +1278,7 @@ p {
   }
 
   .clock-center-row {
-    grid-template-columns: 1fr;
+    width: 100%;
   }
 
   .clock-history-head {
