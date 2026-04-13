@@ -1301,10 +1301,14 @@ function getClockCorrectionRequestsForCurrentView() {
   }
 
   if (isOwner(currentUser)) {
-    return clockCorrectionRequests.filter((request) => request.status === "pending");
+    return dedupeClockCorrectionRequests(
+      clockCorrectionRequests.filter((request) => request.status === "pending")
+    );
   }
 
-  return clockCorrectionRequests.filter((request) => request.requesterUserId === currentUser.id);
+  return dedupeClockCorrectionRequests(
+    clockCorrectionRequests.filter((request) => request.requesterUserId === currentUser.id)
+  );
 }
 
 function getClockCorrectionRequestStatusLabel(status) {
@@ -1316,6 +1320,53 @@ function getClockCorrectionRequestStatusLabel(status) {
     default:
       return "\u7533\u8acb\u4e2d";
   }
+}
+
+function getClockCorrectionRequestKey(request) {
+  return [request.requesterUserId, request.targetUserId, request.dateKey].join("::");
+}
+
+function getClockCorrectionRequestSortStamp(request) {
+  return request.updatedAt || request.createdAt || "";
+}
+
+function getMatchingClockCorrectionRequests(requesterUserId, targetUserId, dateKey, status = "") {
+  return clockCorrectionRequests.filter((request) => {
+    if (!request) {
+      return false;
+    }
+
+    if (request.requesterUserId !== requesterUserId || request.targetUserId !== targetUserId || request.dateKey !== dateKey) {
+      return false;
+    }
+
+    if (status && request.status !== status) {
+      return false;
+    }
+
+    return true;
+  });
+}
+
+function dedupeClockCorrectionRequests(requests) {
+  const grouped = new Map();
+
+  requests.forEach((request) => {
+    if (!request) {
+      return;
+    }
+
+    const key = getClockCorrectionRequestKey(request);
+    const current = grouped.get(key);
+
+    if (!current || getClockCorrectionRequestSortStamp(request) > getClockCorrectionRequestSortStamp(current)) {
+      grouped.set(key, request);
+    }
+  });
+
+  return Array.from(grouped.values()).sort((left, right) =>
+    getClockCorrectionRequestSortStamp(right).localeCompare(getClockCorrectionRequestSortStamp(left))
+  );
 }
 
 function getAttendanceEntry(userId, dateKey) {
@@ -2145,6 +2196,20 @@ async function syncClockCorrectionRequestToShared(request) {
   return true;
 }
 
+async function deleteClockCorrectionRequestsFromShared(requestIds) {
+  if (!sharedStore.configured || !Array.isArray(requestIds) || requestIds.length === 0) {
+    return false;
+  }
+
+  await Promise.all(
+    requestIds.map((requestId) =>
+      deleteSharedRows("lab_clock_change_requests", [{ column: "id", value: requestId }])
+    )
+  );
+  await refreshSharedState({ quiet: true });
+  return true;
+}
+
 function isOwner(member) {
   return Boolean(member && member.id === appConfig.ownerUser.id);
 }
@@ -2679,8 +2744,20 @@ async function submitClockCorrectionRequest(messageTarget) {
     return false;
   }
 
+  const existingPendingRequests = getMatchingClockCorrectionRequests(
+    currentUser.id,
+    currentUser.id,
+    dateKey,
+    "pending"
+  ).sort((left, right) =>
+    getClockCorrectionRequestSortStamp(right).localeCompare(getClockCorrectionRequestSortStamp(left))
+  );
+  const primaryRequest = existingPendingRequests[0] || null;
+  const duplicateIds = existingPendingRequests.slice(1).map((request) => request.id);
+  const nowIso = new Date().toISOString();
+
   const request = normalizeClockCorrectionRequest({
-    id: createClientId("clock-request"),
+    id: primaryRequest?.id || createClientId("clock-request"),
     requesterUserId: currentUser.id,
     targetUserId: currentUser.id,
     dateKey,
@@ -2691,11 +2768,16 @@ async function submitClockCorrectionRequest(messageTarget) {
     status: "pending",
     reviewedBy: "",
     reviewedAt: "",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
+    createdAt: primaryRequest?.createdAt || nowIso,
+    updatedAt: nowIso
   });
 
-  clockCorrectionRequests = [request, ...clockCorrectionRequests];
+  clockCorrectionRequests = [
+    request,
+    ...clockCorrectionRequests.filter(
+      (item) => item.id !== request.id && !duplicateIds.includes(item.id)
+    )
+  ];
   saveClockCorrectionRequests();
   messageTarget.textContent = "\u4fee\u6b63\u7533\u8acb\u3092\u9001\u4fe1\u3057\u307e\u3057\u305f\u3002";
   clockCorrectionNoteInput.value = "";
@@ -2703,6 +2785,9 @@ async function submitClockCorrectionRequest(messageTarget) {
 
   try {
     await syncClockCorrectionRequestToShared(request);
+    if (duplicateIds.length > 0) {
+      await deleteClockCorrectionRequestsFromShared(duplicateIds);
+    }
   } catch (error) {
     messageTarget.textContent = isSharedRelationMissingError(error)
       ? "\u4fee\u6b63\u7533\u8acb\u306e\u5171\u6709\u306b\u306f\u8ffd\u52a0SQL\u304c\u5fc5\u8981\u3067\u3059\u3002"
@@ -2819,6 +2904,13 @@ async function updateClockCorrectionRequestStatus(requestId, status) {
     return;
   }
 
+  const relatedPendingRequests = getMatchingClockCorrectionRequests(
+    request.requesterUserId,
+    request.targetUserId,
+    request.dateKey,
+    "pending"
+  );
+
   if (status === "approved") {
     const saved = await saveClockCorrectionForUser(
       request.targetUserId,
@@ -2834,15 +2926,18 @@ async function updateClockCorrectionRequestStatus(requestId, status) {
     }
   }
 
-  request.status = status;
-  request.reviewedBy = currentUser.id;
-  request.reviewedAt = new Date().toISOString();
-  request.updatedAt = request.reviewedAt;
+  const reviewedAt = new Date().toISOString();
+  relatedPendingRequests.forEach((item) => {
+    item.status = status;
+    item.reviewedBy = currentUser.id;
+    item.reviewedAt = reviewedAt;
+    item.updatedAt = reviewedAt;
+  });
   saveClockCorrectionRequests();
   renderClockCorrectionRequestList();
 
   try {
-    await syncClockCorrectionRequestToShared(request);
+    await Promise.all(relatedPendingRequests.map((item) => syncClockCorrectionRequestToShared(item)));
   } catch (error) {
     clockCorrectionMessage.textContent = isSharedRelationMissingError(error)
       ? "\u7533\u8acb\u4e00\u89a7\u306e\u5171\u6709\u306b\u306f\u8ffd\u52a0SQL\u304c\u5fc5\u8981\u3067\u3059\u3002"
