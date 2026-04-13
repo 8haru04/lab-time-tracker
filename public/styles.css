@@ -433,6 +433,11 @@ p {
   background: rgba(255, 255, 255, 0.04);
 }
 
+.presence-table-section {
+  display: grid;
+  gap: 10px;
+}
+
 .presence-table {
   width: max-content;
   min-width: 100%;
@@ -574,6 +579,20 @@ p {
 .presence-cell-button:focus-visible {
   outline: none;
   box-shadow: inset 0 0 0 2px rgba(232, 192, 125, 0.6);
+}
+
+.attendance-cell-entry {
+  display: grid;
+  gap: 4px;
+  justify-items: center;
+}
+
+.attendance-cell-time {
+  display: block;
+  color: var(--muted);
+  font-size: 0.68rem;
+  line-height: 1.25;
+  white-space: nowrap;
 }
 
 .presence-editor-backdrop {

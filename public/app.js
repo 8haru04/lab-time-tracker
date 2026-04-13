@@ -137,6 +137,8 @@ const presenceTodayButton = document.getElementById("presenceTodayButton");
 const presenceNextButton = document.getElementById("presenceNextButton");
 const presenceTableHead = document.getElementById("presenceTableHead");
 const presenceTableBody = document.getElementById("presenceTableBody");
+const attendanceTableHead = document.getElementById("attendanceTableHead");
+const attendanceTableBody = document.getElementById("attendanceTableBody");
 const presenceEditorModal = document.getElementById("presenceEditorModal");
 const presenceEditorForm = document.getElementById("presenceEditorForm");
 const presenceEditorTitle = document.getElementById("presenceEditorTitle");
@@ -1314,6 +1316,41 @@ function getClockCorrectionRequestStatusLabel(status) {
   }
 }
 
+function getAttendanceEntry(userId, dateKey) {
+  const logs = getClockLogsForDateKey(getClockLogsForUser(userId), dateKey)
+    .slice()
+    .sort((left, right) => left.timestamp.localeCompare(right.timestamp));
+  const firstCheckin = logs.find((entry) => entry.actionType === "checkin");
+  const lastCheckout = [...logs].reverse().find((entry) => entry.actionType === "checkout");
+
+  if (!firstCheckin || !lastCheckout) {
+    return null;
+  }
+
+  return {
+    startTime: formatTime(new Date(firstCheckin.timestamp)),
+    endTime: formatTime(new Date(lastCheckout.timestamp))
+  };
+}
+
+function createPresenceHeadRow(days) {
+  const headRow = document.createElement("tr");
+  const corner = document.createElement("th");
+  corner.textContent = "\u30e6\u30fc\u30b6\u30fc";
+  headRow.appendChild(corner);
+
+  days.forEach((day) => {
+    const headCell = document.createElement("th");
+    headCell.innerHTML = `
+      <span class="presence-day-label">${day.label}</span>
+      <span class="presence-weekday${day.isWeekend ? " presence-day-weekend" : ""}">${day.weekday}</span>
+    `;
+    headRow.appendChild(headCell);
+  });
+
+  return headRow;
+}
+
 function getTaskOwnerTasks(userId) {
   const rawTasks = Array.isArray(myTasks[userId]) ? myTasks[userId] : [];
 
@@ -2335,35 +2372,30 @@ function renderPresenceBoard() {
   presenceMonthLabel.textContent = formatMonthLabel(presenceMonthKey);
   presenceTableHead.replaceChildren();
   presenceTableBody.replaceChildren();
+  attendanceTableHead.replaceChildren();
+  attendanceTableBody.replaceChildren();
 
-  const headRow = document.createElement("tr");
-  const corner = document.createElement("th");
-  corner.textContent = "\u30e6\u30fc\u30b6\u30fc";
-  headRow.appendChild(corner);
-
-  days.forEach((day) => {
-    const headCell = document.createElement("th");
-    headCell.innerHTML = `
-      <span class="presence-day-label">${day.label}</span>
-      <span class="presence-weekday${day.isWeekend ? " presence-day-weekend" : ""}">${day.weekday}</span>
-    `;
-    headRow.appendChild(headCell);
-  });
-
-  presenceTableHead.appendChild(headRow);
+  presenceTableHead.appendChild(createPresenceHeadRow(days));
+  attendanceTableHead.appendChild(createPresenceHeadRow(days));
 
   orderedMembers.forEach((member) => {
     const row = document.createElement("tr");
+    const attendanceRow = document.createElement("tr");
     const memberCell = document.createElement("th");
+    const attendanceMemberCell = document.createElement("th");
     memberCell.innerHTML = `
       <span class="presence-user-name">${member.displayName}</span>
       <span class="presence-user-meta">${member.role}</span>
     `;
+    attendanceMemberCell.innerHTML = memberCell.innerHTML;
     row.appendChild(memberCell);
+    attendanceRow.appendChild(attendanceMemberCell);
 
     days.forEach((day) => {
       const cell = document.createElement("td");
+      const attendanceCell = document.createElement("td");
       const entry = getPresenceEntry(member.id, day.key);
+      const attendanceEntry = getAttendanceEntry(member.id, day.key);
       const isEditableCell = currentUser && member.id === currentUser.id;
       let content;
 
@@ -2408,9 +2440,32 @@ function renderPresenceBoard() {
       }
 
       row.appendChild(cell);
+
+      if (attendanceEntry) {
+        const wrapper = document.createElement("div");
+        const start = document.createElement("span");
+        const end = document.createElement("span");
+
+        wrapper.className = "attendance-cell-entry";
+        wrapper.title = `\u5165\u5ba4 ${attendanceEntry.startTime} / \u9000\u5ba4 ${attendanceEntry.endTime}`;
+        start.className = "attendance-cell-time";
+        end.className = "attendance-cell-time";
+        start.textContent = `\u5165 ${attendanceEntry.startTime}`;
+        end.textContent = `\u9000 ${attendanceEntry.endTime}`;
+        wrapper.append(start, end);
+        attendanceCell.appendChild(wrapper);
+      } else {
+        const empty = document.createElement("span");
+        empty.className = "presence-cell-empty";
+        empty.textContent = "-";
+        attendanceCell.appendChild(empty);
+      }
+
+      attendanceRow.appendChild(attendanceCell);
     });
 
     presenceTableBody.appendChild(row);
+    attendanceTableBody.appendChild(attendanceRow);
   });
 }
 
