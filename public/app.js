@@ -211,6 +211,8 @@ let clockMonthSummaryKey = "";
 let clockRecords = {};
 let clockLogs = {};
 let clockCorrectionRequests = [];
+let clockCorrectionRequestsSharedAvailable = true;
+let clockCorrectionRequestsStatusText = "";
 let myTasks = {};
 let sharedStore = {
   provider: "supabase",
@@ -1949,24 +1951,41 @@ async function refreshSharedState(options = {}) {
 
   sharedSyncInFlight = (async () => {
     try {
-      const [remoteUsers, remotePresence, remoteTasks, remoteClockRecords, remoteClockLogs, remoteClockRequests] =
+      let remoteClockRequests = null;
+      let sharedClockRequestsAvailable = true;
+
+      const [remoteUsers, remotePresence, remoteTasks, remoteClockRecords, remoteClockLogs] =
         await Promise.all([
           selectSharedRows("lab_users", { order: "user_id.asc" }),
           selectSharedRows("lab_presence_plans", { order: "date_key.asc" }),
           selectSharedRows("lab_tasks", { order: "created_at.asc" }),
           selectSharedRows("lab_clock_records", { order: "user_id.asc" }),
-          selectSharedRows("lab_clock_logs", { order: "timestamp.asc" }),
-          selectOptionalSharedRows("lab_clock_change_requests", { order: "created_at.desc" })
+          selectSharedRows("lab_clock_logs", { order: "timestamp.asc" })
         ]);
+
+      try {
+        remoteClockRequests = await selectSharedRows("lab_clock_change_requests", {
+          order: "created_at.desc"
+        });
+      } catch (error) {
+        if (isSharedRelationMissingError(error)) {
+          sharedClockRequestsAvailable = false;
+          remoteClockRequests = [];
+        } else {
+          throw error;
+        }
+      }
 
       memberDirectory = buildDirectoryFromRemoteRows(appConfig, remoteUsers);
       presencePlans = buildPresencePlansFromRemoteRows(remotePresence);
       myTasks = buildTasksFromRemoteRows(remoteTasks);
       clockRecords = buildClockRecordsFromRemoteRows(remoteClockRecords);
       clockLogs = buildClockLogsFromRemoteRows(remoteClockLogs);
-      if (remoteClockRequests) {
-        clockCorrectionRequests = buildClockCorrectionRequestsFromRemoteRows(remoteClockRequests);
-      }
+      clockCorrectionRequestsSharedAvailable = sharedClockRequestsAvailable;
+      clockCorrectionRequestsStatusText = sharedClockRequestsAvailable
+        ? ""
+        : "\u4fee\u6b63\u7533\u8acb\u306e\u5171\u6709\u306b\u306f\u8ffd\u52a0SQL\u304c\u5fc5\u8981\u3067\u3059\u3002";
+      clockCorrectionRequests = buildClockCorrectionRequestsFromRemoteRows(remoteClockRequests);
       cacheSharedSnapshotLocally();
       sharedStore.active = true;
       sharedStore.lastError = "";
@@ -2237,6 +2256,10 @@ function setActiveCategory(categoryKey) {
   updateHash(categoryKey);
   window.scrollTo({ top: 0 });
   renderWorkspace();
+
+  if (sharedStore.configured && categoryKey === "clock") {
+    refreshSharedState({ quiet: true });
+  }
 }
 
 function createNavButton(category) {
@@ -2765,6 +2788,14 @@ function createClockCorrectionRequestCard(request) {
 
 function renderClockCorrectionRequestList() {
   clockCorrectionRequestList.replaceChildren();
+
+  if (sharedStore.configured && !clockCorrectionRequestsSharedAvailable) {
+    const notice = document.createElement("p");
+    notice.className = "clock-history-empty";
+    notice.textContent = clockCorrectionRequestsStatusText;
+    clockCorrectionRequestList.appendChild(notice);
+    return;
+  }
 
   const requests = getClockCorrectionRequestsForCurrentView();
   if (requests.length === 0) {
@@ -3385,6 +3416,14 @@ window.addEventListener("hashchange", () => {
     window.scrollTo({ top: 0 });
     renderWorkspace();
   }
+});
+
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden || !currentUser || activeCategory !== "clock" || !sharedStore.configured) {
+    return;
+  }
+
+  refreshSharedState({ quiet: true });
 });
 
 async function init() {
