@@ -166,6 +166,7 @@ const clockStatusText = document.getElementById("clockStatusText");
 const clockStatusSubtext = document.getElementById("clockStatusSubtext");
 const clockActionButtons = document.getElementById("clockActionButtons");
 const clockSummaryText = document.getElementById("clockSummaryText");
+const clockDaySummaryCards = document.getElementById("clockDaySummaryCards");
 const clockExportButton = document.getElementById("clockExportButton");
 const clockHistoryList = document.getElementById("clockHistoryList");
 const clockCorrectionForm = document.getElementById("clockCorrectionForm");
@@ -1062,6 +1063,47 @@ function getClockSummary(logs, currentStatus, now = new Date()) {
     breakMinutes,
     activeMinutes: Math.max(0, stayMinutes - breakMinutes)
   };
+}
+
+function getDayClockDisplaySummary(logs, summary) {
+  const firstCheckin = logs.find((entry) => entry.actionType === "checkin");
+  const lastCheckout = [...logs].reverse().find((entry) => entry.actionType === "checkout");
+
+  return {
+    checkinTime: firstCheckin ? formatTime(new Date(firstCheckin.timestamp)) : "--:--",
+    checkoutTime: lastCheckout ? formatTime(new Date(lastCheckout.timestamp)) : "--:--",
+    breakTime: formatDurationFromMinutes(summary.breakMinutes)
+  };
+}
+
+function createClockDaySummaryCard(label, value) {
+  const card = document.createElement("article");
+  const title = document.createElement("span");
+  const body = document.createElement("strong");
+
+  card.className = "clock-day-summary-card";
+  title.textContent = label;
+  body.textContent = value;
+
+  card.append(title, body);
+  return card;
+}
+
+function renderClockDaySummary(logs, summary, latestAction) {
+  clockDaySummaryCards.replaceChildren();
+
+  if (latestAction?.actionType !== "checkout") {
+    clockDaySummaryCards.hidden = true;
+    return;
+  }
+
+  const daySummary = getDayClockDisplaySummary(logs, summary);
+  clockDaySummaryCards.hidden = false;
+  clockDaySummaryCards.append(
+    createClockDaySummaryCard("\u5165\u5ba4", daySummary.checkinTime),
+    createClockDaySummaryCard("\u9000\u5ba4", daySummary.checkoutTime),
+    createClockDaySummaryCard("\u4f11\u61a9", daySummary.breakTime)
+  );
 }
 
 function getStatusStartedText(record, logs) {
@@ -2955,6 +2997,7 @@ function renderClockView() {
 
   clockStatusText.textContent = statusMeta.title;
   clockStatusSubtext.textContent = getStatusStartedText(record, logs);
+  renderClockDaySummary(todayLogs, todaySummary, latestAction);
   if (latestAction?.actionType === "checkout") {
     clockSummaryText.textContent = `\u672c\u65e5\u306e\u6d3b\u52d5\u6642\u9593: ${formatDurationFromMinutes(todaySummary.activeMinutes)}`;
   } else {
