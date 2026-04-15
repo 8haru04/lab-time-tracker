@@ -1050,7 +1050,7 @@ function getClockSummary(logs, currentStatus, now = new Date()) {
     }
   });
 
-  if (checkedInAt) {
+  if (checkedInAt && currentStatus !== "out") {
     stayMinutes += (now - checkedInAt) / 60000;
   }
 
