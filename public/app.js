@@ -6,6 +6,7 @@ const CLOCK_RECORDS_KEY = "ergonomics-lab-clock-records-v1";
 const CLOCK_LOGS_KEY = "ergonomics-lab-clock-logs-v1";
 const CLOCK_CORRECTION_REQUESTS_KEY = "ergonomics-lab-clock-correction-requests-v1";
 const TASKS_STORAGE_KEY = "ergonomics-lab-my-tasks-v1";
+const EXCEL_LINKS_KEY = "ergonomics-lab-excel-links-v1";
 const EXCEL_ATTACHMENT_DB_NAME = "ergonomics-lab-excel-attachments";
 const EXCEL_ATTACHMENT_DB_VERSION = 1;
 const EXCEL_ATTACHMENT_STORE_NAME = "excelFiles";
@@ -203,6 +204,9 @@ const clockMonthSummaryTableBody = document.getElementById("clockMonthSummaryTab
   const excelFileName = document.getElementById("excelFileName");
   const excelFileMessage = document.getElementById("excelFileMessage");
   const excelFileClearButton = document.getElementById("excelFileClearButton");
+  const excelLinkForm = document.getElementById("excelLinkForm");
+  const excelLinkInput = document.getElementById("excelLinkInput");
+  const excelLinkMessage = document.getElementById("excelLinkMessage");
 
 let appConfig = FALLBACK_CONFIG;
 let memberDirectory = [];
@@ -221,6 +225,7 @@ let clockCorrectionRequests = [];
 let clockCorrectionRequestsSharedAvailable = true;
 let clockCorrectionRequestsStatusText = "";
 let myTasks = {};
+let excelLinks = {};
 let sharedStore = {
   provider: "supabase",
   configured: false,
@@ -306,6 +311,21 @@ function loadMyTasks() {
 
 function saveMyTasks() {
   window.localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(myTasks));
+}
+
+function loadExcelLinks() {
+  try {
+    const raw = window.localStorage.getItem(EXCEL_LINKS_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch (error) {
+    console.warn("Could not load Excel links. Using defaults.", error);
+    return {};
+  }
+}
+
+function saveExcelLinks() {
+  window.localStorage.setItem(EXCEL_LINKS_KEY, JSON.stringify(excelLinks));
 }
 
 function saveDisplayNameOverrides() {
@@ -401,6 +421,43 @@ function isExcelAttachmentFile(file) {
   }
 
   return /\.(xlsx|xlsm|xls)$/i.test(file.name);
+}
+
+function normalizeExcelLink(value) {
+  const trimmed = String(value || "").trim();
+
+  if (!trimmed) {
+    return "";
+  }
+
+  try {
+    const url = new URL(trimmed);
+    return url.protocol === "http:" || url.protocol === "https:" ? url.href : "";
+  } catch (error) {
+    return "";
+  }
+}
+
+function getExcelLink(userId) {
+  const link = typeof excelLinks[userId] === "string" ? excelLinks[userId] : "";
+  return normalizeExcelLink(link);
+}
+
+function setExcelLink(userId, link) {
+  const normalizedLink = normalizeExcelLink(link);
+
+  if (!userId) {
+    return "";
+  }
+
+  if (!normalizedLink) {
+    delete excelLinks[userId];
+  } else {
+    excelLinks[userId] = normalizedLink;
+  }
+
+  saveExcelLinks();
+  return normalizedLink;
 }
 
 function saveExcelAttachment(userId, file) {
@@ -1241,6 +1298,18 @@ function setExcelAttachmentPanel(record) {
   excelFileClearButton.hidden = false;
 }
 
+function renderExcelLinkPanel() {
+  if (!excelLinkInput || !currentUser) {
+    return;
+  }
+
+  const link = getExcelLink(currentUser.id);
+  excelLinkInput.value = link;
+  if (excelLinkMessage) {
+    excelLinkMessage.textContent = link ? "\u4fdd\u5b58\u6e08\u307f" : "";
+  }
+}
+
 function renderExcelAttachmentPanel() {
   if (!excelFileName || !excelFileClearButton) {
     return;
@@ -1284,6 +1353,19 @@ function renderClockExcelFileCard(latestAction) {
 
   const userId = currentUser.id;
   const expectedActionId = latestAction.id;
+  const excelLink = getExcelLink(userId);
+  if (excelLink) {
+    clockExcelFileCard.hidden = false;
+    clockExcelFileName.textContent = "OneDrive\u306eExcel";
+    if (clockExcelOpenButton) {
+      clockExcelOpenButton.textContent = "\u958b\u304f";
+    }
+    if (clockExcelMessage) {
+      clockExcelMessage.textContent = "";
+    }
+    return;
+  }
+
   getExcelAttachment(userId).then((record) => {
     if (!currentUser || currentUser.id !== userId) {
       return;
@@ -1302,8 +1384,11 @@ function renderClockExcelFileCard(latestAction) {
 
     clockExcelFileCard.hidden = false;
     clockExcelFileName.textContent = record.name;
+    if (clockExcelOpenButton) {
+      clockExcelOpenButton.textContent = "\u4fdd\u5b58";
+    }
     if (clockExcelMessage) {
-      clockExcelMessage.textContent = "";
+      clockExcelMessage.textContent = "Excel\u672c\u4f53\u306f\u4fdd\u5b58\u306b\u306a\u308a\u307e\u3059";
     }
   });
 }
@@ -1348,6 +1433,15 @@ async function openCurrentExcelAttachment() {
     return;
   }
 
+  const excelLink = getExcelLink(currentUser.id);
+  if (excelLink) {
+    window.open(excelLink, "_blank", "noopener");
+    if (clockExcelMessage) {
+      clockExcelMessage.textContent = "\u958b\u304d\u307e\u3057\u305f";
+    }
+    return;
+  }
+
   const attachment = await getExcelAttachment(currentUser.id);
   if (!attachment?.blob) {
     if (clockExcelMessage) {
@@ -1371,7 +1465,7 @@ async function openCurrentExcelAttachment() {
   anchor.remove();
   window.setTimeout(() => URL.revokeObjectURL(url), 60000);
   if (clockExcelMessage) {
-    clockExcelMessage.textContent = "\u958b\u304d\u307e\u3057\u305f";
+    clockExcelMessage.textContent = "\u4fdd\u5b58\u3057\u307e\u3057\u305f";
   }
 }
 
@@ -3366,6 +3460,7 @@ function renderClockMonthlyView() {
 
   function renderSettings() {
     renderCurrentUserSummary();
+    renderExcelLinkPanel();
     renderExcelAttachmentPanel();
 
     settingsNotice.textContent = getSharedStoreStatusText();
@@ -3565,6 +3660,32 @@ displayNameForm.addEventListener("submit", async (event) => {
   }
   renderWorkspace();
 });
+
+if (excelLinkForm && excelLinkInput) {
+  excelLinkForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+
+    if (!currentUser) {
+      return;
+    }
+
+    const rawLink = excelLinkInput.value.trim();
+    const normalizedLink = normalizeExcelLink(rawLink);
+
+    if (rawLink && !normalizedLink) {
+      if (excelLinkMessage) {
+        excelLinkMessage.textContent = "URL\u3092\u78ba\u8a8d";
+      }
+      return;
+    }
+
+    setExcelLink(currentUser.id, normalizedLink);
+    if (excelLinkMessage) {
+      excelLinkMessage.textContent = normalizedLink ? "\u4fdd\u5b58\u6e08\u307f" : "\u524a\u9664\u6e08\u307f";
+    }
+    renderClockView();
+  });
+}
 
 if (excelFileInput && excelFileDropZone && excelFileClearButton) {
   excelFileInput.addEventListener("change", async () => {
@@ -3852,10 +3973,11 @@ async function init() {
   displayNameOverrides = loadDisplayNameOverrides();
   presencePlans = loadPresencePlans();
   clockRecords = loadClockRecords();
-  clockLogs = loadClockLogs();
-  clockCorrectionRequests = loadClockCorrectionRequests().map((request) => normalizeClockCorrectionRequest(request)).filter(Boolean);
-  myTasks = loadMyTasks();
-  presenceMonthKey = getMonthKey(new Date());
+    clockLogs = loadClockLogs();
+    clockCorrectionRequests = loadClockCorrectionRequests().map((request) => normalizeClockCorrectionRequest(request)).filter(Boolean);
+    myTasks = loadMyTasks();
+    excelLinks = loadExcelLinks();
+    presenceMonthKey = getMonthKey(new Date());
   clockMonthSummaryKey = getMonthKey(new Date());
   memberDirectory = loadStoredDirectory(appConfig);
 
