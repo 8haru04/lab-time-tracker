@@ -1,5 +1,5 @@
-const SHELL_CACHE = "ergonomics-lab-shell-v31";
-const DATA_CACHE = "ergonomics-lab-data-v31";
+const SHELL_CACHE = "ergonomics-lab-shell-v32";
+const DATA_CACHE = "ergonomics-lab-data-v32";
 const APP_SHELL = [
   "./",
   "./index.html",

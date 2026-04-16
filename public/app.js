@@ -1351,9 +1351,7 @@ function renderClockExcelFileCard(latestAction) {
     return;
   }
 
-  const userId = currentUser.id;
-  const expectedActionId = latestAction.id;
-  const excelLink = getExcelLink(userId);
+  const excelLink = getExcelLink(currentUser.id);
   if (excelLink) {
     clockExcelFileCard.hidden = false;
     clockExcelFileName.textContent = "\u6d3b\u52d5\u6642\u9593\u3092\u8a18\u9332";
@@ -1366,31 +1364,7 @@ function renderClockExcelFileCard(latestAction) {
     return;
   }
 
-  getExcelAttachment(userId).then((record) => {
-    if (!currentUser || currentUser.id !== userId) {
-      return;
-    }
-
-    const currentLogs = getTodayClockLogs(getClockLogsForUser(userId));
-    const currentLatestAction = currentLogs.length > 0 ? currentLogs[currentLogs.length - 1] : null;
-    if (currentLatestAction?.id !== expectedActionId || currentLatestAction?.actionType !== "checkout") {
-      return;
-    }
-
-    if (!record) {
-      hideClockExcelFileCard();
-      return;
-    }
-
-    clockExcelFileCard.hidden = false;
-    clockExcelFileName.textContent = record.name;
-    if (clockExcelOpenButton) {
-      clockExcelOpenButton.textContent = "\u4fdd\u5b58";
-    }
-    if (clockExcelMessage) {
-      clockExcelMessage.textContent = "Excel\u672c\u4f53\u306f\u4fdd\u5b58\u306b\u306a\u308a\u307e\u3059";
-    }
-  });
+  hideClockExcelFileCard();
 }
 
 async function handleExcelAttachmentFile(file) {
@@ -1441,31 +1415,8 @@ async function openCurrentExcelAttachment() {
     }
     return;
   }
-
-  const attachment = await getExcelAttachment(currentUser.id);
-  if (!attachment?.blob) {
-    if (clockExcelMessage) {
-      clockExcelMessage.textContent = "\u672a\u6dfb\u4ed8";
-    }
-    return;
-  }
-
-  const blob = attachment.blob instanceof Blob
-    ? attachment.blob
-    : new Blob([attachment.blob], { type: attachment.type || "" });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-
-  anchor.href = url;
-  anchor.download = attachment.name || "\u6d3b\u52d5\u8a18\u9332.xlsx";
-  anchor.target = "_blank";
-  anchor.rel = "noopener";
-  document.body.appendChild(anchor);
-  anchor.click();
-  anchor.remove();
-  window.setTimeout(() => URL.revokeObjectURL(url), 60000);
   if (clockExcelMessage) {
-    clockExcelMessage.textContent = "\u4fdd\u5b58\u3057\u307e\u3057\u305f";
+    clockExcelMessage.textContent = "\u30ea\u30f3\u30af\u672a\u8a2d\u5b9a";
   }
 }
 
@@ -3461,7 +3412,6 @@ function renderClockMonthlyView() {
   function renderSettings() {
     renderCurrentUserSummary();
     renderExcelLinkPanel();
-    renderExcelAttachmentPanel();
 
     settingsNotice.textContent = getSharedStoreStatusText();
 
