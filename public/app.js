@@ -1356,9 +1356,9 @@ function renderClockExcelFileCard(latestAction) {
   const excelLink = getExcelLink(userId);
   if (excelLink) {
     clockExcelFileCard.hidden = false;
-    clockExcelFileName.textContent = "OneDrive\u306eExcel";
+    clockExcelFileName.textContent = "\u6d3b\u52d5\u6642\u9593\u3092\u8a18\u9332";
     if (clockExcelOpenButton) {
-      clockExcelOpenButton.textContent = "\u958b\u304f";
+      clockExcelOpenButton.textContent = "\u6d3b\u52d5\u6642\u9593\u3092\u8a18\u9332\u3059\u308b";
     }
     if (clockExcelMessage) {
       clockExcelMessage.textContent = "";
