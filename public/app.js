@@ -6,10 +6,12 @@ const CLOCK_RECORDS_KEY = "ergonomics-lab-clock-records-v1";
 const CLOCK_LOGS_KEY = "ergonomics-lab-clock-logs-v1";
 const CLOCK_CORRECTION_REQUESTS_KEY = "ergonomics-lab-clock-correction-requests-v1";
 const TASKS_STORAGE_KEY = "ergonomics-lab-my-tasks-v1";
+const CHAT_MESSAGES_KEY = "ergonomics-lab-chat-messages-v1";
 const EXCEL_LINKS_KEY = "ergonomics-lab-excel-links-v1";
 const EXCEL_ATTACHMENT_DB_NAME = "ergonomics-lab-excel-attachments";
 const EXCEL_ATTACHMENT_DB_VERSION = 1;
 const EXCEL_ATTACHMENT_STORE_NAME = "excelFiles";
+const CHAT_MAX_MESSAGES = 250;
 const DEFAULT_SHARED_SYNC_INTERVAL_MS = 20000;
 const CATEGORIES = [
   {
@@ -23,6 +25,12 @@ const CATEGORIES = [
     label: "\u30de\u30a4\u30bf\u30b9\u30af",
     short: "\u500b\u4eba\u30bf\u30b9\u30af\u3092\u6574\u7406",
     description: "\u500b\u4eba\u306e\u30bf\u30b9\u30af\u3092\u6574\u7406\u3059\u308b\u753b\u9762\u3067\u3059\u3002"
+  },
+  {
+    key: "chat",
+    label: "\u30c1\u30e3\u30c3\u30c8",
+    short: "\u3072\u3068\u3053\u3068\u5171\u6709",
+    description: "\u7814\u7a76\u5ba4\u5168\u4f53\u3067\u4f7f\u3046\u5171\u6709\u30c1\u30e3\u30c3\u30c8\u3067\u3059\u3002"
   },
   {
     key: "clock",
@@ -160,6 +168,11 @@ const taskDueDateInput = document.getElementById("taskDueDateInput");
 const taskNoteInput = document.getElementById("taskNoteInput");
 const taskFormMessage = document.getElementById("taskFormMessage");
 const taskList = document.getElementById("taskList");
+const chatMessageList = document.getElementById("chatMessageList");
+const chatForm = document.getElementById("chatForm");
+const chatInput = document.getElementById("chatInput");
+const chatFormMessage = document.getElementById("chatFormMessage");
+const chatStatusMessage = document.getElementById("chatStatusMessage");
 const clockCurrentTime = document.getElementById("clockCurrentTime");
 const clockCurrentDate = document.getElementById("clockCurrentDate");
 const clockMonthTotalValue = document.getElementById("clockMonthTotalValue");
@@ -225,6 +238,9 @@ let clockCorrectionRequests = [];
 let clockCorrectionRequestsSharedAvailable = true;
 let clockCorrectionRequestsStatusText = "";
 let myTasks = {};
+let chatMessages = [];
+let chatSharedAvailable = true;
+let chatSharedStatusText = "";
 let excelLinks = {};
 let sharedStore = {
   provider: "supabase",
@@ -311,6 +327,25 @@ function loadMyTasks() {
 
 function saveMyTasks() {
   window.localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(myTasks));
+}
+
+function loadChatMessages() {
+  try {
+    const raw = window.localStorage.getItem(CHAT_MESSAGES_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    return sortChatMessages(parsed.map((message) => normalizeChatMessage(message)).filter(Boolean));
+  } catch (error) {
+    console.warn("Could not load chat messages. Using defaults.", error);
+    return [];
+  }
+}
+
+function saveChatMessages() {
+  window.localStorage.setItem(CHAT_MESSAGES_KEY, JSON.stringify(sortChatMessages(chatMessages)));
 }
 
 function loadExcelLinks() {
@@ -918,6 +953,64 @@ function buildClockCorrectionRequestsFromRemoteRows(rows) {
     });
 }
 
+function normalizeChatMessage(rawMessage) {
+  if (!rawMessage || typeof rawMessage !== "object") {
+    return null;
+  }
+
+  const id = String(rawMessage.id || "").trim();
+  const userId = String(rawMessage.userId || rawMessage.user_id || "").trim();
+  const rawText =
+    typeof rawMessage.text === "string"
+      ? rawMessage.text
+      : typeof rawMessage.message === "string"
+        ? rawMessage.message
+        : "";
+  const text = rawText.replace(/\r\n?/g, "\n").trim();
+  const createdAt = String(rawMessage.createdAt || rawMessage.created_at || "").trim() || new Date().toISOString();
+
+  if (!id || !userId || !text) {
+    return null;
+  }
+
+  return {
+    id,
+    userId,
+    text,
+    createdAt
+  };
+}
+
+function sortChatMessages(messages) {
+  return [...(Array.isArray(messages) ? messages : [])]
+    .sort((left, right) => {
+      const leftStamp = left?.createdAt || "";
+      const rightStamp = right?.createdAt || "";
+
+      if (leftStamp && rightStamp && leftStamp !== rightStamp) {
+        return leftStamp.localeCompare(rightStamp);
+      }
+
+      return String(left?.id || "").localeCompare(String(right?.id || ""), "ja");
+    })
+    .slice(-CHAT_MAX_MESSAGES);
+}
+
+function buildChatMessagesFromRemoteRows(rows) {
+  return sortChatMessages(
+    (Array.isArray(rows) ? rows : [])
+      .map((row) =>
+        normalizeChatMessage({
+          id: row.id,
+          userId: row.user_id,
+          message: row.message,
+          createdAt: row.created_at
+        })
+      )
+      .filter(Boolean)
+  );
+}
+
 function cacheSharedSnapshotLocally() {
   saveDirectory();
   savePresencePlans();
@@ -925,6 +1018,7 @@ function cacheSharedSnapshotLocally() {
   saveClockLogs();
   saveClockCorrectionRequests();
   saveMyTasks();
+  saveChatMessages();
 }
 
 function renderClockNow() {
@@ -1822,6 +1916,23 @@ function deleteTaskForUser(userId, taskId) {
   return myTasks[userId].length !== previousLength;
 }
 
+function addChatMessage(userId, text) {
+  const message = normalizeChatMessage({
+    id: createClientId("chat"),
+    userId,
+    text,
+    createdAt: new Date().toISOString()
+  });
+
+  if (!message) {
+    return null;
+  }
+
+  chatMessages = sortChatMessages([...chatMessages, message]);
+  saveChatMessages();
+  return message;
+}
+
 function getTaskDueState(dueDate) {
   if (!dueDate) {
     return {
@@ -2322,6 +2433,16 @@ function toSharedClockCorrectionRequestRow(request) {
   };
 }
 
+function toSharedChatMessageRow(message) {
+  return {
+    id: message.id,
+    user_id: message.userId,
+    message: message.text,
+    created_at: message.createdAt || new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+}
+
 async function ensureSharedSeedMembers() {
   const remoteUsers = await selectSharedRows("lab_users", {
     order: "user_id.asc"
@@ -2354,6 +2475,8 @@ async function refreshSharedState(options = {}) {
     try {
       let remoteClockRequests = null;
       let sharedClockRequestsAvailable = true;
+      let remoteChatMessages = null;
+      let sharedChatAvailableNext = true;
 
       const [remoteUsers, remotePresence, remoteTasks, remoteClockRecords, remoteClockLogs] =
         await Promise.all([
@@ -2377,6 +2500,19 @@ async function refreshSharedState(options = {}) {
         }
       }
 
+      try {
+        remoteChatMessages = await selectSharedRows("lab_chat_messages", {
+          order: "created_at.asc"
+        });
+      } catch (error) {
+        if (isSharedRelationMissingError(error)) {
+          sharedChatAvailableNext = false;
+          remoteChatMessages = [];
+        } else {
+          throw error;
+        }
+      }
+
       memberDirectory = buildDirectoryFromRemoteRows(appConfig, remoteUsers);
       presencePlans = buildPresencePlansFromRemoteRows(remotePresence);
       myTasks = buildTasksFromRemoteRows(remoteTasks);
@@ -2387,6 +2523,13 @@ async function refreshSharedState(options = {}) {
         ? ""
         : "\u4fee\u6b63\u7533\u8acb\u306e\u5171\u6709\u306b\u306f\u8ffd\u52a0SQL\u304c\u5fc5\u8981\u3067\u3059\u3002";
       clockCorrectionRequests = buildClockCorrectionRequestsFromRemoteRows(remoteClockRequests);
+      chatSharedAvailable = sharedChatAvailableNext;
+      chatSharedStatusText = sharedChatAvailableNext
+        ? ""
+        : "\u30c1\u30e3\u30c3\u30c8\u5171\u6709\u306b\u306f\u8ffd\u52a0SQL\u304c\u5fc5\u8981\u3067\u3059\u3002";
+      if (sharedChatAvailableNext) {
+        chatMessages = buildChatMessagesFromRemoteRows(remoteChatMessages);
+      }
       cacheSharedSnapshotLocally();
       sharedStore.active = true;
       sharedStore.lastError = "";
@@ -2485,6 +2628,16 @@ async function syncTaskToShared(userId, task) {
   }
 
   await upsertSharedRows("lab_tasks", [toSharedTaskRow(userId, task)], "id");
+  await refreshSharedState({ quiet: true });
+  return true;
+}
+
+async function syncChatMessageToShared(message) {
+  if (!sharedStore.configured || !chatSharedAvailable || !message) {
+    return false;
+  }
+
+  await upsertSharedRows("lab_chat_messages", [toSharedChatMessageRow(message)], "id");
   await refreshSharedState({ quiet: true });
   return true;
 }
@@ -2671,7 +2824,7 @@ function setActiveCategory(categoryKey) {
   window.scrollTo({ top: 0 });
   renderWorkspace();
 
-  if (sharedStore.configured && categoryKey === "clock") {
+  if (sharedStore.configured && (categoryKey === "clock" || categoryKey === "chat")) {
     refreshSharedState({ quiet: true });
   }
 }
@@ -2947,6 +3100,62 @@ function renderTasksView() {
 
   tasks.forEach((task) => {
     taskList.appendChild(createTaskCard(task));
+  });
+}
+
+function createChatMessageCard(message) {
+  const item = document.createElement("article");
+  const bubble = document.createElement("div");
+  const head = document.createElement("div");
+  const author = document.createElement("strong");
+  const timestamp = document.createElement("time");
+  const text = document.createElement("p");
+  const sender = findMemberById(message.userId);
+  const isOwn = currentUser && message.userId === currentUser.id;
+
+  item.className = `chat-message${isOwn ? " is-own" : ""}`;
+  bubble.className = "chat-bubble";
+  head.className = "chat-bubble-head";
+  author.textContent = sender?.displayName || message.userId;
+  timestamp.dateTime = message.createdAt;
+  timestamp.textContent = formatDateTime(new Date(message.createdAt));
+  text.className = "chat-bubble-text";
+  text.textContent = message.text;
+
+  head.append(author, timestamp);
+  bubble.append(head, text);
+  item.appendChild(bubble);
+  return item;
+}
+
+function renderChatView() {
+  if (!chatMessageList) {
+    return;
+  }
+
+  if (chatStatusMessage) {
+    if (sharedStore.configured && !chatSharedAvailable) {
+      chatStatusMessage.textContent = chatSharedStatusText;
+    } else {
+      chatStatusMessage.textContent = isSharedStoreActive() ? "\u5171\u6709\u4e2d" : "\u3053\u306e\u7aef\u672b\u306e\u307f";
+    }
+  }
+
+  chatMessageList.replaceChildren();
+
+  if (chatMessages.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "chat-empty";
+    empty.textContent = "\u307e\u3060\u30e1\u30c3\u30bb\u30fc\u30b8\u304c\u3042\u308a\u307e\u305b\u3093\u3002";
+    chatMessageList.appendChild(empty);
+  } else {
+    chatMessages.forEach((message) => {
+      chatMessageList.appendChild(createChatMessageCard(message));
+    });
+  }
+
+  window.requestAnimationFrame(() => {
+    chatMessageList.scrollTop = chatMessageList.scrollHeight;
   });
 }
 
@@ -3437,6 +3646,10 @@ function renderViews() {
     renderTasksView();
   }
 
+  if (activeCategory === "chat") {
+    renderChatView();
+  }
+
   if (activeCategory === "clock") {
     renderClockView();
   }
@@ -3896,6 +4109,55 @@ taskList.addEventListener("click", async (event) => {
   }
 });
 
+if (chatForm && chatInput) {
+  chatForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    if (!currentUser) {
+      return;
+    }
+
+    const text = chatInput.value.replace(/\r\n?/g, "\n").trim();
+    if (!text) {
+      if (chatFormMessage) {
+        chatFormMessage.textContent = "\u30e1\u30c3\u30bb\u30fc\u30b8\u3092\u5165\u529b";
+      }
+      return;
+    }
+
+    const message = addChatMessage(currentUser.id, text);
+    if (!message) {
+      if (chatFormMessage) {
+        chatFormMessage.textContent = "\u9001\u4fe1\u3067\u304d\u307e\u305b\u3093";
+      }
+      return;
+    }
+
+    chatInput.value = "";
+    if (chatFormMessage) {
+      chatFormMessage.textContent =
+        sharedStore.configured && chatSharedAvailable
+          ? "\u9001\u4fe1\u3057\u307e\u3057\u305f"
+          : sharedStore.configured && !chatSharedAvailable
+            ? chatSharedStatusText
+            : "\u3053\u306e\u7aef\u672b\u306b\u4fdd\u5b58\u3057\u307e\u3057\u305f";
+    }
+    renderChatView();
+
+    if (!sharedStore.configured || !chatSharedAvailable) {
+      return;
+    }
+
+    try {
+      await syncChatMessageToShared(message);
+    } catch (error) {
+      if (chatFormMessage) {
+        chatFormMessage.textContent = getSharedSyncErrorText(error);
+      }
+    }
+  });
+}
+
 window.addEventListener("hashchange", () => {
   if (!currentUser) {
     return;
@@ -3910,7 +4172,12 @@ window.addEventListener("hashchange", () => {
 });
 
 document.addEventListener("visibilitychange", () => {
-  if (document.hidden || !currentUser || activeCategory !== "clock" || !sharedStore.configured) {
+  if (
+    document.hidden ||
+    !currentUser ||
+    !sharedStore.configured ||
+    (activeCategory !== "clock" && activeCategory !== "chat")
+  ) {
     return;
   }
 
@@ -3926,6 +4193,7 @@ async function init() {
     clockLogs = loadClockLogs();
     clockCorrectionRequests = loadClockCorrectionRequests().map((request) => normalizeClockCorrectionRequest(request)).filter(Boolean);
     myTasks = loadMyTasks();
+    chatMessages = loadChatMessages();
     excelLinks = loadExcelLinks();
     presenceMonthKey = getMonthKey(new Date());
   clockMonthSummaryKey = getMonthKey(new Date());

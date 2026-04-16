@@ -212,6 +212,34 @@
             </section>
           </article>
 
+          <article id="view-chat" class="workspace-view" hidden>
+            <section class="view-card">
+              <div class="chat-shell">
+                <div class="chat-header">
+                  <div>
+                    <p class="view-label">&#x30c1;&#x30e3;&#x30c3;&#x30c8;</p>
+                    <h3>&#x5171;&#x6709;&#x30c1;&#x30e3;&#x30c3;&#x30c8;</h3>
+                  </div>
+                  <p id="chatStatusMessage" class="helper-text"></p>
+                </div>
+
+                <div id="chatMessageList" class="chat-message-list" aria-live="polite"></div>
+
+                <form id="chatForm" class="chat-form">
+                  <label class="field">
+                    <span>&#x30e1;&#x30c3;&#x30bb;&#x30fc;&#x30b8;</span>
+                    <textarea id="chatInput" name="chatInput" rows="4" maxlength="400" placeholder=""></textarea>
+                  </label>
+
+                  <div class="chat-form-actions">
+                    <p id="chatFormMessage" class="helper-text"></p>
+                    <button class="primary-button chat-send-button" type="submit">&#x9001;&#x4fe1;</button>
+                  </div>
+                </form>
+              </div>
+            </section>
+          </article>
+
           <article id="view-clock" class="workspace-view" hidden>
             <section class="view-card">
               <div class="clock-shell">

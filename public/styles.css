@@ -190,7 +190,8 @@ p {
 }
 
 .field input,
-.field select {
+.field select,
+.field textarea {
   width: 100%;
   border: 1px solid var(--control-line);
   border-radius: var(--radius-md);
@@ -213,6 +214,12 @@ p {
   color: rgba(244, 247, 255, 0.56);
 }
 
+.field textarea {
+  min-height: 108px;
+  resize: vertical;
+  font: inherit;
+}
+
 .field select {
   color: var(--control-text);
   padding-right: 52px;
@@ -223,7 +230,8 @@ p {
 }
 
 .field input:focus,
-.field select:focus {
+.field select:focus,
+.field textarea:focus {
   border-color: rgba(232, 192, 125, 0.62);
   box-shadow: 0 0 0 4px rgba(232, 192, 125, 0.14);
   background: var(--control-bg-focus);
@@ -851,6 +859,101 @@ p {
 
 .tasks-panel {
   gap: 16px;
+}
+
+.chat-shell {
+  display: grid;
+  gap: 18px;
+}
+
+.chat-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.chat-message-list {
+  display: grid;
+  gap: 12px;
+  min-height: 360px;
+  max-height: min(62vh, 760px);
+  padding: 16px;
+  overflow: auto;
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.chat-message {
+  display: flex;
+}
+
+.chat-message.is-own {
+  justify-content: flex-end;
+}
+
+.chat-bubble {
+  width: min(720px, 100%);
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.chat-message.is-own .chat-bubble {
+  border-color: rgba(232, 192, 125, 0.24);
+  background: rgba(232, 192, 125, 0.13);
+}
+
+.chat-bubble-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: baseline;
+}
+
+.chat-bubble-head strong {
+  font-size: 0.96rem;
+}
+
+.chat-bubble-head time {
+  color: var(--muted);
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.chat-bubble-text,
+.chat-empty {
+  color: rgba(255, 255, 255, 0.92);
+  line-height: 1.75;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.chat-empty {
+  color: var(--muted);
+  align-self: center;
+  text-align: center;
+}
+
+.chat-form {
+  display: grid;
+  gap: 14px;
+}
+
+.chat-form-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+}
+
+.chat-send-button {
+  width: auto;
+  min-width: 140px;
 }
 
 .task-list {
@@ -1497,6 +1600,7 @@ p {
 
   .tasks-header,
   .tasks-layout,
+  .chat-header,
   .clock-monthly-header,
   .clock-adjustment-layout {
     grid-template-columns: 1fr;
@@ -1549,11 +1653,21 @@ p {
     display: grid;
   }
 
+  .chat-bubble-head,
+  .chat-form-actions {
+    grid-template-columns: 1fr;
+    display: grid;
+  }
+
   .task-card-actions {
     justify-content: stretch;
   }
 
   .task-delete-button {
+    width: 100%;
+  }
+
+  .chat-send-button {
     width: 100%;
   }
 
