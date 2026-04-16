@@ -1242,6 +1242,10 @@ function setExcelAttachmentPanel(record) {
 }
 
 function renderExcelAttachmentPanel() {
+  if (!excelFileName || !excelFileClearButton) {
+    return;
+  }
+
   if (!currentUser) {
     setExcelAttachmentPanel(null);
     return;
@@ -1258,11 +1262,21 @@ function renderExcelAttachmentPanel() {
 }
 
 function hideClockExcelFileCard() {
+  if (!clockExcelFileCard) {
+    return;
+  }
+
   clockExcelFileCard.hidden = true;
-  clockExcelMessage.textContent = "";
+  if (clockExcelMessage) {
+    clockExcelMessage.textContent = "";
+  }
 }
 
 function renderClockExcelFileCard(latestAction) {
+  if (!clockExcelFileCard || !clockExcelFileName) {
+    return;
+  }
+
   if (latestAction?.actionType !== "checkout" || !currentUser) {
     hideClockExcelFileCard();
     return;
@@ -1288,7 +1302,9 @@ function renderClockExcelFileCard(latestAction) {
 
     clockExcelFileCard.hidden = false;
     clockExcelFileName.textContent = record.name;
-    clockExcelMessage.textContent = "";
+    if (clockExcelMessage) {
+      clockExcelMessage.textContent = "";
+    }
   });
 }
 
@@ -1298,22 +1314,32 @@ async function handleExcelAttachmentFile(file) {
   }
 
   if (!isExcelAttachmentFile(file)) {
-    excelFileMessage.textContent = "Excel\u30d5\u30a1\u30a4\u30eb\u306e\u307f";
+    if (excelFileMessage) {
+      excelFileMessage.textContent = "Excel\u30d5\u30a1\u30a4\u30eb\u306e\u307f";
+    }
     return;
   }
 
-  excelFileMessage.textContent = "\u4fdd\u5b58\u4e2d";
+  if (excelFileMessage) {
+    excelFileMessage.textContent = "\u4fdd\u5b58\u4e2d";
+  }
 
   try {
     const attachment = await saveExcelAttachment(currentUser.id, file);
     setExcelAttachmentPanel(attachment);
-    excelFileMessage.textContent = "\u6dfb\u4ed8\u6e08\u307f";
+    if (excelFileMessage) {
+      excelFileMessage.textContent = "\u6dfb\u4ed8\u6e08\u307f";
+    }
     renderClockView();
   } catch (error) {
     console.warn("Could not save Excel attachment.", error);
-    excelFileMessage.textContent = "\u4fdd\u5b58\u3067\u304d\u307e\u305b\u3093";
+    if (excelFileMessage) {
+      excelFileMessage.textContent = "\u4fdd\u5b58\u3067\u304d\u307e\u305b\u3093";
+    }
   } finally {
-    excelFileInput.value = "";
+    if (excelFileInput) {
+      excelFileInput.value = "";
+    }
   }
 }
 
@@ -1324,7 +1350,9 @@ async function openCurrentExcelAttachment() {
 
   const attachment = await getExcelAttachment(currentUser.id);
   if (!attachment?.blob) {
-    clockExcelMessage.textContent = "\u672a\u6dfb\u4ed8";
+    if (clockExcelMessage) {
+      clockExcelMessage.textContent = "\u672a\u6dfb\u4ed8";
+    }
     return;
   }
 
@@ -1342,7 +1370,9 @@ async function openCurrentExcelAttachment() {
   anchor.click();
   anchor.remove();
   window.setTimeout(() => URL.revokeObjectURL(url), 60000);
-  clockExcelMessage.textContent = "\u958b\u304d\u307e\u3057\u305f";
+  if (clockExcelMessage) {
+    clockExcelMessage.textContent = "\u958b\u304d\u307e\u3057\u305f";
+  }
 }
 
 function getStatusStartedText(record, logs) {
@@ -3536,63 +3566,73 @@ displayNameForm.addEventListener("submit", async (event) => {
   renderWorkspace();
 });
 
-excelFileInput.addEventListener("change", async () => {
-  const file = excelFileInput.files?.[0];
-  if (file) {
-    await handleExcelAttachmentFile(file);
-  }
-});
-
-["dragenter", "dragover"].forEach((eventName) => {
-  excelFileDropZone.addEventListener(eventName, (event) => {
-    event.preventDefault();
-    excelFileDropZone.classList.add("is-dragging");
+if (excelFileInput && excelFileDropZone && excelFileClearButton) {
+  excelFileInput.addEventListener("change", async () => {
+    const file = excelFileInput.files?.[0];
+    if (file) {
+      await handleExcelAttachmentFile(file);
+    }
   });
-});
 
-["dragleave", "drop"].forEach((eventName) => {
-  excelFileDropZone.addEventListener(eventName, () => {
-    excelFileDropZone.classList.remove("is-dragging");
+  ["dragenter", "dragover"].forEach((eventName) => {
+    excelFileDropZone.addEventListener(eventName, (event) => {
+      event.preventDefault();
+      excelFileDropZone.classList.add("is-dragging");
+    });
   });
-});
 
-excelFileDropZone.addEventListener("drop", async (event) => {
-  event.preventDefault();
-  const file = Array.from(event.dataTransfer?.files || []).find(isExcelAttachmentFile);
-  if (file) {
-    await handleExcelAttachmentFile(file);
-    return;
-  }
+  ["dragleave", "drop"].forEach((eventName) => {
+    excelFileDropZone.addEventListener(eventName, () => {
+      excelFileDropZone.classList.remove("is-dragging");
+    });
+  });
 
-  excelFileMessage.textContent = "Excel\u30d5\u30a1\u30a4\u30eb\u306e\u307f";
-});
-
-excelFileDropZone.addEventListener("keydown", (event) => {
-  if (event.key === "Enter" || event.key === " ") {
+  excelFileDropZone.addEventListener("drop", async (event) => {
     event.preventDefault();
-    excelFileInput.click();
-  }
-});
+    const file = Array.from(event.dataTransfer?.files || []).find(isExcelAttachmentFile);
+    if (file) {
+      await handleExcelAttachmentFile(file);
+      return;
+    }
 
-excelFileClearButton.addEventListener("click", async () => {
-  if (!currentUser) {
-    return;
-  }
+    if (excelFileMessage) {
+      excelFileMessage.textContent = "Excel\u30d5\u30a1\u30a4\u30eb\u306e\u307f";
+    }
+  });
 
-  try {
-    await deleteExcelAttachment(currentUser.id);
-    setExcelAttachmentPanel(null);
-    excelFileMessage.textContent = "\u524a\u9664\u3057\u307e\u3057\u305f";
-    renderClockView();
-  } catch (error) {
-    console.warn("Could not delete Excel attachment.", error);
-    excelFileMessage.textContent = "\u524a\u9664\u3067\u304d\u307e\u305b\u3093";
-  }
-});
+  excelFileDropZone.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      excelFileInput.click();
+    }
+  });
 
-clockExcelOpenButton.addEventListener("click", () => {
-  openCurrentExcelAttachment();
-});
+  excelFileClearButton.addEventListener("click", async () => {
+    if (!currentUser) {
+      return;
+    }
+
+    try {
+      await deleteExcelAttachment(currentUser.id);
+      setExcelAttachmentPanel(null);
+      if (excelFileMessage) {
+        excelFileMessage.textContent = "\u524a\u9664\u3057\u307e\u3057\u305f";
+      }
+      renderClockView();
+    } catch (error) {
+      console.warn("Could not delete Excel attachment.", error);
+      if (excelFileMessage) {
+        excelFileMessage.textContent = "\u524a\u9664\u3067\u304d\u307e\u305b\u3093";
+      }
+    }
+  });
+}
+
+if (clockExcelOpenButton) {
+  clockExcelOpenButton.addEventListener("click", () => {
+    openCurrentExcelAttachment();
+  });
+}
 
 presencePrevButton.addEventListener("click", () => {
   presenceMonthKey = shiftMonthKey(presenceMonthKey, -1);
