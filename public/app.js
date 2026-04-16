@@ -6,6 +6,9 @@ const CLOCK_RECORDS_KEY = "ergonomics-lab-clock-records-v1";
 const CLOCK_LOGS_KEY = "ergonomics-lab-clock-logs-v1";
 const CLOCK_CORRECTION_REQUESTS_KEY = "ergonomics-lab-clock-correction-requests-v1";
 const TASKS_STORAGE_KEY = "ergonomics-lab-my-tasks-v1";
+const EXCEL_ATTACHMENT_DB_NAME = "ergonomics-lab-excel-attachments";
+const EXCEL_ATTACHMENT_DB_VERSION = 1;
+const EXCEL_ATTACHMENT_STORE_NAME = "excelFiles";
 const DEFAULT_SHARED_SYNC_INTERVAL_MS = 20000;
 const CATEGORIES = [
   {
@@ -167,6 +170,10 @@ const clockStatusSubtext = document.getElementById("clockStatusSubtext");
 const clockActionButtons = document.getElementById("clockActionButtons");
 const clockSummaryText = document.getElementById("clockSummaryText");
 const clockDaySummaryCards = document.getElementById("clockDaySummaryCards");
+const clockExcelFileCard = document.getElementById("clockExcelFileCard");
+const clockExcelFileName = document.getElementById("clockExcelFileName");
+const clockExcelOpenButton = document.getElementById("clockExcelOpenButton");
+const clockExcelMessage = document.getElementById("clockExcelMessage");
 const clockExportButton = document.getElementById("clockExportButton");
 const clockHistoryList = document.getElementById("clockHistoryList");
 const clockCorrectionForm = document.getElementById("clockCorrectionForm");
@@ -191,6 +198,11 @@ const clockMonthSummaryTableBody = document.getElementById("clockMonthSummaryTab
   const settingsNotice = document.getElementById("settingsNotice");
   const memberSection = document.getElementById("memberSection");
   const memberTable = document.getElementById("memberTable");
+  const excelFileDropZone = document.getElementById("excelFileDropZone");
+  const excelFileInput = document.getElementById("excelFileInput");
+  const excelFileName = document.getElementById("excelFileName");
+  const excelFileMessage = document.getElementById("excelFileMessage");
+  const excelFileClearButton = document.getElementById("excelFileClearButton");
 
 let appConfig = FALLBACK_CONFIG;
 let memberDirectory = [];
@@ -328,6 +340,101 @@ function createSharedStoreConfig(config) {
       : "\u5171\u6709\u4fdd\u5b58\u5148\u306f\u672a\u8a2d\u5b9a\u3067\u3001\u73fe\u5728\u306f\u3053\u306e\u7aef\u672b\u3060\u3051\u306b\u4fdd\u5b58\u3055\u308c\u307e\u3059\u3002",
     lastError: ""
   };
+}
+
+function openExcelAttachmentDatabase() {
+  return new Promise((resolve, reject) => {
+    if (!("indexedDB" in window)) {
+      reject(new Error("\u3053\u306e\u30d6\u30e9\u30a6\u30b6\u3067\u306f\u6dfb\u4ed8\u4fdd\u5b58\u306b\u5bfe\u5fdc\u3057\u3066\u3044\u307e\u305b\u3093\u3002"));
+      return;
+    }
+
+    const request = window.indexedDB.open(EXCEL_ATTACHMENT_DB_NAME, EXCEL_ATTACHMENT_DB_VERSION);
+
+    request.onupgradeneeded = () => {
+      const database = request.result;
+      if (!database.objectStoreNames.contains(EXCEL_ATTACHMENT_STORE_NAME)) {
+        database.createObjectStore(EXCEL_ATTACHMENT_STORE_NAME, { keyPath: "userId" });
+      }
+    };
+
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () =>
+      reject(request.error || new Error("\u6dfb\u4ed8\u4fdd\u5b58\u3092\u958b\u3051\u307e\u305b\u3093\u3002"));
+  });
+}
+
+function runExcelAttachmentTransaction(mode, operation) {
+  return openExcelAttachmentDatabase().then((database) =>
+    new Promise((resolve, reject) => {
+      const transaction = database.transaction(EXCEL_ATTACHMENT_STORE_NAME, mode);
+      const store = transaction.objectStore(EXCEL_ATTACHMENT_STORE_NAME);
+      let request;
+
+      try {
+        request = operation(store);
+      } catch (error) {
+        database.close();
+        reject(error);
+        return;
+      }
+
+      transaction.oncomplete = () => {
+        database.close();
+        resolve(request?.result || null);
+      };
+      transaction.onerror = () => {
+        database.close();
+        reject(transaction.error || request?.error || new Error("\u6dfb\u4ed8\u4fdd\u5b58\u306b\u5931\u6557\u3057\u307e\u3057\u305f\u3002"));
+      };
+      transaction.onabort = () => {
+        database.close();
+        reject(transaction.error || new Error("\u6dfb\u4ed8\u4fdd\u5b58\u304c\u4e2d\u65ad\u3055\u308c\u307e\u3057\u305f\u3002"));
+      };
+    })
+  );
+}
+
+function isExcelAttachmentFile(file) {
+  if (!file || typeof file.name !== "string") {
+    return false;
+  }
+
+  return /\.(xlsx|xlsm|xls)$/i.test(file.name);
+}
+
+function saveExcelAttachment(userId, file) {
+  const attachment = {
+    userId,
+    name: file.name,
+    type: file.type || "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    size: file.size,
+    updatedAt: new Date().toISOString(),
+    blob: file
+  };
+
+  return runExcelAttachmentTransaction("readwrite", (store) => store.put(attachment)).then(
+    () => attachment
+  );
+}
+
+function getExcelAttachment(userId) {
+  if (!userId) {
+    return Promise.resolve(null);
+  }
+
+  return runExcelAttachmentTransaction("readonly", (store) => store.get(userId)).catch((error) => {
+    console.warn("Could not load Excel attachment.", error);
+    return null;
+  });
+}
+
+function deleteExcelAttachment(userId) {
+  if (!userId) {
+    return Promise.resolve(false);
+  }
+
+  return runExcelAttachmentTransaction("readwrite", (store) => store.delete(userId)).then(() => true);
 }
 
 function isSharedStoreActive() {
@@ -1104,6 +1211,138 @@ function renderClockDaySummary(logs, summary, latestAction) {
     createClockDaySummaryCard("\u9000\u5ba4", daySummary.checkoutTime),
     createClockDaySummaryCard("\u4f11\u61a9", daySummary.breakTime)
   );
+}
+
+function formatAttachmentSize(size) {
+  if (!Number.isFinite(size) || size <= 0) {
+    return "";
+  }
+
+  if (size >= 1024 * 1024) {
+    return `${(size / 1024 / 1024).toFixed(1)}MB`;
+  }
+
+  return `${Math.max(1, Math.round(size / 1024))}KB`;
+}
+
+function setExcelAttachmentPanel(record) {
+  if (!excelFileName || !excelFileClearButton) {
+    return;
+  }
+
+  if (!record) {
+    excelFileName.textContent = "\u672a\u6dfb\u4ed8";
+    excelFileClearButton.hidden = true;
+    return;
+  }
+
+  const sizeText = formatAttachmentSize(Number(record.size));
+  excelFileName.textContent = sizeText ? `${record.name} / ${sizeText}` : record.name;
+  excelFileClearButton.hidden = false;
+}
+
+function renderExcelAttachmentPanel() {
+  if (!currentUser) {
+    setExcelAttachmentPanel(null);
+    return;
+  }
+
+  const userId = currentUser.id;
+  getExcelAttachment(userId).then((record) => {
+    if (!currentUser || currentUser.id !== userId) {
+      return;
+    }
+
+    setExcelAttachmentPanel(record);
+  });
+}
+
+function hideClockExcelFileCard() {
+  clockExcelFileCard.hidden = true;
+  clockExcelMessage.textContent = "";
+}
+
+function renderClockExcelFileCard(latestAction) {
+  if (latestAction?.actionType !== "checkout" || !currentUser) {
+    hideClockExcelFileCard();
+    return;
+  }
+
+  const userId = currentUser.id;
+  const expectedActionId = latestAction.id;
+  getExcelAttachment(userId).then((record) => {
+    if (!currentUser || currentUser.id !== userId) {
+      return;
+    }
+
+    const currentLogs = getTodayClockLogs(getClockLogsForUser(userId));
+    const currentLatestAction = currentLogs.length > 0 ? currentLogs[currentLogs.length - 1] : null;
+    if (currentLatestAction?.id !== expectedActionId || currentLatestAction?.actionType !== "checkout") {
+      return;
+    }
+
+    if (!record) {
+      hideClockExcelFileCard();
+      return;
+    }
+
+    clockExcelFileCard.hidden = false;
+    clockExcelFileName.textContent = record.name;
+    clockExcelMessage.textContent = "";
+  });
+}
+
+async function handleExcelAttachmentFile(file) {
+  if (!currentUser) {
+    return;
+  }
+
+  if (!isExcelAttachmentFile(file)) {
+    excelFileMessage.textContent = "Excel\u30d5\u30a1\u30a4\u30eb\u306e\u307f";
+    return;
+  }
+
+  excelFileMessage.textContent = "\u4fdd\u5b58\u4e2d";
+
+  try {
+    const attachment = await saveExcelAttachment(currentUser.id, file);
+    setExcelAttachmentPanel(attachment);
+    excelFileMessage.textContent = "\u6dfb\u4ed8\u6e08\u307f";
+    renderClockView();
+  } catch (error) {
+    console.warn("Could not save Excel attachment.", error);
+    excelFileMessage.textContent = "\u4fdd\u5b58\u3067\u304d\u307e\u305b\u3093";
+  } finally {
+    excelFileInput.value = "";
+  }
+}
+
+async function openCurrentExcelAttachment() {
+  if (!currentUser) {
+    return;
+  }
+
+  const attachment = await getExcelAttachment(currentUser.id);
+  if (!attachment?.blob) {
+    clockExcelMessage.textContent = "\u672a\u6dfb\u4ed8";
+    return;
+  }
+
+  const blob = attachment.blob instanceof Blob
+    ? attachment.blob
+    : new Blob([attachment.blob], { type: attachment.type || "" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+
+  anchor.href = url;
+  anchor.download = attachment.name || "\u6d3b\u52d5\u8a18\u9332.xlsx";
+  anchor.target = "_blank";
+  anchor.rel = "noopener";
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+  clockExcelMessage.textContent = "\u958b\u304d\u307e\u3057\u305f";
 }
 
 function getStatusStartedText(record, logs) {
@@ -2998,6 +3237,7 @@ function renderClockView() {
   clockStatusText.textContent = statusMeta.title;
   clockStatusSubtext.textContent = getStatusStartedText(record, logs);
   renderClockDaySummary(todayLogs, todaySummary, latestAction);
+  renderClockExcelFileCard(latestAction);
   if (latestAction?.actionType === "checkout") {
     clockSummaryText.textContent = `\u672c\u65e5\u306e\u6d3b\u52d5\u6642\u9593: ${formatDurationFromMinutes(todaySummary.activeMinutes)}`;
   } else {
@@ -3096,6 +3336,7 @@ function renderClockMonthlyView() {
 
   function renderSettings() {
     renderCurrentUserSummary();
+    renderExcelAttachmentPanel();
 
     settingsNotice.textContent = getSharedStoreStatusText();
 
@@ -3293,6 +3534,64 @@ displayNameForm.addEventListener("submit", async (event) => {
     displayNameStatusMessage = getSharedSyncErrorText(error);
   }
   renderWorkspace();
+});
+
+excelFileInput.addEventListener("change", async () => {
+  const file = excelFileInput.files?.[0];
+  if (file) {
+    await handleExcelAttachmentFile(file);
+  }
+});
+
+["dragenter", "dragover"].forEach((eventName) => {
+  excelFileDropZone.addEventListener(eventName, (event) => {
+    event.preventDefault();
+    excelFileDropZone.classList.add("is-dragging");
+  });
+});
+
+["dragleave", "drop"].forEach((eventName) => {
+  excelFileDropZone.addEventListener(eventName, () => {
+    excelFileDropZone.classList.remove("is-dragging");
+  });
+});
+
+excelFileDropZone.addEventListener("drop", async (event) => {
+  event.preventDefault();
+  const file = Array.from(event.dataTransfer?.files || []).find(isExcelAttachmentFile);
+  if (file) {
+    await handleExcelAttachmentFile(file);
+    return;
+  }
+
+  excelFileMessage.textContent = "Excel\u30d5\u30a1\u30a4\u30eb\u306e\u307f";
+});
+
+excelFileDropZone.addEventListener("keydown", (event) => {
+  if (event.key === "Enter" || event.key === " ") {
+    event.preventDefault();
+    excelFileInput.click();
+  }
+});
+
+excelFileClearButton.addEventListener("click", async () => {
+  if (!currentUser) {
+    return;
+  }
+
+  try {
+    await deleteExcelAttachment(currentUser.id);
+    setExcelAttachmentPanel(null);
+    excelFileMessage.textContent = "\u524a\u9664\u3057\u307e\u3057\u305f";
+    renderClockView();
+  } catch (error) {
+    console.warn("Could not delete Excel attachment.", error);
+    excelFileMessage.textContent = "\u524a\u9664\u3067\u304d\u307e\u305b\u3093";
+  }
+});
+
+clockExcelOpenButton.addEventListener("click", () => {
+  openCurrentExcelAttachment();
 });
 
 presencePrevButton.addEventListener("click", () => {

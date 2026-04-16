@@ -243,6 +243,15 @@
 
                 <div id="clockDaySummaryCards" class="clock-day-summary" hidden aria-live="polite"></div>
 
+                <div id="clockExcelFileCard" class="clock-excel-card" hidden aria-live="polite">
+                  <div>
+                    <span class="clock-excel-label">Excel</span>
+                    <strong id="clockExcelFileName"></strong>
+                    <p id="clockExcelMessage" class="helper-text"></p>
+                  </div>
+                  <button id="clockExcelOpenButton" class="secondary-button" type="button">&#x958b;&#x304f;</button>
+                </div>
+
                 <section class="clock-history">
                   <div class="clock-history-head">
                     <div>
@@ -367,6 +376,24 @@
                   &#x4fdd;&#x5b58;&#x5148;&#x3092;&#x8868;&#x793a;&#x3057;&#x307e;&#x3059;&#x3002;
                 </p>
                 <div id="permissionSummary" class="chip-list"></div>
+              </section>
+
+              <section class="panel">
+                <div class="panel-head">
+                  <p class="view-label">Excel</p>
+                  <h3>&#x6dfb;&#x4ed8;&#x30d5;&#x30a1;&#x30a4;&#x30eb;</h3>
+                </div>
+
+                <label id="excelFileDropZone" class="file-drop-zone" tabindex="0">
+                  <input id="excelFileInput" type="file" accept=".xlsx,.xls,.xlsm,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel">
+                  <span class="file-drop-main">Excel&#x3092;&#x6dfb;&#x4ed8;</span>
+                  <span id="excelFileName" class="file-drop-sub">&#x672a;&#x6dfb;&#x4ed8;</span>
+                </label>
+
+                <div class="file-drop-actions">
+                  <button id="excelFileClearButton" class="secondary-button" type="button" hidden>&#x524a;&#x9664;</button>
+                </div>
+                <p id="excelFileMessage" class="helper-text"></p>
               </section>
 
                 <section class="panel">

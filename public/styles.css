@@ -672,6 +672,60 @@ p {
   cursor: default;
 }
 
+.file-drop-zone {
+  position: relative;
+  display: grid;
+  gap: 8px;
+  place-items: center;
+  min-height: 136px;
+  padding: 22px;
+  border: 1px dashed rgba(232, 192, 125, 0.42);
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(circle at 50% 0%, rgba(232, 192, 125, 0.12), transparent 42%),
+    rgba(6, 12, 30, 0.72);
+  cursor: pointer;
+  transition: border-color 140ms ease, background 140ms ease, transform 140ms ease;
+}
+
+.file-drop-zone:hover,
+.file-drop-zone:focus-visible,
+.file-drop-zone.is-dragging {
+  border-color: rgba(244, 210, 152, 0.86);
+  background:
+    radial-gradient(circle at 50% 0%, rgba(232, 192, 125, 0.2), transparent 44%),
+    rgba(10, 18, 42, 0.9);
+  transform: translateY(-1px);
+}
+
+.file-drop-zone input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.file-drop-main {
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 1.08rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+.file-drop-sub {
+  max-width: 100%;
+  color: var(--muted);
+  font-size: 0.9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-drop-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
 .presence-actions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -991,6 +1045,43 @@ p {
   color: rgba(255, 255, 255, 0.94);
   font-size: clamp(1.1rem, 2.3vw, 1.45rem);
   font-variant-numeric: tabular-nums;
+}
+
+.clock-excel-card {
+  width: min(560px, 100%);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  padding: 16px 18px;
+  border-radius: 24px;
+  background: rgba(232, 192, 125, 0.1);
+  border: 1px solid rgba(232, 192, 125, 0.26);
+}
+
+.clock-excel-card[hidden] {
+  display: none;
+}
+
+.clock-excel-card div {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+  text-align: left;
+}
+
+.clock-excel-label {
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.clock-excel-card strong {
+  color: rgba(255, 255, 255, 0.94);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .clock-center-row {
@@ -1448,6 +1539,7 @@ p {
   .clock-actions,
   .clock-monthly-nav,
   .clock-day-summary,
+  .clock-excel-card,
   .clock-adjustment-grid {
     grid-template-columns: 1fr;
   }
