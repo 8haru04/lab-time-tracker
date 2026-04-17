@@ -1117,18 +1117,18 @@ function getClockStatusMeta(status) {
   switch (status) {
     case "in":
       return {
-        title: "\u5165\u5ba4\u4e2d",
-        subtext: "\u9000\u5ba4\u307e\u305f\u306f\u4f11\u61a9\u3092\u9078\u3079\u307e\u3059\u3002"
+        title: "\u7814\u7a76\u6642\u9593\u4e2d",
+        subtext: "\u7814\u7a76\u3092\u7d42\u3048\u308b\u304b\u3001\u7814\u7a76\u5916\u6642\u9593\u3078\u5207\u308a\u66ff\u3048\u307e\u3059\u3002"
       };
     case "break":
       return {
-        title: "\u4f11\u61a9\u4e2d",
-        subtext: "\u4f11\u61a9\u304c\u7d42\u308f\u3063\u305f\u3089\u4f11\u61a9\u7d42\u4e86\u3092\u62bc\u3057\u307e\u3059\u3002"
+        title: "\u7814\u7a76\u5916\u6642\u9593\u4e2d",
+        subtext: "\u7814\u7a76\u306b\u623b\u308b\u3068\u304d\u306f\u3001\u623b\u308b\u3092\u62bc\u3057\u307e\u3059\u3002"
       };
     default:
       return {
-        title: "\u9000\u5ba4\u4e2d",
-        subtext: "\u5165\u5ba4\u3059\u308b\u3068\u3001\u9000\u5ba4\u3068\u4f11\u61a9\u304c\u9078\u3079\u308b\u3088\u3046\u306b\u306a\u308a\u307e\u3059\u3002"
+        title: "\u672a\u958b\u59cb",
+        subtext: "\u7814\u7a76\u6642\u9593\u3092\u59cb\u3081\u308b\u3068\u3001\u7814\u7a76\u7d42\u4e86\u3068\u7814\u7a76\u5916\u6642\u9593\u304c\u9078\u3079\u308b\u3088\u3046\u306b\u306a\u308a\u307e\u3059\u3002"
       };
   }
 }
@@ -1136,13 +1136,13 @@ function getClockStatusMeta(status) {
 function getClockActionLabel(actionType) {
   switch (actionType) {
     case "checkin":
-      return "\u5165\u5ba4";
+      return "\u7814\u7a76\u958b\u59cb";
     case "checkout":
-      return "\u9000\u5ba4";
+      return "\u7814\u7a76\u7d42\u4e86";
     case "breakStart":
-      return "\u4f11\u61a9";
+      return "\u7814\u7a76\u5916\u6642\u9593\u3078";
     case "breakEnd":
-      return "\u4f11\u61a9\u7d42\u4e86";
+      return "\u7814\u7a76\u306b\u623b\u308b";
     default:
       return "";
   }
@@ -1151,11 +1151,11 @@ function getClockActionLabel(actionType) {
 function getClockStatusLabel(status) {
   switch (status) {
     case "in":
-      return "\u5165\u5ba4\u4e2d";
+      return "\u7814\u7a76\u6642\u9593\u4e2d";
     case "break":
-      return "\u4f11\u61a9\u4e2d";
+      return "\u7814\u7a76\u5916\u6642\u9593\u4e2d";
     default:
-      return "\u9000\u5ba4\u4e2d";
+      return "\u7814\u7a76\u7d42\u4e86";
   }
 }
 
@@ -1163,16 +1163,16 @@ function buildClockActions(status) {
   if (status === "in") {
     return [
       {
-        label: "\u9000\u5ba4",
-        note: "\u304a\u3064\u304b\u308c\u3055\u307e",
+        label: "\u7814\u7a76\u7d42\u4e86",
+        note: "\u4eca\u65e5\u306f\u3053\u3053\u307e\u3067",
         icon: "\u2190",
         actionType: "checkout",
         nextStatus: "out",
         tone: "secondary"
       },
       {
-        label: "\u4f11\u61a9",
-        note: "\u3072\u3068\u606f\u3064\u304f",
+        label: "\u7814\u7a76\u5916\u6642\u9593\u3078",
+        note: "\u3044\u3063\u305f\u3093\u96e2\u308c\u308b",
         icon: "\u2615",
         actionType: "breakStart",
         nextStatus: "break",
@@ -1184,8 +1184,8 @@ function buildClockActions(status) {
   if (status === "break") {
     return [
       {
-        label: "\u4f11\u61a9\u7d42\u4e86",
-        note: "\u4f5c\u696d\u306b\u623b\u308b",
+        label: "\u7814\u7a76\u306b\u623b\u308b",
+        note: "\u7814\u7a76\u6642\u9593\u3092\u518d\u958b",
         icon: "\u21ba",
         actionType: "breakEnd",
         nextStatus: "in",
@@ -1196,8 +1196,8 @@ function buildClockActions(status) {
 
   return [
     {
-      label: "\u5165\u5ba4",
-      note: "\u4eca\u65e5\u3082\u3088\u308d\u3057\u304f",
+      label: "\u7814\u7a76\u6642\u9593\u3092\u59cb\u3081\u308b",
+      note: "\u4eca\u65e5\u306e\u7814\u7a76\u3092\u958b\u59cb",
       icon: "\u2192",
       actionType: "checkin",
       nextStatus: "in",
@@ -1358,9 +1358,9 @@ function renderClockDaySummary(logs, summary, latestAction) {
   const daySummary = getDayClockDisplaySummary(logs, summary);
   clockDaySummaryCards.hidden = false;
   clockDaySummaryCards.append(
-    createClockDaySummaryCard("\u5165\u5ba4", daySummary.checkinTime),
-    createClockDaySummaryCard("\u9000\u5ba4", daySummary.checkoutTime),
-    createClockDaySummaryCard("\u4f11\u61a9", daySummary.breakTime)
+    createClockDaySummaryCard("\u7814\u7a76\u958b\u59cb", daySummary.checkinTime),
+    createClockDaySummaryCard("\u7814\u7a76\u7d42\u4e86", daySummary.checkoutTime),
+    createClockDaySummaryCard("\u7814\u7a76\u5916\u6642\u9593", daySummary.breakTime)
   );
 }
 
@@ -1524,14 +1524,14 @@ function getStatusStartedText(record, logs) {
   const stamp = new Date(statusStartedAt);
 
   if (record.status === "in") {
-    return `\u5165\u5ba4 / ${formatDateTime(stamp)}\u304b\u3089`;
+    return `\u7814\u7a76\u958b\u59cb / ${formatDateTime(stamp)}\u304b\u3089`;
   }
 
   if (record.status === "break") {
-    return `\u4f11\u61a9 / ${formatDateTime(stamp)}\u304b\u3089`;
+    return `\u7814\u7a76\u5916\u6642\u9593 / ${formatDateTime(stamp)}\u304b\u3089`;
   }
 
-  return `\u9000\u5ba4 / ${formatDateTime(stamp)}`;
+  return `\u7814\u7a76\u7d42\u4e86 / ${formatDateTime(stamp)}`;
 }
 
 function createClockHistoryItem(entry) {
@@ -3391,7 +3391,7 @@ function createClockCorrectionRequestCard(request) {
   const range = document.createElement("span");
   const rest = document.createElement("span");
   range.textContent = `${request.startTime} - ${request.endTime}`;
-  rest.textContent = `\u4f11\u61a9 ${request.breakMinutes}\u5206`;
+  rest.textContent = `\u7814\u7a76\u5916\u6642\u9593 ${request.breakMinutes}\u5206`;
   body.append(range, rest);
 
   if (request.note) {
@@ -3526,7 +3526,7 @@ function renderClockView() {
     clockSummaryText.textContent = `\u672c\u65e5\u306e\u6d3b\u52d5\u6642\u9593: ${formatDurationFromMinutes(todaySummary.activeMinutes)}`;
   } else {
     clockSummaryText.textContent = todayLogs.length > 0
-      ? `\u672c\u65e5: \u5728\u5ba4 ${formatDurationFromMinutes(todaySummary.stayMinutes)} / \u4f11\u61a9 ${formatDurationFromMinutes(todaySummary.breakMinutes)} / \u5b9f\u50cd ${formatDurationFromMinutes(todaySummary.activeMinutes)}`
+      ? `\u672c\u65e5: \u5728\u5ba4 ${formatDurationFromMinutes(todaySummary.stayMinutes)} / \u7814\u7a76\u5916\u6642\u9593 ${formatDurationFromMinutes(todaySummary.breakMinutes)} / \u7814\u7a76\u6642\u9593 ${formatDurationFromMinutes(todaySummary.activeMinutes)}`
       : "\u307e\u3060\u672c\u65e5\u306e\u6d3b\u52d5\u8a18\u9332\u306f\u3042\u308a\u307e\u305b\u3093\u3002";
   }
   clockMonthTotalValue.textContent = formatDurationFromMinutes(monthSummary.activeMinutes);
