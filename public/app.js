@@ -7,6 +7,7 @@ const CLOCK_LOGS_KEY = "ergonomics-lab-clock-logs-v1";
 const CLOCK_CORRECTION_REQUESTS_KEY = "ergonomics-lab-clock-correction-requests-v1";
 const TASKS_STORAGE_KEY = "ergonomics-lab-my-tasks-v1";
 const SHARED_SCHEDULE_ITEMS_KEY = "ergonomics-lab-shared-schedule-v1";
+const LAB_SETTINGS_KEY = "ergonomics-lab-settings-v1";
 const EXCEL_LINKS_KEY = "ergonomics-lab-excel-links-v1";
 const EXCEL_ATTACHMENT_DB_NAME = "ergonomics-lab-excel-attachments";
 const EXCEL_ATTACHMENT_DB_VERSION = 1;
@@ -81,11 +82,21 @@ const AVAILABILITY_OPTIONS = [
 
 const DEFAULT_AVAILABILITY = AVAILABILITY_OPTIONS[0].value;
 const SHARED_SCHEDULE_TYPES = [
-  "\u4e2d\u9593\u767a\u8868",
-  "\u672c\u5be9\u67fb\u4f1a",
   "\u30df\u30fc\u30c6\u30a3\u30f3\u30b0",
-  "\u5b66\u4f1a\u30fb\u767a\u8868",
+  "\u7814\u7a76\u30a4\u30d9\u30f3\u30c8",
   "\u305d\u306e\u4ed6"
+];
+const LAB_MILESTONE_DEFS = [
+  {
+    key: "midtermPresentationDate",
+    label: "\u4e2d\u9593\u767a\u8868\u307e\u3067",
+    inputLabel: "\u4e2d\u9593\u767a\u8868\u65e5"
+  },
+  {
+    key: "finalReviewDate",
+    label: "\u672c\u5be9\u67fb\u4f1a\u307e\u3067",
+    inputLabel: "\u672c\u5be9\u67fb\u4f1a\u65e5"
+  }
 ];
 
 const FALLBACK_CONFIG = {
@@ -225,11 +236,15 @@ const clockMonthSummaryPrevButton = document.getElementById("clockMonthSummaryPr
 const clockMonthSummaryTodayButton = document.getElementById("clockMonthSummaryTodayButton");
 const clockMonthSummaryNextButton = document.getElementById("clockMonthSummaryNextButton");
 const clockMonthSummaryTableBody = document.getElementById("clockMonthSummaryTableBody");
-  const currentUserCard = document.getElementById("currentUserCard");
-  const permissionSummary = document.getElementById("permissionSummary");
-  const settingsNotice = document.getElementById("settingsNotice");
-  const memberSection = document.getElementById("memberSection");
-  const memberRoleMessage = document.getElementById("memberRoleMessage");
+const currentUserCard = document.getElementById("currentUserCard");
+const permissionSummary = document.getElementById("permissionSummary");
+const settingsNotice = document.getElementById("settingsNotice");
+const labMilestoneForm = document.getElementById("labMilestoneForm");
+const midtermPresentationDateInput = document.getElementById("midtermPresentationDateInput");
+const finalReviewDateInput = document.getElementById("finalReviewDateInput");
+const labMilestoneMessage = document.getElementById("labMilestoneMessage");
+const memberSection = document.getElementById("memberSection");
+const memberRoleMessage = document.getElementById("memberRoleMessage");
   const memberTable = document.getElementById("memberTable");
   const excelFileDropZone = document.getElementById("excelFileDropZone");
   const excelFileInput = document.getElementById("excelFileInput");
@@ -248,6 +263,12 @@ let displayNameOverrides = {};
 let displayNameStatusMessage =
   "\u3053\u306e\u7aef\u672b\u306b\u4fdd\u5b58";
 let memberRoleStatusMessage = "";
+let labSettings = {
+  midtermPresentationDate: "",
+  finalReviewDate: ""
+};
+let labSettingsStatusMessage = "";
+let labSettingsSharedAvailable = true;
 let presencePlans = {};
 let presenceMonthKey = "";
 let presenceEditorDateKey = "";
@@ -370,6 +391,35 @@ function saveSharedScheduleItems() {
     SHARED_SCHEDULE_ITEMS_KEY,
     JSON.stringify(sortSharedScheduleItems(sharedScheduleItems))
   );
+}
+
+function normalizeLabSettings(rawSettings) {
+  const safe = rawSettings && typeof rawSettings === "object" ? rawSettings : {};
+  return {
+    midtermPresentationDate:
+      /^\d{4}-\d{2}-\d{2}$/.test(String(safe.midtermPresentationDate || "").trim())
+        ? String(safe.midtermPresentationDate).trim()
+        : "",
+    finalReviewDate:
+      /^\d{4}-\d{2}-\d{2}$/.test(String(safe.finalReviewDate || "").trim())
+        ? String(safe.finalReviewDate).trim()
+        : ""
+  };
+}
+
+function loadLabSettings() {
+  try {
+    const raw = window.localStorage.getItem(LAB_SETTINGS_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return normalizeLabSettings(parsed);
+  } catch (error) {
+    console.warn("Could not load lab settings. Using defaults.", error);
+    return normalizeLabSettings({});
+  }
+}
+
+function saveLabSettings() {
+  window.localStorage.setItem(LAB_SETTINGS_KEY, JSON.stringify(normalizeLabSettings(labSettings)));
 }
 
 function loadExcelLinks() {
@@ -1062,6 +1112,23 @@ function buildSharedScheduleItemsFromRemoteRows(rows) {
   );
 }
 
+function buildLabSettingsFromRemoteRows(rows) {
+  const nextSettings = {};
+
+  (Array.isArray(rows) ? rows : []).forEach((row) => {
+    const key = String(row.setting_key || "").trim();
+    const value = String(row.setting_value || "").trim();
+    if (key) {
+      nextSettings[key] = value;
+    }
+  });
+
+  return normalizeLabSettings({
+    midtermPresentationDate: nextSettings.midtermPresentationDate,
+    finalReviewDate: nextSettings.finalReviewDate
+  });
+}
+
 function cacheSharedSnapshotLocally() {
   saveDirectory();
   savePresencePlans();
@@ -1070,6 +1137,7 @@ function cacheSharedSnapshotLocally() {
   saveClockCorrectionRequests();
   saveMyTasks();
   saveSharedScheduleItems();
+  saveLabSettings();
 }
 
 function renderClockNow() {
@@ -2012,10 +2080,14 @@ function getSharedScheduleItemsForMonth(monthKey) {
 }
 
 function getSharedScheduleCountdownTarget(type) {
-  const todayKey = getTodayDateKey();
-  return sortSharedScheduleItems(
-    sharedScheduleItems.filter((item) => item.type === type && item.dateKey >= todayKey)
-  )[0] || null;
+  const value = String(labSettings?.[type] || "").trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return null;
+  }
+
+  return {
+    dateKey: value
+  };
 }
 
 function getDaysUntilDate(dateKey) {
@@ -2545,6 +2617,22 @@ function toSharedScheduleRow(item) {
   };
 }
 
+function toSharedLabSettingRows(settings) {
+  const normalized = normalizeLabSettings(settings);
+  return [
+    {
+      setting_key: "midtermPresentationDate",
+      setting_value: normalized.midtermPresentationDate || "",
+      updated_at: new Date().toISOString()
+    },
+    {
+      setting_key: "finalReviewDate",
+      setting_value: normalized.finalReviewDate || "",
+      updated_at: new Date().toISOString()
+    }
+  ];
+}
+
 async function ensureSharedSeedMembers() {
   const remoteUsers = await selectSharedRows("lab_users", {
     order: "user_id.asc"
@@ -2579,6 +2667,8 @@ async function refreshSharedState(options = {}) {
       let sharedClockRequestsAvailable = true;
       let remoteSharedScheduleItems = null;
       let sharedScheduleAvailableNext = true;
+      let remoteLabSettings = null;
+      let labSettingsAvailableNext = true;
 
       const [remoteUsers, remotePresence, remoteTasks, remoteClockRecords, remoteClockLogs] =
         await Promise.all([
@@ -2615,6 +2705,19 @@ async function refreshSharedState(options = {}) {
         }
       }
 
+      try {
+        remoteLabSettings = await selectSharedRows("lab_app_settings", {
+          order: "setting_key.asc"
+        });
+      } catch (error) {
+        if (isSharedRelationMissingError(error)) {
+          labSettingsAvailableNext = false;
+          remoteLabSettings = [];
+        } else {
+          throw error;
+        }
+      }
+
       memberDirectory = buildDirectoryFromRemoteRows(appConfig, remoteUsers);
       presencePlans = buildPresencePlansFromRemoteRows(remotePresence);
       myTasks = buildTasksFromRemoteRows(remoteTasks);
@@ -2631,6 +2734,10 @@ async function refreshSharedState(options = {}) {
         : "\u5171\u6709\u30b9\u30b1\u30b8\u30e5\u30fc\u30eb\u306e\u5171\u6709\u306b\u306f\u8ffd\u52a0SQL\u304c\u5fc5\u8981\u3067\u3059\u3002";
       if (sharedScheduleAvailableNext) {
         sharedScheduleItems = buildSharedScheduleItemsFromRemoteRows(remoteSharedScheduleItems);
+      }
+      labSettingsSharedAvailable = labSettingsAvailableNext;
+      if (labSettingsAvailableNext) {
+        labSettings = buildLabSettingsFromRemoteRows(remoteLabSettings);
       }
       cacheSharedSnapshotLocally();
       sharedStore.active = true;
@@ -2750,6 +2857,16 @@ async function deleteSharedScheduleItemFromShared(itemId) {
   }
 
   await deleteSharedRows("lab_shared_schedule_items", [{ column: "id", value: itemId }]);
+  await refreshSharedState({ quiet: true });
+  return true;
+}
+
+async function syncLabSettingsToShared(settings) {
+  if (!sharedStore.configured || !labSettingsSharedAvailable) {
+    return false;
+  }
+
+  await upsertSharedRows("lab_app_settings", toSharedLabSettingRows(settings), "setting_key");
   await refreshSharedState({ quiet: true });
   return true;
 }
@@ -3025,7 +3142,7 @@ function createPermissionChip(text, isOff = false) {
   return chip;
 }
 
-  function renderCurrentUserSummary() {
+function renderCurrentUserSummary() {
     currentUserCard.replaceChildren();
     permissionSummary.replaceChildren();
 
@@ -3050,6 +3167,29 @@ function createPermissionChip(text, isOff = false) {
       )
     );
   }
+
+function renderLabMilestoneSettings() {
+  if (!labMilestoneForm) {
+    return;
+  }
+
+  const editable = Boolean(currentUser && canManagePermissions(currentUser));
+  midtermPresentationDateInput.value = labSettings.midtermPresentationDate || "";
+  finalReviewDateInput.value = labSettings.finalReviewDate || "";
+  midtermPresentationDateInput.disabled = !editable;
+  finalReviewDateInput.disabled = !editable;
+  Array.from(labMilestoneForm.querySelectorAll("button, input")).forEach((element) => {
+    if (element instanceof HTMLButtonElement) {
+      element.disabled = !editable;
+    }
+  });
+  labMilestoneMessage.textContent = labSettingsStatusMessage
+    || (!editable
+      ? "\u57fa\u6e96\u65e5\u306e\u5909\u66f4\u306f\u7ba1\u7406\u8005\u306e\u307f\u3067\u3059\u3002"
+      : isSharedStoreActive() && labSettingsSharedAvailable
+        ? "\u5171\u6709\u4fdd\u5b58\u4e2d"
+        : "\u4e2d\u9593\u767a\u8868\u65e5\u3068\u672c\u5be9\u67fb\u4f1a\u65e5\u3092\u8a2d\u5b9a\u3067\u304d\u307e\u3059\u3002");
+}
 
 function renderMemberTable() {
   memberTable.replaceChildren();
@@ -3343,9 +3483,9 @@ function createSharedScheduleCountdownCard(label, item) {
       remainingDays === null
         ? formatDateKey(item.dateKey)
         : remainingDays <= 0
-          ? "\u4eca\u65e5"
+        ? "\u4eca\u65e5"
           : `\u3042\u3068${remainingDays}\u65e5`;
-    note.textContent = `${item.title} / ${formatDateKey(item.dateKey)}`;
+    note.textContent = formatDateKey(item.dateKey);
   }
 
   card.append(title, value, note);
@@ -3358,8 +3498,8 @@ function renderSharedScheduleCountdown() {
   }
 
   sharedScheduleCountdown.replaceChildren(
-    createSharedScheduleCountdownCard("\u4e2d\u9593\u767a\u8868\u307e\u3067", getSharedScheduleCountdownTarget("\u4e2d\u9593\u767a\u8868")),
-    createSharedScheduleCountdownCard("\u672c\u5be9\u67fb\u4f1a\u307e\u3067", getSharedScheduleCountdownTarget("\u672c\u5be9\u67fb\u4f1a"))
+    createSharedScheduleCountdownCard("\u4e2d\u9593\u767a\u8868\u307e\u3067", getSharedScheduleCountdownTarget("midtermPresentationDate")),
+    createSharedScheduleCountdownCard("\u672c\u5be9\u67fb\u4f1a\u307e\u3067", getSharedScheduleCountdownTarget("finalReviewDate"))
   );
 }
 
@@ -3956,6 +4096,7 @@ function renderClockMonthlyView() {
 
   function renderSettings() {
     renderCurrentUserSummary();
+    renderLabMilestoneSettings();
     renderExcelLinkPanel();
 
     settingsNotice.textContent = getSharedStoreStatusText();
@@ -4160,6 +4301,45 @@ displayNameForm.addEventListener("submit", async (event) => {
   }
   renderWorkspace();
 });
+
+if (labMilestoneForm && midtermPresentationDateInput && finalReviewDateInput) {
+  labMilestoneForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    if (!currentUser || !canManagePermissions(currentUser)) {
+      labSettingsStatusMessage = "\u57fa\u6e96\u65e5\u306e\u5909\u66f4\u306f\u7ba1\u7406\u8005\u306e\u307f\u3067\u3059\u3002";
+      renderSettings();
+      return;
+    }
+
+    labSettings = normalizeLabSettings({
+      midtermPresentationDate: midtermPresentationDateInput.value,
+      finalReviewDate: finalReviewDateInput.value
+    });
+    saveLabSettings();
+    labSettingsStatusMessage = "\u57fa\u6e96\u65e5\u3092\u66f4\u65b0\u3057\u307e\u3057\u305f\u3002";
+    renderWorkspace();
+
+    if (!sharedStore.configured) {
+      return;
+    }
+
+    if (!labSettingsSharedAvailable) {
+      labSettingsStatusMessage = "\u3053\u306e\u7aef\u672b\u306b\u306f\u4fdd\u5b58\u3057\u307e\u3057\u305f\u304c\u3001\u5171\u6709\u306b\u306f\u8ffd\u52a0SQL\u304c\u5fc5\u8981\u3067\u3059\u3002";
+      renderSettings();
+      return;
+    }
+
+    try {
+      await syncLabSettingsToShared(labSettings);
+    } catch (error) {
+      labSettingsStatusMessage = isSharedRelationMissingError(error)
+        ? "\u57fa\u6e96\u65e5\u3092\u5171\u6709\u3059\u308b\u306b\u306f\u8ffd\u52a0SQL\u304c\u5fc5\u8981\u3067\u3059\u3002"
+        : getSharedSyncErrorText(error);
+      renderSettings();
+    }
+  });
+}
 
 if (memberTable) {
   memberTable.addEventListener("change", async (event) => {
@@ -4636,10 +4816,11 @@ async function init() {
   displayNameOverrides = loadDisplayNameOverrides();
   presencePlans = loadPresencePlans();
   clockRecords = loadClockRecords();
-    clockLogs = loadClockLogs();
+  clockLogs = loadClockLogs();
     clockCorrectionRequests = loadClockCorrectionRequests().map((request) => normalizeClockCorrectionRequest(request)).filter(Boolean);
     myTasks = loadMyTasks();
     sharedScheduleItems = loadSharedScheduleItems();
+    labSettings = loadLabSettings();
     excelLinks = loadExcelLinks();
     presenceMonthKey = getMonthKey(new Date());
   sharedScheduleMonthKey = getMonthKey(new Date());
