@@ -873,14 +873,147 @@ p {
   align-items: flex-start;
 }
 
-.shared-schedule-layout {
+.shared-schedule-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: center;
+}
+
+.shared-schedule-toolbar h4 {
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  line-height: 1.1;
+}
+
+.shared-schedule-nav {
   display: grid;
-  grid-template-columns: minmax(320px, 380px) minmax(0, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  width: min(420px, 100%);
+}
+
+.shared-schedule-countdown {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
 }
 
-.shared-schedule-panel {
+.shared-schedule-countdown-card {
+  display: grid;
+  gap: 8px;
+  padding: 18px 20px;
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0.04) 100%);
+}
+
+.shared-schedule-countdown-label {
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.shared-schedule-countdown-value {
+  font-size: clamp(1.5rem, 4vw, 2.2rem);
+  line-height: 1.1;
+}
+
+.shared-schedule-countdown-note {
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.shared-schedule-board {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 420px);
   gap: 16px;
+}
+
+.shared-schedule-side,
+.shared-schedule-panel {
+  display: grid;
+  gap: 16px;
+}
+
+.shared-schedule-calendar-panel {
+  padding: 18px;
+}
+
+.shared-schedule-calendar {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.shared-schedule-weekday {
+  padding: 10px 8px;
+  text-align: center;
+  color: var(--accent);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.shared-schedule-blank {
+  min-height: 118px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.shared-schedule-day {
+  min-height: 138px;
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.shared-schedule-day.is-weekend {
+  background: rgba(232, 192, 125, 0.08);
+}
+
+.shared-schedule-day-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+}
+
+.shared-schedule-day-number {
+  font-size: 1.02rem;
+}
+
+.shared-schedule-day-weekday {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.shared-schedule-day-list {
+  display: grid;
+  gap: 8px;
+}
+
+.shared-schedule-day-item {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid rgba(232, 192, 125, 0.18);
+  border-radius: 12px;
+  background: rgba(232, 192, 125, 0.12);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  line-height: 1.45;
+}
+
+.shared-schedule-day-empty,
+.shared-schedule-day-more {
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.5;
 }
 
 .shared-schedule-list {
@@ -1602,9 +1735,10 @@ p {
   }
 
   .tasks-header,
-  .tasks-layout,
   .shared-schedule-header,
-  .shared-schedule-layout,
+  .shared-schedule-toolbar,
+  .shared-schedule-board,
+  .tasks-layout,
   .clock-monthly-header,
   .clock-adjustment-layout {
     grid-template-columns: 1fr;
@@ -1658,12 +1792,25 @@ p {
   .permission-grid,
   .presence-input-grid,
   .presence-actions,
+  .shared-schedule-countdown,
   .clock-actions,
   .clock-monthly-nav,
   .clock-day-summary,
   .clock-excel-card,
   .clock-adjustment-grid {
     grid-template-columns: 1fr;
+  }
+
+  .shared-schedule-calendar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .shared-schedule-weekday {
+    display: none;
+  }
+
+  .shared-schedule-blank {
+    display: none;
   }
 
   .task-card-head {

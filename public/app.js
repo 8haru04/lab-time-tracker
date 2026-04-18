@@ -176,6 +176,12 @@ const taskNoteInput = document.getElementById("taskNoteInput");
 const taskFormMessage = document.getElementById("taskFormMessage");
 const taskList = document.getElementById("taskList");
 const sharedScheduleList = document.getElementById("sharedScheduleList");
+const sharedScheduleMonthLabel = document.getElementById("sharedScheduleMonthLabel");
+const sharedSchedulePrevButton = document.getElementById("sharedSchedulePrevButton");
+const sharedScheduleTodayButton = document.getElementById("sharedScheduleTodayButton");
+const sharedScheduleNextButton = document.getElementById("sharedScheduleNextButton");
+const sharedScheduleCountdown = document.getElementById("sharedScheduleCountdown");
+const sharedScheduleCalendar = document.getElementById("sharedScheduleCalendar");
 const sharedScheduleForm = document.getElementById("sharedScheduleForm");
 const sharedScheduleTitleInput = document.getElementById("sharedScheduleTitleInput");
 const sharedScheduleTypeInput = document.getElementById("sharedScheduleTypeInput");
@@ -245,6 +251,7 @@ let memberRoleStatusMessage = "";
 let presencePlans = {};
 let presenceMonthKey = "";
 let presenceEditorDateKey = "";
+let sharedScheduleMonthKey = "";
 let clockMonthSummaryKey = "";
 let clockRecords = {};
 let clockLogs = {};
@@ -1998,6 +2005,31 @@ function canDeleteSharedScheduleItem(item) {
   return isOwner(currentUser) || item.createdBy === currentUser.id;
 }
 
+function getSharedScheduleItemsForMonth(monthKey) {
+  return sortSharedScheduleItems(
+    sharedScheduleItems.filter((item) => String(item.dateKey || "").startsWith(`${monthKey}-`))
+  );
+}
+
+function getSharedScheduleCountdownTarget(type) {
+  const todayKey = getTodayDateKey();
+  return sortSharedScheduleItems(
+    sharedScheduleItems.filter((item) => item.type === type && item.dateKey >= todayKey)
+  )[0] || null;
+}
+
+function getDaysUntilDate(dateKey) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(dateKey || ""))) {
+    return null;
+  }
+
+  const target = new Date(`${dateKey}T00:00:00`);
+  const today = new Date();
+  const start = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const diffMs = target.getTime() - start.getTime();
+  return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+}
+
 function getTaskDueState(dueDate) {
   if (!dueDate) {
     return {
@@ -3288,6 +3320,143 @@ function createSharedScheduleCard(item) {
   return card;
 }
 
+function createSharedScheduleCountdownCard(label, item) {
+  const card = document.createElement("article");
+  card.className = "shared-schedule-countdown-card";
+
+  const title = document.createElement("span");
+  title.className = "shared-schedule-countdown-label";
+  title.textContent = label;
+
+  const value = document.createElement("strong");
+  value.className = "shared-schedule-countdown-value";
+
+  const note = document.createElement("p");
+  note.className = "shared-schedule-countdown-note";
+
+  if (!item) {
+    value.textContent = "\u672a\u767b\u9332";
+    note.textContent = "\u65e5\u7a0b\u304c\u6c7a\u307e\u3063\u305f\u3089\u8ffd\u52a0\u3067\u304d\u307e\u3059\u3002";
+  } else {
+    const remainingDays = getDaysUntilDate(item.dateKey);
+    value.textContent =
+      remainingDays === null
+        ? formatDateKey(item.dateKey)
+        : remainingDays <= 0
+          ? "\u4eca\u65e5"
+          : `\u3042\u3068${remainingDays}\u65e5`;
+    note.textContent = `${item.title} / ${formatDateKey(item.dateKey)}`;
+  }
+
+  card.append(title, value, note);
+  return card;
+}
+
+function renderSharedScheduleCountdown() {
+  if (!sharedScheduleCountdown) {
+    return;
+  }
+
+  sharedScheduleCountdown.replaceChildren(
+    createSharedScheduleCountdownCard("\u4e2d\u9593\u767a\u8868\u307e\u3067", getSharedScheduleCountdownTarget("\u4e2d\u9593\u767a\u8868")),
+    createSharedScheduleCountdownCard("\u672c\u5be9\u67fb\u4f1a\u307e\u3067", getSharedScheduleCountdownTarget("\u672c\u5be9\u67fb\u4f1a"))
+  );
+}
+
+function createSharedScheduleWeekdayHeader(label) {
+  const cell = document.createElement("div");
+  cell.className = "shared-schedule-weekday";
+  cell.textContent = label;
+  return cell;
+}
+
+function createSharedScheduleCalendarCell(day, items) {
+  const cell = document.createElement("article");
+  const head = document.createElement("div");
+  const dayNumber = document.createElement("strong");
+  const weekday = document.createElement("span");
+  const list = document.createElement("div");
+
+  cell.className = `shared-schedule-day${day.isWeekend ? " is-weekend" : ""}`;
+  head.className = "shared-schedule-day-head";
+  dayNumber.className = "shared-schedule-day-number";
+  weekday.className = "shared-schedule-day-weekday";
+  list.className = "shared-schedule-day-list";
+
+  dayNumber.textContent = String(day.label);
+  weekday.textContent = day.weekday;
+  head.append(dayNumber, weekday);
+  cell.appendChild(head);
+
+  if (items.length === 0) {
+    const empty = document.createElement("span");
+    empty.className = "shared-schedule-day-empty";
+    empty.textContent = "\u2014";
+    list.appendChild(empty);
+  } else {
+    items.slice(0, 3).forEach((item) => {
+      const entry = document.createElement("button");
+      entry.type = "button";
+      entry.className = "shared-schedule-day-item";
+      entry.textContent = item.startTime ? `${item.startTime} ${item.title}` : item.title;
+      entry.title = `${item.title} / ${item.type}${item.startTime || item.endTime ? ` / ${formatTimeRange(item.startTime, item.endTime)}` : ""}`;
+      entry.addEventListener("click", () => {
+        const label = `${item.title} / ${formatDateKey(item.dateKey)}${item.startTime || item.endTime ? ` / ${formatTimeRange(item.startTime, item.endTime)}` : ""}${item.note ? ` / ${item.note}` : ""}`;
+        if (sharedScheduleFormMessage) {
+          sharedScheduleFormMessage.textContent = label;
+        }
+      });
+      list.appendChild(entry);
+    });
+
+    if (items.length > 3) {
+      const more = document.createElement("span");
+      more.className = "shared-schedule-day-more";
+      more.textContent = `+${items.length - 3}`;
+      list.appendChild(more);
+    }
+  }
+
+  cell.appendChild(list);
+  return cell;
+}
+
+function renderSharedScheduleCalendar() {
+  if (!sharedScheduleCalendar) {
+    return;
+  }
+
+  const days = getDaysForMonth(sharedScheduleMonthKey);
+  const monthStart = parseMonthKey(sharedScheduleMonthKey);
+  const leadingBlankCount = monthStart.getDay();
+  const itemsByDate = new Map();
+
+  getSharedScheduleItemsForMonth(sharedScheduleMonthKey).forEach((item) => {
+    if (!itemsByDate.has(item.dateKey)) {
+      itemsByDate.set(item.dateKey, []);
+    }
+    itemsByDate.get(item.dateKey).push(item);
+  });
+
+  sharedScheduleCalendar.replaceChildren();
+
+  ["\u65e5", "\u6708", "\u706b", "\u6c34", "\u6728", "\u91d1", "\u571f"].forEach((weekday) => {
+    sharedScheduleCalendar.appendChild(createSharedScheduleWeekdayHeader(weekday));
+  });
+
+  Array.from({ length: leadingBlankCount }).forEach(() => {
+    const blank = document.createElement("div");
+    blank.className = "shared-schedule-blank";
+    sharedScheduleCalendar.appendChild(blank);
+  });
+
+  days.forEach((day) => {
+    sharedScheduleCalendar.appendChild(
+      createSharedScheduleCalendarCell(day, itemsByDate.get(day.key) || [])
+    );
+  });
+}
+
 function renderSharedScheduleView() {
   if (!sharedScheduleList) {
     return;
@@ -3301,10 +3470,16 @@ function renderSharedScheduleView() {
     }
   }
 
+  if (sharedScheduleMonthLabel) {
+    sharedScheduleMonthLabel.textContent = formatMonthLabel(sharedScheduleMonthKey);
+  }
+
   if (sharedScheduleForm) {
     sharedScheduleForm.hidden = !currentUser;
   }
 
+  renderSharedScheduleCountdown();
+  renderSharedScheduleCalendar();
   sharedScheduleList.replaceChildren();
 
   if (sharedScheduleItems.length === 0) {
@@ -3315,7 +3490,7 @@ function renderSharedScheduleView() {
     return;
   }
 
-  sharedScheduleItems.forEach((item) => {
+  sharedScheduleItems.slice(0, 8).forEach((item) => {
     sharedScheduleList.appendChild(createSharedScheduleCard(item));
   });
 }
@@ -4408,6 +4583,27 @@ if (sharedScheduleList) {
   });
 }
 
+if (sharedSchedulePrevButton) {
+  sharedSchedulePrevButton.addEventListener("click", () => {
+    sharedScheduleMonthKey = shiftMonthKey(sharedScheduleMonthKey, -1);
+    renderSharedScheduleView();
+  });
+}
+
+if (sharedScheduleTodayButton) {
+  sharedScheduleTodayButton.addEventListener("click", () => {
+    sharedScheduleMonthKey = getMonthKey(new Date());
+    renderSharedScheduleView();
+  });
+}
+
+if (sharedScheduleNextButton) {
+  sharedScheduleNextButton.addEventListener("click", () => {
+    sharedScheduleMonthKey = shiftMonthKey(sharedScheduleMonthKey, 1);
+    renderSharedScheduleView();
+  });
+}
+
 window.addEventListener("hashchange", () => {
   if (!currentUser) {
     return;
@@ -4446,6 +4642,7 @@ async function init() {
     sharedScheduleItems = loadSharedScheduleItems();
     excelLinks = loadExcelLinks();
     presenceMonthKey = getMonthKey(new Date());
+  sharedScheduleMonthKey = getMonthKey(new Date());
   clockMonthSummaryKey = getMonthKey(new Date());
   memberDirectory = loadStoredDirectory(appConfig);
 

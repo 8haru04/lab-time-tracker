@@ -223,7 +223,23 @@
                   <p id="sharedScheduleStatusMessage" class="helper-text"></p>
                 </div>
 
-                <div class="shared-schedule-layout">
+                <div class="shared-schedule-toolbar">
+                  <h4 id="sharedScheduleMonthLabel">&#x4eca;&#x6708;</h4>
+                  <div class="shared-schedule-nav">
+                    <button id="sharedSchedulePrevButton" class="secondary-button" type="button">&#x524d;&#x306e;&#x6708;</button>
+                    <button id="sharedScheduleTodayButton" class="secondary-button" type="button">&#x4eca;&#x6708;</button>
+                    <button id="sharedScheduleNextButton" class="secondary-button" type="button">&#x6b21;&#x306e;&#x6708;</button>
+                  </div>
+                </div>
+
+                <div id="sharedScheduleCountdown" class="shared-schedule-countdown" aria-live="polite"></div>
+
+                <div class="shared-schedule-board">
+                  <section class="panel shared-schedule-calendar-panel">
+                    <div id="sharedScheduleCalendar" class="shared-schedule-calendar" aria-live="polite"></div>
+                  </section>
+
+                  <div class="shared-schedule-side">
                   <section class="panel shared-schedule-panel">
                     <div class="panel-head">
                       <p class="view-label">&#x5165;&#x529b;</p>
@@ -277,6 +293,7 @@
 
                     <div id="sharedScheduleList" class="shared-schedule-list" aria-live="polite"></div>
                   </section>
+                  </div>
                 </div>
               </div>
             </section>
