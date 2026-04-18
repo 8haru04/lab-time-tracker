@@ -72,7 +72,7 @@ p {
 }
 
 .shell {
-  width: min(1320px, calc(100% - 32px));
+  width: min(1800px, calc(100% - 24px));
   min-height: 100vh;
   margin: 0 auto;
   padding: 24px 0;
@@ -1544,6 +1544,25 @@ p {
   gap: 4px;
 }
 
+.member-role-panel,
+.member-role-head {
+  display: grid;
+  gap: 10px;
+}
+
+.member-role-field {
+  width: min(280px, 100%);
+}
+
+.member-role-head strong {
+  font-size: 1rem;
+}
+
+.member-role-head small {
+  color: var(--muted);
+  line-height: 1.6;
+}
+
 .permission-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1619,6 +1638,20 @@ p {
   .clock-history-head {
     grid-template-columns: 1fr;
     display: grid;
+  }
+}
+
+@media (min-width: 1600px) {
+  .workspace-shell {
+    grid-template-columns: 280px minmax(0, 1fr);
+    gap: 24px;
+  }
+
+  .sidebar-card,
+  .workspace-header,
+  .view-card,
+  .panel {
+    padding: 26px;
   }
 }
 

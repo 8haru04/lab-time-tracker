@@ -111,6 +111,7 @@ const FALLBACK_CONFIG = {
     { id: "202304181", displayName: "202304181", role: "\u5b66\u90e84\u5e74" },
     { id: "202304200", displayName: "202304200", role: "\u5b66\u90e84\u5e74" },
     { id: "202304135", displayName: "202304135", role: "\u672a\u8a2d\u5b9a" },
+    { id: "202404045", displayName: "202404045", role: "\u672a\u8a2d\u5b9a" },
     { id: "01", displayName: "01", role: "\u6559\u6388" },
     { id: "02", displayName: "02", role: "\u52a9\u6559" },
     { id: "202670231", displayName: "202670231", role: "\u672a\u8a2d\u5b9a" }
@@ -211,6 +212,7 @@ const clockMonthSummaryTableBody = document.getElementById("clockMonthSummaryTab
   const permissionSummary = document.getElementById("permissionSummary");
   const settingsNotice = document.getElementById("settingsNotice");
   const memberSection = document.getElementById("memberSection");
+  const memberRoleMessage = document.getElementById("memberRoleMessage");
   const memberTable = document.getElementById("memberTable");
   const excelFileDropZone = document.getElementById("excelFileDropZone");
   const excelFileInput = document.getElementById("excelFileInput");
@@ -228,6 +230,7 @@ let activeCategory = null;
 let displayNameOverrides = {};
 let displayNameStatusMessage =
   "\u3053\u306e\u7aef\u672b\u306b\u4fdd\u5b58";
+let memberRoleStatusMessage = "";
 let presencePlans = {};
 let presenceMonthKey = "";
 let presenceEditorDateKey = "";
@@ -2756,15 +2759,24 @@ function getOrderedMembers() {
   });
 }
 
-function renderRoleOptions(target, roles) {
+function renderRoleOptions(target, roles, selectedValue = "") {
   target.replaceChildren();
 
-  roles.forEach((role) => {
+  const normalizedRoles = Array.isArray(roles) ? roles.filter(Boolean) : [];
+  const optionValues = selectedValue && !normalizedRoles.includes(selectedValue)
+    ? [selectedValue, ...normalizedRoles]
+    : normalizedRoles;
+
+  optionValues.forEach((role) => {
     const option = document.createElement("option");
     option.value = role;
     option.textContent = role;
     target.appendChild(option);
   });
+
+  if (selectedValue) {
+    target.value = selectedValue;
+  }
 }
 
 function renderAvailabilityOptions(target) {
@@ -2917,7 +2929,7 @@ function createPermissionChip(text, isOff = false) {
 function renderMemberTable() {
   memberTable.replaceChildren();
 
-  memberDirectory.forEach((member) => {
+  getOrderedMembers().forEach((member) => {
     const row = document.createElement("article");
     row.className = "member-row";
 
@@ -2929,27 +2941,48 @@ function renderMemberTable() {
       <small>${member.role}${member.isOwner ? " / \u6700\u4e0a\u4f4d\u7ba1\u7406\u8005" : ""}</small>
     `;
 
+    const rolePanel = document.createElement("div");
+    rolePanel.className = "member-role-panel";
+
+    const roleHead = document.createElement("div");
+    roleHead.className = "member-role-head";
+    roleHead.innerHTML = `
+      <strong>\u30e6\u30fc\u30b6\u30fc\u533a\u5206</strong>
+      <small>\u533a\u5206\u3092\u5909\u66f4\u3059\u308b\u3068\u3001\u8868\u793a\u9806\u3082\u66f4\u65b0\u3055\u308c\u307e\u3059\u3002</small>
+    `;
+
+    const roleField = document.createElement("label");
+    roleField.className = "field member-role-field";
+    roleField.innerHTML = `<span>\u533a\u5206</span>`;
+
+    const roleSelect = document.createElement("select");
+    roleSelect.name = `memberRole-${member.id}`;
+    roleSelect.dataset.roleUserId = member.id;
+    roleSelect.setAttribute("aria-label", `${member.displayName}\u306e\u30e6\u30fc\u30b6\u30fc\u533a\u5206`);
+    renderRoleOptions(roleSelect, appConfig.userRoles, member.role || "\u672a\u8a2d\u5b9a");
+    roleField.appendChild(roleSelect);
+
     const permissionGrid = document.createElement("div");
     permissionGrid.className = "permission-grid";
-
-      permissionGrid.append(
-        createPermissionChip("\u57fa\u672c\u6a5f\u80fd / \u5229\u7528\u53ef"),
-        createPermissionChip("\u8a2d\u5b9a\u753b\u9762 / \u5229\u7528\u53ef"),
-        createPermissionChip(
-          member.isOwner
-            ? "\u6700\u4e0a\u4f4d\u7ba1\u7406\u8005"
-            : "\u5171\u6709\u30e1\u30f3\u30d0\u30fc",
-          !member.isOwner
-        ),
-        createPermissionChip(
-          member.isOwner
-            ? "\u4fee\u6b63\u78ba\u8a8d / \u5bfe\u5fdc\u53ef"
-            : "\u4eca\u5f8c\u306e\u8ffd\u52a0\u6a29\u9650\u306f\u672a\u8a2d\u5b9a",
-          !member.isOwner
-        )
+    permissionGrid.append(
+      createPermissionChip("\u57fa\u672c\u6a5f\u80fd / \u5229\u7528\u53ef"),
+      createPermissionChip("\u8a2d\u5b9a / \u5229\u7528\u53ef"),
+      createPermissionChip(
+        member.isOwner
+          ? "\u6700\u4e0a\u4f4d\u7ba1\u7406\u8005"
+          : "\u30e6\u30fc\u30b6\u30fc\u767b\u9332 / \u7ba1\u7406\u8005\u306e\u307f",
+        !member.isOwner
+      ),
+      createPermissionChip(
+        member.isOwner
+          ? "\u4fee\u6b63\u78ba\u8a8d / \u5bfe\u5fdc\u53ef"
+          : "\u305d\u306e\u4ed6\u306e\u64cd\u4f5c / \u5229\u7528\u53ef",
+        false
+      )
     );
 
-    row.append(memberCard, permissionGrid);
+    rolePanel.append(roleHead, roleField, permissionGrid);
+    row.append(memberCard, rolePanel);
     memberTable.appendChild(row);
   });
 }
@@ -3623,6 +3656,7 @@ function renderClockMonthlyView() {
     renderExcelLinkPanel();
 
     settingsNotice.textContent = getSharedStoreStatusText();
+    memberRoleMessage.textContent = memberRoleStatusMessage || "\u5909\u66f4\u3059\u308b\u3068\u3059\u3050\u4fdd\u5b58\u3055\u308c\u307e\u3059\u3002";
 
     memberSection.hidden = !canManagePermissions(currentUser);
 
@@ -3823,6 +3857,42 @@ displayNameForm.addEventListener("submit", async (event) => {
   }
   renderWorkspace();
 });
+
+if (memberTable) {
+  memberTable.addEventListener("change", async (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLSelectElement) || !target.dataset.roleUserId) {
+      return;
+    }
+
+    if (!currentUser || !canManagePermissions(currentUser)) {
+      return;
+    }
+
+    const member = findMemberById(target.dataset.roleUserId);
+    const nextRole = String(target.value || "").trim();
+    const allowedRoles = Array.isArray(appConfig.userRoles) ? appConfig.userRoles : [];
+    const isAllowedRole = nextRole === "\u672a\u8a2d\u5b9a" || allowedRoles.includes(nextRole);
+
+    if (!member || !isAllowedRole) {
+      memberRoleStatusMessage = "\u30e6\u30fc\u30b6\u30fc\u533a\u5206\u3092\u78ba\u8a8d\u3057\u3066\u304f\u3060\u3055\u3044\u3002";
+      renderSettings();
+      return;
+    }
+
+    member.role = nextRole;
+    saveDirectory();
+    memberRoleStatusMessage = `${member.displayName} / ${member.id} \u306e\u533a\u5206\u3092 ${nextRole} \u306b\u66f4\u65b0\u3057\u307e\u3057\u305f\u3002`;
+
+    try {
+      await syncMemberToShared(member);
+    } catch (error) {
+      memberRoleStatusMessage = getSharedSyncErrorText(error);
+    }
+
+    renderWorkspace();
+  });
+}
 
 if (excelLinkForm && excelLinkInput) {
   excelLinkForm.addEventListener("submit", (event) => {
