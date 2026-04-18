@@ -6,12 +6,11 @@ const CLOCK_RECORDS_KEY = "ergonomics-lab-clock-records-v1";
 const CLOCK_LOGS_KEY = "ergonomics-lab-clock-logs-v1";
 const CLOCK_CORRECTION_REQUESTS_KEY = "ergonomics-lab-clock-correction-requests-v1";
 const TASKS_STORAGE_KEY = "ergonomics-lab-my-tasks-v1";
-const CHAT_MESSAGES_KEY = "ergonomics-lab-chat-messages-v1";
+const SHARED_SCHEDULE_ITEMS_KEY = "ergonomics-lab-shared-schedule-v1";
 const EXCEL_LINKS_KEY = "ergonomics-lab-excel-links-v1";
 const EXCEL_ATTACHMENT_DB_NAME = "ergonomics-lab-excel-attachments";
 const EXCEL_ATTACHMENT_DB_VERSION = 1;
 const EXCEL_ATTACHMENT_STORE_NAME = "excelFiles";
-const CHAT_MAX_MESSAGES = 250;
 const DEFAULT_SHARED_SYNC_INTERVAL_MS = 20000;
 const CATEGORIES = [
   {
@@ -27,10 +26,10 @@ const CATEGORIES = [
     description: "\u500b\u4eba\u306e\u30bf\u30b9\u30af\u3092\u6574\u7406\u3059\u308b\u753b\u9762\u3067\u3059\u3002"
   },
   {
-    key: "chat",
-    label: "\u30c1\u30e3\u30c3\u30c8",
-    short: "\u3072\u3068\u3053\u3068\u5171\u6709",
-    description: "\u7814\u7a76\u5ba4\u5168\u4f53\u3067\u4f7f\u3046\u5171\u6709\u30c1\u30e3\u30c3\u30c8\u3067\u3059\u3002"
+    key: "sharedSchedule",
+    label: "\u5171\u6709\u30b9\u30b1\u30b8\u30e5\u30fc\u30eb",
+    short: "\u884c\u4e8b\u4e88\u5b9a\u3092\u5171\u6709",
+    description: "\u4e2d\u9593\u767a\u8868\u3001\u672c\u5be9\u67fb\u4f1a\u3001\u30df\u30fc\u30c6\u30a3\u30f3\u30b0\u306a\u3069\u3001\u7814\u7a76\u5ba4\u5168\u4f53\u306e\u4e88\u5b9a\u3092\u78ba\u8a8d\u3059\u308b\u753b\u9762\u3067\u3059\u3002"
   },
   {
     key: "clock",
@@ -81,6 +80,13 @@ const AVAILABILITY_OPTIONS = [
 ];
 
 const DEFAULT_AVAILABILITY = AVAILABILITY_OPTIONS[0].value;
+const SHARED_SCHEDULE_TYPES = [
+  "\u4e2d\u9593\u767a\u8868",
+  "\u672c\u5be9\u67fb\u4f1a",
+  "\u30df\u30fc\u30c6\u30a3\u30f3\u30b0",
+  "\u5b66\u4f1a\u30fb\u767a\u8868",
+  "\u305d\u306e\u4ed6"
+];
 
 const FALLBACK_CONFIG = {
   appName: "\u4eba\u9593\u5de5\u5b66\u7814\u7a76\u5ba4 \u5171\u6709\u30c4\u30fc\u30eb",
@@ -169,11 +175,16 @@ const taskDueDateInput = document.getElementById("taskDueDateInput");
 const taskNoteInput = document.getElementById("taskNoteInput");
 const taskFormMessage = document.getElementById("taskFormMessage");
 const taskList = document.getElementById("taskList");
-const chatMessageList = document.getElementById("chatMessageList");
-const chatForm = document.getElementById("chatForm");
-const chatInput = document.getElementById("chatInput");
-const chatFormMessage = document.getElementById("chatFormMessage");
-const chatStatusMessage = document.getElementById("chatStatusMessage");
+const sharedScheduleList = document.getElementById("sharedScheduleList");
+const sharedScheduleForm = document.getElementById("sharedScheduleForm");
+const sharedScheduleTitleInput = document.getElementById("sharedScheduleTitleInput");
+const sharedScheduleTypeInput = document.getElementById("sharedScheduleTypeInput");
+const sharedScheduleDateInput = document.getElementById("sharedScheduleDateInput");
+const sharedScheduleStartTimeInput = document.getElementById("sharedScheduleStartTimeInput");
+const sharedScheduleEndTimeInput = document.getElementById("sharedScheduleEndTimeInput");
+const sharedScheduleNoteInput = document.getElementById("sharedScheduleNoteInput");
+const sharedScheduleFormMessage = document.getElementById("sharedScheduleFormMessage");
+const sharedScheduleStatusMessage = document.getElementById("sharedScheduleStatusMessage");
 const clockCurrentTime = document.getElementById("clockCurrentTime");
 const clockCurrentDate = document.getElementById("clockCurrentDate");
 const clockMonthTotalValue = document.getElementById("clockMonthTotalValue");
@@ -241,9 +252,9 @@ let clockCorrectionRequests = [];
 let clockCorrectionRequestsSharedAvailable = true;
 let clockCorrectionRequestsStatusText = "";
 let myTasks = {};
-let chatMessages = [];
-let chatSharedAvailable = true;
-let chatSharedStatusText = "";
+let sharedScheduleItems = [];
+let sharedScheduleSharedAvailable = true;
+let sharedScheduleSharedStatusText = "";
 let excelLinks = {};
 let sharedStore = {
   provider: "supabase",
@@ -332,23 +343,26 @@ function saveMyTasks() {
   window.localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(myTasks));
 }
 
-function loadChatMessages() {
+function loadSharedScheduleItems() {
   try {
-    const raw = window.localStorage.getItem(CHAT_MESSAGES_KEY);
+    const raw = window.localStorage.getItem(SHARED_SCHEDULE_ITEMS_KEY);
     const parsed = raw ? JSON.parse(raw) : [];
     if (!Array.isArray(parsed)) {
       return [];
     }
 
-    return sortChatMessages(parsed.map((message) => normalizeChatMessage(message)).filter(Boolean));
+    return sortSharedScheduleItems(parsed.map((item) => normalizeSharedScheduleItem(item)).filter(Boolean));
   } catch (error) {
-    console.warn("Could not load chat messages. Using defaults.", error);
+    console.warn("Could not load shared schedule items. Using defaults.", error);
     return [];
   }
 }
 
-function saveChatMessages() {
-  window.localStorage.setItem(CHAT_MESSAGES_KEY, JSON.stringify(sortChatMessages(chatMessages)));
+function saveSharedScheduleItems() {
+  window.localStorage.setItem(
+    SHARED_SCHEDULE_ITEMS_KEY,
+    JSON.stringify(sortSharedScheduleItems(sharedScheduleItems))
+  );
 }
 
 function loadExcelLinks() {
@@ -956,58 +970,85 @@ function buildClockCorrectionRequestsFromRemoteRows(rows) {
     });
 }
 
-function normalizeChatMessage(rawMessage) {
-  if (!rawMessage || typeof rawMessage !== "object") {
+function normalizeSharedScheduleItem(rawItem) {
+  if (!rawItem || typeof rawItem !== "object") {
     return null;
   }
 
-  const id = String(rawMessage.id || "").trim();
-  const userId = String(rawMessage.userId || rawMessage.user_id || "").trim();
-  const rawText =
-    typeof rawMessage.text === "string"
-      ? rawMessage.text
-      : typeof rawMessage.message === "string"
-        ? rawMessage.message
-        : "";
-  const text = rawText.replace(/\r\n?/g, "\n").trim();
-  const createdAt = String(rawMessage.createdAt || rawMessage.created_at || "").trim() || new Date().toISOString();
+  const id = String(rawItem.id || "").trim();
+  const title = String(rawItem.title || "").trim();
+  const type = String(rawItem.type || "\u305d\u306e\u4ed6").trim() || "\u305d\u306e\u4ed6";
+  const dateKey = String(rawItem.dateKey || rawItem.date_key || "").trim();
+  const startTime = normalizeTimeValue(rawItem.startTime || rawItem.start_time || "");
+  const endTime = normalizeTimeValue(rawItem.endTime || rawItem.end_time || "");
+  const note = String(rawItem.note || "").replace(/\r\n?/g, "\n").trim();
+  const createdBy = String(rawItem.createdBy || rawItem.created_by || "").trim();
+  const createdAt = String(rawItem.createdAt || rawItem.created_at || "").trim() || new Date().toISOString();
+  const updatedAt = String(rawItem.updatedAt || rawItem.updated_at || "").trim() || createdAt;
 
-  if (!id || !userId || !text) {
+  if (!id || !title || !dateKey) {
     return null;
   }
 
   return {
     id,
-    userId,
-    text,
-    createdAt
+    title,
+    type,
+    dateKey,
+    startTime,
+    endTime,
+    note,
+    createdBy,
+    createdAt,
+    updatedAt
   };
 }
 
-function sortChatMessages(messages) {
-  return [...(Array.isArray(messages) ? messages : [])]
-    .sort((left, right) => {
-      const leftStamp = left?.createdAt || "";
-      const rightStamp = right?.createdAt || "";
-
-      if (leftStamp && rightStamp && leftStamp !== rightStamp) {
-        return leftStamp.localeCompare(rightStamp);
-      }
-
-      return String(left?.id || "").localeCompare(String(right?.id || ""), "ja");
-    })
-    .slice(-CHAT_MAX_MESSAGES);
+function getSharedScheduleSortStamp(item) {
+  return `${item?.dateKey || ""}T${item?.startTime || "23:59"}:00`;
 }
 
-function buildChatMessagesFromRemoteRows(rows) {
-  return sortChatMessages(
+function sortSharedScheduleItems(items) {
+  const todayKey = getTodayDateKey();
+
+  return [...(Array.isArray(items) ? items : [])].sort((left, right) => {
+    const leftUpcoming = (left?.dateKey || "") >= todayKey ? 0 : 1;
+    const rightUpcoming = (right?.dateKey || "") >= todayKey ? 0 : 1;
+
+    if (leftUpcoming !== rightUpcoming) {
+      return leftUpcoming - rightUpcoming;
+    }
+
+    const leftStamp = getSharedScheduleSortStamp(left);
+    const rightStamp = getSharedScheduleSortStamp(right);
+
+    if (leftUpcoming === 0) {
+      if (leftStamp !== rightStamp) {
+        return leftStamp.localeCompare(rightStamp);
+      }
+    } else if (leftStamp !== rightStamp) {
+      return rightStamp.localeCompare(leftStamp);
+    }
+
+    return String(left?.id || "").localeCompare(String(right?.id || ""), "ja");
+  });
+}
+
+function buildSharedScheduleItemsFromRemoteRows(rows) {
+  return sortSharedScheduleItems(
     (Array.isArray(rows) ? rows : [])
       .map((row) =>
-        normalizeChatMessage({
+        normalizeSharedScheduleItem({
           id: row.id,
-          userId: row.user_id,
-          message: row.message,
-          createdAt: row.created_at
+          title: row.title,
+          type: row.type,
+          dateKey: row.date_key,
+          startTime: row.start_time,
+          endTime: row.end_time,
+          note: row.note,
+          createdBy: row.created_by,
+          createdAt: row.created_at,
+          updatedAt: row.updated_at
         })
       )
       .filter(Boolean)
@@ -1021,7 +1062,7 @@ function cacheSharedSnapshotLocally() {
   saveClockLogs();
   saveClockCorrectionRequests();
   saveMyTasks();
-  saveChatMessages();
+  saveSharedScheduleItems();
 }
 
 function renderClockNow() {
@@ -1919,21 +1960,42 @@ function deleteTaskForUser(userId, taskId) {
   return myTasks[userId].length !== previousLength;
 }
 
-function addChatMessage(userId, text) {
-  const message = normalizeChatMessage({
-    id: createClientId("chat"),
-    userId,
-    text,
-    createdAt: new Date().toISOString()
+function addSharedScheduleItem(userId, values) {
+  const item = normalizeSharedScheduleItem({
+    id: createClientId("shared-schedule"),
+    title: values.title,
+    type: values.type,
+    dateKey: values.dateKey,
+    startTime: values.startTime,
+    endTime: values.endTime,
+    note: values.note,
+    createdBy: userId,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
   });
 
-  if (!message) {
+  if (!item) {
     return null;
   }
 
-  chatMessages = sortChatMessages([...chatMessages, message]);
-  saveChatMessages();
-  return message;
+  sharedScheduleItems = sortSharedScheduleItems([...sharedScheduleItems, item]);
+  saveSharedScheduleItems();
+  return item;
+}
+
+function deleteSharedScheduleItem(itemId) {
+  const previousLength = sharedScheduleItems.length;
+  sharedScheduleItems = sharedScheduleItems.filter((item) => item.id !== itemId);
+  saveSharedScheduleItems();
+  return previousLength !== sharedScheduleItems.length;
+}
+
+function canDeleteSharedScheduleItem(item) {
+  if (!currentUser || !item) {
+    return false;
+  }
+
+  return isOwner(currentUser) || item.createdBy === currentUser.id;
 }
 
 function getTaskDueState(dueDate) {
@@ -2436,12 +2498,17 @@ function toSharedClockCorrectionRequestRow(request) {
   };
 }
 
-function toSharedChatMessageRow(message) {
+function toSharedScheduleRow(item) {
   return {
-    id: message.id,
-    user_id: message.userId,
-    message: message.text,
-    created_at: message.createdAt || new Date().toISOString(),
+    id: item.id,
+    title: item.title,
+    type: item.type,
+    date_key: item.dateKey,
+    start_time: item.startTime || "",
+    end_time: item.endTime || "",
+    note: item.note || "",
+    created_by: item.createdBy || "",
+    created_at: item.createdAt || new Date().toISOString(),
     updated_at: new Date().toISOString()
   };
 }
@@ -2478,8 +2545,8 @@ async function refreshSharedState(options = {}) {
     try {
       let remoteClockRequests = null;
       let sharedClockRequestsAvailable = true;
-      let remoteChatMessages = null;
-      let sharedChatAvailableNext = true;
+      let remoteSharedScheduleItems = null;
+      let sharedScheduleAvailableNext = true;
 
       const [remoteUsers, remotePresence, remoteTasks, remoteClockRecords, remoteClockLogs] =
         await Promise.all([
@@ -2504,13 +2571,13 @@ async function refreshSharedState(options = {}) {
       }
 
       try {
-        remoteChatMessages = await selectSharedRows("lab_chat_messages", {
-          order: "created_at.asc"
+        remoteSharedScheduleItems = await selectSharedRows("lab_shared_schedule_items", {
+          order: "date_key.asc,start_time.asc,created_at.asc"
         });
       } catch (error) {
         if (isSharedRelationMissingError(error)) {
-          sharedChatAvailableNext = false;
-          remoteChatMessages = [];
+          sharedScheduleAvailableNext = false;
+          remoteSharedScheduleItems = [];
         } else {
           throw error;
         }
@@ -2526,12 +2593,12 @@ async function refreshSharedState(options = {}) {
         ? ""
         : "\u4fee\u6b63\u7533\u8acb\u306e\u5171\u6709\u306b\u306f\u8ffd\u52a0SQL\u304c\u5fc5\u8981\u3067\u3059\u3002";
       clockCorrectionRequests = buildClockCorrectionRequestsFromRemoteRows(remoteClockRequests);
-      chatSharedAvailable = sharedChatAvailableNext;
-      chatSharedStatusText = sharedChatAvailableNext
+      sharedScheduleSharedAvailable = sharedScheduleAvailableNext;
+      sharedScheduleSharedStatusText = sharedScheduleAvailableNext
         ? ""
-        : "\u30c1\u30e3\u30c3\u30c8\u5171\u6709\u306b\u306f\u8ffd\u52a0SQL\u304c\u5fc5\u8981\u3067\u3059\u3002";
-      if (sharedChatAvailableNext) {
-        chatMessages = buildChatMessagesFromRemoteRows(remoteChatMessages);
+        : "\u5171\u6709\u30b9\u30b1\u30b8\u30e5\u30fc\u30eb\u306e\u5171\u6709\u306b\u306f\u8ffd\u52a0SQL\u304c\u5fc5\u8981\u3067\u3059\u3002";
+      if (sharedScheduleAvailableNext) {
+        sharedScheduleItems = buildSharedScheduleItemsFromRemoteRows(remoteSharedScheduleItems);
       }
       cacheSharedSnapshotLocally();
       sharedStore.active = true;
@@ -2635,12 +2702,22 @@ async function syncTaskToShared(userId, task) {
   return true;
 }
 
-async function syncChatMessageToShared(message) {
-  if (!sharedStore.configured || !chatSharedAvailable || !message) {
+async function syncSharedScheduleItemToShared(item) {
+  if (!sharedStore.configured || !sharedScheduleSharedAvailable || !item) {
     return false;
   }
 
-  await upsertSharedRows("lab_chat_messages", [toSharedChatMessageRow(message)], "id");
+  await upsertSharedRows("lab_shared_schedule_items", [toSharedScheduleRow(item)], "id");
+  await refreshSharedState({ quiet: true });
+  return true;
+}
+
+async function deleteSharedScheduleItemFromShared(itemId) {
+  if (!sharedStore.configured || !sharedScheduleSharedAvailable || !itemId) {
+    return false;
+  }
+
+  await deleteSharedRows("lab_shared_schedule_items", [{ column: "id", value: itemId }]);
   await refreshSharedState({ quiet: true });
   return true;
 }
@@ -2790,6 +2867,21 @@ function renderAvailabilityOptions(target) {
   });
 }
 
+function renderSharedScheduleTypeOptions(target) {
+  if (!target) {
+    return;
+  }
+
+  target.replaceChildren();
+
+  SHARED_SCHEDULE_TYPES.forEach((type) => {
+    const option = document.createElement("option");
+    option.value = type;
+    option.textContent = type;
+    target.appendChild(option);
+  });
+}
+
 function renderConfig(config) {
   document.title = config.appName;
   labName.textContent = config.labName;
@@ -2797,6 +2889,7 @@ function renderConfig(config) {
     tagline.textContent = config.tagline;
     loginDescription.textContent = config.loginDescription;
     renderAvailabilityOptions(presenceEditorAvailabilitySelect);
+    renderSharedScheduleTypeOptions(sharedScheduleTypeInput);
   }
 
 function updateHash(categoryKey) {
@@ -2836,7 +2929,7 @@ function setActiveCategory(categoryKey) {
   window.scrollTo({ top: 0 });
   renderWorkspace();
 
-  if (sharedStore.configured && (categoryKey === "clock" || categoryKey === "chat")) {
+  if (sharedStore.configured && (categoryKey === "clock" || categoryKey === "sharedSchedule")) {
     refreshSharedState({ quiet: true });
   }
 }
@@ -3136,59 +3229,94 @@ function renderTasksView() {
   });
 }
 
-function createChatMessageCard(message) {
-  const item = document.createElement("article");
-  const bubble = document.createElement("div");
-  const head = document.createElement("div");
-  const author = document.createElement("strong");
-  const timestamp = document.createElement("time");
-  const text = document.createElement("p");
-  const sender = findMemberById(message.userId);
-  const isOwn = currentUser && message.userId === currentUser.id;
+function createSharedScheduleCard(item) {
+  const card = document.createElement("article");
+  const top = document.createElement("div");
+  const label = document.createElement("span");
+  const date = document.createElement("strong");
+  const title = document.createElement("h4");
+  const meta = document.createElement("div");
+  const timeChip = document.createElement("span");
+  const typeChip = document.createElement("span");
+  const ownerChip = document.createElement("span");
+  const note = document.createElement("p");
+  const actions = document.createElement("div");
+  const creator = findMemberById(item.createdBy);
+  const dateText = item.dateKey ? formatDateKey(item.dateKey) : "\u65e5\u4ed8\u672a\u8a2d\u5b9a";
+  const timeText = item.startTime || item.endTime
+    ? formatTimeRange(item.startTime, item.endTime)
+    : "\u7d42\u65e5";
 
-  item.className = `chat-message${isOwn ? " is-own" : ""}`;
-  bubble.className = "chat-bubble";
-  head.className = "chat-bubble-head";
-  author.textContent = sender?.displayName || message.userId;
-  timestamp.dateTime = message.createdAt;
-  timestamp.textContent = formatDateTime(new Date(message.createdAt));
-  text.className = "chat-bubble-text";
-  text.textContent = message.text;
+  card.className = "shared-schedule-card";
+  top.className = "shared-schedule-card-top";
+  label.className = "shared-schedule-date-label";
+  date.className = "shared-schedule-date-value";
+  title.className = "shared-schedule-title";
+  meta.className = "shared-schedule-meta";
+  timeChip.className = "task-chip";
+  typeChip.className = "task-chip";
+  ownerChip.className = "task-chip";
+  note.className = "shared-schedule-note";
+  actions.className = "shared-schedule-actions";
 
-  head.append(author, timestamp);
-  bubble.append(head, text);
-  item.appendChild(bubble);
-  return item;
+  label.textContent = "\u65e5\u7a0b";
+  date.textContent = dateText;
+  title.textContent = item.title;
+  timeChip.textContent = timeText;
+  typeChip.textContent = item.type || "\u305d\u306e\u4ed6";
+  ownerChip.textContent = creator ? creator.displayName : (item.createdBy || "\u7814\u7a76\u5ba4");
+
+  top.append(label, date);
+  meta.append(timeChip, typeChip, ownerChip);
+  card.append(top, title, meta);
+
+  if (item.note) {
+    note.textContent = item.note;
+    card.appendChild(note);
+  }
+
+  if (canDeleteSharedScheduleItem(item)) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "secondary-button shared-schedule-delete";
+    button.dataset.scheduleId = item.id;
+    button.textContent = "\u524a\u9664";
+    actions.appendChild(button);
+    card.appendChild(actions);
+  }
+
+  return card;
 }
 
-function renderChatView() {
-  if (!chatMessageList) {
+function renderSharedScheduleView() {
+  if (!sharedScheduleList) {
     return;
   }
 
-  if (chatStatusMessage) {
-    if (sharedStore.configured && !chatSharedAvailable) {
-      chatStatusMessage.textContent = chatSharedStatusText;
+  if (sharedScheduleStatusMessage) {
+    if (sharedStore.configured && !sharedScheduleSharedAvailable) {
+      sharedScheduleStatusMessage.textContent = sharedScheduleSharedStatusText;
     } else {
-      chatStatusMessage.textContent = isSharedStoreActive() ? "\u5171\u6709\u4e2d" : "\u3053\u306e\u7aef\u672b\u306e\u307f";
+      sharedScheduleStatusMessage.textContent = isSharedStoreActive() ? "\u5171\u6709\u4e2d" : "\u3053\u306e\u7aef\u672b\u306e\u307f";
     }
   }
 
-  chatMessageList.replaceChildren();
-
-  if (chatMessages.length === 0) {
-    const empty = document.createElement("p");
-    empty.className = "chat-empty";
-    empty.textContent = "\u307e\u3060\u30e1\u30c3\u30bb\u30fc\u30b8\u304c\u3042\u308a\u307e\u305b\u3093\u3002";
-    chatMessageList.appendChild(empty);
-  } else {
-    chatMessages.forEach((message) => {
-      chatMessageList.appendChild(createChatMessageCard(message));
-    });
+  if (sharedScheduleForm) {
+    sharedScheduleForm.hidden = !currentUser;
   }
 
-  window.requestAnimationFrame(() => {
-    chatMessageList.scrollTop = chatMessageList.scrollHeight;
+  sharedScheduleList.replaceChildren();
+
+  if (sharedScheduleItems.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "shared-schedule-empty";
+    empty.textContent = "\u307e\u3060\u4e88\u5b9a\u304c\u3042\u308a\u307e\u305b\u3093\u3002";
+    sharedScheduleList.appendChild(empty);
+    return;
+  }
+
+  sharedScheduleItems.forEach((item) => {
+    sharedScheduleList.appendChild(createSharedScheduleCard(item));
   });
 }
 
@@ -3680,8 +3808,8 @@ function renderViews() {
     renderTasksView();
   }
 
-  if (activeCategory === "chat") {
-    renderChatView();
+  if (activeCategory === "sharedSchedule") {
+    renderSharedScheduleView();
   }
 
   if (activeCategory === "clock") {
@@ -4179,50 +4307,102 @@ taskList.addEventListener("click", async (event) => {
   }
 });
 
-if (chatForm && chatInput) {
-  chatForm.addEventListener("submit", async (event) => {
+if (sharedScheduleForm && sharedScheduleTitleInput && sharedScheduleDateInput) {
+  sharedScheduleForm.addEventListener("submit", async (event) => {
     event.preventDefault();
 
     if (!currentUser) {
       return;
     }
 
-    const text = chatInput.value.replace(/\r\n?/g, "\n").trim();
-    if (!text) {
-      if (chatFormMessage) {
-        chatFormMessage.textContent = "\u30e1\u30c3\u30bb\u30fc\u30b8\u3092\u5165\u529b";
+    const title = sharedScheduleTitleInput.value.trim();
+    const dateKey = sharedScheduleDateInput.value;
+    const type = sharedScheduleTypeInput?.value || SHARED_SCHEDULE_TYPES[0];
+    const startTime = normalizeTimeValue(sharedScheduleStartTimeInput?.value || "");
+    const endTime = normalizeTimeValue(sharedScheduleEndTimeInput?.value || "");
+    const note = sharedScheduleNoteInput?.value.trim() || "";
+
+    if (!title || !dateKey) {
+      if (sharedScheduleFormMessage) {
+        sharedScheduleFormMessage.textContent = "\u4ef6\u540d\u3068\u65e5\u4ed8\u3092\u5165\u529b";
       }
       return;
     }
 
-    const message = addChatMessage(currentUser.id, text);
-    if (!message) {
-      if (chatFormMessage) {
-        chatFormMessage.textContent = "\u9001\u4fe1\u3067\u304d\u307e\u305b\u3093";
+    if (startTime && endTime && startTime > endTime) {
+      if (sharedScheduleFormMessage) {
+        sharedScheduleFormMessage.textContent = "\u6642\u9593\u3092\u78ba\u8a8d";
       }
       return;
     }
 
-    chatInput.value = "";
-    if (chatFormMessage) {
-      chatFormMessage.textContent =
-        sharedStore.configured && chatSharedAvailable
-          ? "\u9001\u4fe1\u3057\u307e\u3057\u305f"
-          : sharedStore.configured && !chatSharedAvailable
-            ? chatSharedStatusText
+    const item = addSharedScheduleItem(currentUser.id, {
+      title,
+      type,
+      dateKey,
+      startTime,
+      endTime,
+      note
+    });
+
+    if (!item) {
+      if (sharedScheduleFormMessage) {
+        sharedScheduleFormMessage.textContent = "\u4fdd\u5b58\u3067\u304d\u307e\u305b\u3093";
+      }
+      return;
+    }
+
+    sharedScheduleForm.reset();
+    renderSharedScheduleTypeOptions(sharedScheduleTypeInput);
+    if (sharedScheduleFormMessage) {
+      sharedScheduleFormMessage.textContent =
+        sharedStore.configured && sharedScheduleSharedAvailable
+          ? "\u4fdd\u5b58\u3057\u307e\u3057\u305f"
+          : sharedStore.configured && !sharedScheduleSharedAvailable
+            ? sharedScheduleSharedStatusText
             : "\u3053\u306e\u7aef\u672b\u306b\u4fdd\u5b58\u3057\u307e\u3057\u305f";
     }
-    renderChatView();
+    renderSharedScheduleView();
 
-    if (!sharedStore.configured || !chatSharedAvailable) {
+    if (!sharedStore.configured || !sharedScheduleSharedAvailable) {
       return;
     }
 
     try {
-      await syncChatMessageToShared(message);
+      await syncSharedScheduleItemToShared(item);
     } catch (error) {
-      if (chatFormMessage) {
-        chatFormMessage.textContent = getSharedSyncErrorText(error);
+      if (sharedScheduleFormMessage) {
+        sharedScheduleFormMessage.textContent = getSharedSyncErrorText(error);
+      }
+    }
+  });
+}
+
+if (sharedScheduleList) {
+  sharedScheduleList.addEventListener("click", async (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLButtonElement) || !target.dataset.scheduleId) {
+      return;
+    }
+
+    const itemId = target.dataset.scheduleId;
+    const item = sharedScheduleItems.find((entry) => entry.id === itemId);
+    if (!item || !canDeleteSharedScheduleItem(item)) {
+      return;
+    }
+
+    deleteSharedScheduleItem(itemId);
+    renderSharedScheduleView();
+
+    if (!sharedStore.configured || !sharedScheduleSharedAvailable) {
+      return;
+    }
+
+    try {
+      await deleteSharedScheduleItemFromShared(itemId);
+    } catch (error) {
+      if (sharedScheduleFormMessage) {
+        sharedScheduleFormMessage.textContent = getSharedSyncErrorText(error);
       }
     }
   });
@@ -4246,7 +4426,7 @@ document.addEventListener("visibilitychange", () => {
     document.hidden ||
     !currentUser ||
     !sharedStore.configured ||
-    (activeCategory !== "clock" && activeCategory !== "chat")
+    (activeCategory !== "clock" && activeCategory !== "sharedSchedule")
   ) {
     return;
   }
@@ -4263,7 +4443,7 @@ async function init() {
     clockLogs = loadClockLogs();
     clockCorrectionRequests = loadClockCorrectionRequests().map((request) => normalizeClockCorrectionRequest(request)).filter(Boolean);
     myTasks = loadMyTasks();
-    chatMessages = loadChatMessages();
+    sharedScheduleItems = loadSharedScheduleItems();
     excelLinks = loadExcelLinks();
     presenceMonthKey = getMonthKey(new Date());
   clockMonthSummaryKey = getMonthKey(new Date());

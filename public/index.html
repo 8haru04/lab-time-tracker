@@ -212,30 +212,72 @@
             </section>
           </article>
 
-          <article id="view-chat" class="workspace-view" hidden>
+          <article id="view-sharedSchedule" class="workspace-view" hidden>
             <section class="view-card">
-              <div class="chat-shell">
-                <div class="chat-header">
+              <div class="shared-schedule-shell">
+                <div class="shared-schedule-header">
                   <div>
-                    <p class="view-label">&#x30c1;&#x30e3;&#x30c3;&#x30c8;</p>
-                    <h3>&#x5171;&#x6709;&#x30c1;&#x30e3;&#x30c3;&#x30c8;</h3>
+                    <p class="view-label">&#x5171;&#x6709;&#x30b9;&#x30b1;&#x30b8;&#x30e5;&#x30fc;&#x30eb;</p>
+                    <h3>&#x7814;&#x7a76;&#x5ba4;&#x5168;&#x4f53;&#x306e;&#x4e88;&#x5b9a;</h3>
                   </div>
-                  <p id="chatStatusMessage" class="helper-text"></p>
+                  <p id="sharedScheduleStatusMessage" class="helper-text"></p>
                 </div>
 
-                <div id="chatMessageList" class="chat-message-list" aria-live="polite"></div>
+                <div class="shared-schedule-layout">
+                  <section class="panel shared-schedule-panel">
+                    <div class="panel-head">
+                      <p class="view-label">&#x5165;&#x529b;</p>
+                      <h3>&#x65b0;&#x3057;&#x3044;&#x4e88;&#x5b9a;</h3>
+                    </div>
 
-                <form id="chatForm" class="chat-form">
-                  <label class="field">
-                    <span>&#x30e1;&#x30c3;&#x30bb;&#x30fc;&#x30b8;</span>
-                    <textarea id="chatInput" name="chatInput" rows="4" maxlength="400" placeholder=""></textarea>
-                  </label>
+                    <form id="sharedScheduleForm" class="form-stack">
+                      <label class="field">
+                        <span>&#x4ef6;&#x540d;</span>
+                        <input id="sharedScheduleTitleInput" type="text" name="sharedScheduleTitle" maxlength="80" placeholder="">
+                      </label>
 
-                  <div class="chat-form-actions">
-                    <p id="chatFormMessage" class="helper-text"></p>
-                    <button class="primary-button chat-send-button" type="submit">&#x9001;&#x4fe1;</button>
-                  </div>
-                </form>
+                      <label class="field">
+                        <span>&#x7a2e;&#x5225;</span>
+                        <select id="sharedScheduleTypeInput" name="sharedScheduleType"></select>
+                      </label>
+
+                      <label class="field">
+                        <span>&#x65e5;&#x4ed8;</span>
+                        <input id="sharedScheduleDateInput" type="date" name="sharedScheduleDate">
+                      </label>
+
+                      <div class="presence-input-grid">
+                        <label class="field">
+                          <span>&#x958b;&#x59cb;</span>
+                          <input id="sharedScheduleStartTimeInput" type="time" name="sharedScheduleStartTime">
+                        </label>
+
+                        <label class="field">
+                          <span>&#x7d42;&#x4e86;</span>
+                          <input id="sharedScheduleEndTimeInput" type="time" name="sharedScheduleEndTime">
+                        </label>
+                      </div>
+
+                      <label class="field">
+                        <span>&#x30e1;&#x30e2;</span>
+                        <input id="sharedScheduleNoteInput" type="text" name="sharedScheduleNote" maxlength="120" placeholder="">
+                      </label>
+
+                      <button class="primary-button" type="submit">&#x4fdd;&#x5b58;</button>
+                    </form>
+
+                    <p id="sharedScheduleFormMessage" class="helper-text"></p>
+                  </section>
+
+                  <section class="panel shared-schedule-panel">
+                    <div class="panel-head">
+                      <p class="view-label">&#x4e00;&#x89a7;</p>
+                      <h3>&#x8fd1;&#x3044;&#x4e88;&#x5b9a;</h3>
+                    </div>
+
+                    <div id="sharedScheduleList" class="shared-schedule-list" aria-live="polite"></div>
+                  </section>
+                </div>
               </div>
             </section>
           </article>
