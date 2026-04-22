@@ -100,7 +100,7 @@ const LAB_MILESTONE_DEFS = [
 ];
 
 const FALLBACK_CONFIG = {
-  appName: "\u4eba\u9593\u5de5\u5b66\u7814\u7a76\u5ba4 \u5171\u6709\u30c4\u30fc\u30eb",
+  appName: "Labby",
   labName: "\u4eba\u9593\u5de5\u5b66\u7814\u7a76\u5ba4",
   tagline:
     "\u7814\u7a76\u5ba4\u306e\u5171\u6709\u30c4\u30fc\u30eb\u3067\u3059\u3002",

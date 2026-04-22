@@ -1,5 +1,5 @@
-const SHELL_CACHE = "ergonomics-lab-shell-v39";
-const DATA_CACHE = "ergonomics-lab-data-v39";
+const SHELL_CACHE = "ergonomics-lab-shell-v40";
+const DATA_CACHE = "ergonomics-lab-data-v40";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -7,8 +7,8 @@ const APP_SHELL = [
   "./app.js",
   "./app-config.json",
   "./manifest.webmanifest",
-  "./icon.svg",
-  "./icon-maskable.svg",
+  "./labby-icon-192.png",
+  "./labby-icon-512.png",
   "./offline.html"
 ];
 

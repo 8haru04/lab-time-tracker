@@ -3,14 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>&#x4eba;&#x9593;&#x5de5;&#x5b66;&#x7814;&#x7a76;&#x5ba4; &#x5171;&#x6709;&#x30c4;&#x30fc;&#x30eb;</title>
+  <title>Labby</title>
   <meta name="description" content="&#x4eba;&#x9593;&#x5de5;&#x5b66;&#x7814;&#x7a76;&#x5ba4;&#x306e;&#x5171;&#x6709;&#x30c4;&#x30fc;&#x30eb;">
   <meta name="theme-color" content="#191970">
   <meta name="robots" content="noindex, nofollow, noarchive">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="&#x4eba;&#x9593;&#x5de5;&#x5b66;&#x7814;&#x7a76;&#x5ba4;">
+  <meta name="apple-mobile-web-app-title" content="Labby">
   <link rel="manifest" href="./manifest.webmanifest">
-  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <link rel="icon" href="./labby-icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="./labby-icon-192.png">
   <link rel="stylesheet" href="./styles.css">
   <script src="./app.js" defer></script>
 </head>
@@ -19,6 +20,10 @@
     <section id="authView" class="auth-screen">
       <section class="auth-card" aria-labelledby="loginTitle">
         <div class="auth-orb" aria-hidden="true"></div>
+        <div class="app-brand">
+          <img src="./labby-icon-192.png" alt="Labby" class="app-brand-icon">
+          <span class="app-brand-name">Labby</span>
+        </div>
         <p class="auth-label">Human Ergonomics Lab</p>
         <h1 id="labName">&#x4eba;&#x9593;&#x5de5;&#x5b66;&#x7814;&#x7a76;&#x5ba4;</h1>
         <p id="tagline" class="auth-copy">
@@ -57,6 +62,10 @@
     <section id="workspaceView" class="workspace-shell" hidden>
       <aside class="sidebar">
         <div class="sidebar-card">
+          <div class="app-brand app-brand-sidebar">
+            <img src="./labby-icon-192.png" alt="Labby" class="app-brand-icon">
+            <span class="app-brand-name">Labby</span>
+          </div>
           <p class="sidebar-label">Workspace</p>
           <h2 id="sidebarLabName">&#x4eba;&#x9593;&#x5de5;&#x5b66;&#x7814;&#x7a76;&#x5ba4;</h2>
           <p id="sidebarUserText" class="sidebar-copy"></p>

@@ -1,6 +1,6 @@
 {
-  "name": "\u4eba\u9593\u5de5\u5b66\u7814\u7a76\u5ba4",
-  "short_name": "\u4eba\u9593\u5de5\u5b66\u7814",
+  "name": "Labby",
+  "short_name": "Labby",
   "description": "\u4eba\u9593\u5de5\u5b66\u7814\u7a76\u5ba4\u306e\u5171\u6709\u30c4\u30fc\u30eb\u3092\u516c\u958bURL\u3067\u5229\u7528\u3059\u308b\u305f\u3081\u306ePWA\u69cb\u6210\u3067\u3059\u3002",
   "start_url": "./",
   "scope": "./",
@@ -10,16 +10,16 @@
   "lang": "ja",
   "icons": [
     {
-      "src": "./icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "./labby-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "./icon-maskable.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "maskable"
+      "src": "./labby-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
