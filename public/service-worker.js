@@ -1,7 +1,8 @@
-const SHELL_CACHE = "ergonomics-lab-shell-v41";
-const DATA_CACHE = "ergonomics-lab-data-v41";
+const SHELL_CACHE = "ergonomics-lab-shell-v42";
+const DATA_CACHE = "ergonomics-lab-data-v42";
 const APP_SHELL = [
   "./",
+  "./?source=pwa",
   "./index.html",
   "./styles.css",
   "./app.js",
