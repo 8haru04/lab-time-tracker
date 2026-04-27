@@ -1943,9 +1943,12 @@ function getAttendanceEntry(userId, dateKey) {
     return null;
   }
 
+  const summary = getClockSummary(logs, "out");
+
   return {
     startTime: formatTime(new Date(firstCheckin.timestamp)),
-    endTime: formatTime(new Date(lastCheckout.timestamp))
+    endTime: formatTime(new Date(lastCheckout.timestamp)),
+    breakTime: formatDurationFromMinutes(summary.breakMinutes)
   };
 }
 
@@ -3332,14 +3335,17 @@ function renderPresenceBoard() {
         const wrapper = document.createElement("div");
         const start = document.createElement("span");
         const end = document.createElement("span");
+        const breakTime = document.createElement("span");
 
         wrapper.className = "attendance-cell-entry";
-        wrapper.title = `\u5165\u5ba4 ${attendanceEntry.startTime} / \u9000\u5ba4 ${attendanceEntry.endTime}`;
+        wrapper.title = `\u5165\u5ba4 ${attendanceEntry.startTime} / \u9000\u5ba4 ${attendanceEntry.endTime} / \u7814\u7a76\u5916 ${attendanceEntry.breakTime}`;
         start.className = "attendance-cell-time";
         end.className = "attendance-cell-time";
+        breakTime.className = "attendance-cell-time attendance-cell-break";
         start.textContent = `\u5165 ${attendanceEntry.startTime}`;
         end.textContent = `\u9000 ${attendanceEntry.endTime}`;
-        wrapper.append(start, end);
+        breakTime.textContent = `\u5916 ${attendanceEntry.breakTime}`;
+        wrapper.append(start, end, breakTime);
         attendanceCell.appendChild(wrapper);
       } else {
         const empty = document.createElement("span");

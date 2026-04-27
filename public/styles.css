@@ -632,6 +632,10 @@ p {
   white-space: nowrap;
 }
 
+.attendance-cell-break {
+  color: rgba(232, 192, 125, 0.92);
+}
+
 .presence-editor-backdrop {
   position: fixed;
   inset: 0;

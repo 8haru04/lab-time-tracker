@@ -1,5 +1,5 @@
-const SHELL_CACHE = "ergonomics-lab-shell-v42";
-const DATA_CACHE = "ergonomics-lab-data-v42";
+const SHELL_CACHE = "ergonomics-lab-shell-v43";
+const DATA_CACHE = "ergonomics-lab-data-v43";
 const APP_SHELL = [
   "./",
   "./?source=pwa",
